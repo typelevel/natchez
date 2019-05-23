@@ -85,8 +85,8 @@ lazy val natchez = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core)
-  .aggregate(core)
+  .dependsOn(core, jaeger)
+  .aggregate(core, jaeger)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -102,17 +102,17 @@ lazy val core = project
     )
   )
 
-  lazy val jaeger = project
-    .in(file("modules/jaeger"))
-    .dependsOn(core)
-    .enablePlugins(AutomateHeaderPlugin)
-    .settings(commonSettings)
-    .settings(
-      name := "natchez-jaeger",
-      description := "Jaeger support for Natchez.",
-      libraryDependencies ++= Seq(
-        "io.jaegertracing" % "jaeger-client" % "0.32.0",
-        "org.slf4j"        % "slf4j-jdk14"   % "1.7.26",
-        "org.tpolecat"    %% "skunk-core"    % "0.0.3"
-      )
+lazy val jaeger = project
+  .in(file("modules/jaeger"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "natchez-jaeger",
+    description := "Jaeger support for Natchez.",
+    libraryDependencies ++= Seq(
+      "io.jaegertracing" % "jaeger-client" % "0.32.0",
+      "org.slf4j"        % "slf4j-jdk14"   % "1.7.26",
+      "org.tpolecat"    %% "skunk-core"    % "0.0.3"
     )
+  )
