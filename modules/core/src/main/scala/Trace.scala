@@ -19,9 +19,27 @@ trait Trace[F[_]] {
   def httpHeaders: F[Map[String, String]]
 }
 
-object Trace extends TraceLow {
+object Trace {
 
   def apply[F[_]](implicit ev: Trace[F]): ev.type = ev
+
+  /**
+   * A no-op `Trace` implementation is freely available for any applicative effect. This lets us add
+   * a `Trace` constraint to most existing code without demanding anything new from the concrete
+   * effect type.
+   */
+  def noopTrace[F[_]: Applicative]: Trace[F] =
+    new Trace[F] {
+      final val void = ().pure[F]
+      final val item = Option.empty[String].pure[F]
+      final val map  = Map.empty[String, String].pure[F]
+      def getBaggageItem(key: String): F[Option[String]] = item
+      def httpHeaders: F[Map[String,String]] = map
+      def log(fields: (String, TraceValue)*): F[Unit] = void
+      def setBaggageItem(key: String, value: String): F[Unit] = void
+      def setTag(key: String, value: TraceValue): F[Unit] = void
+      def span[A](label: String)(k: F[A]): F[A] = k
+    }
 
   class KleisliTrace[F[_]: Bracket[?[_], Throwable]] extends Trace[Kleisli[F, Span[F], ?]] {
     def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =             Kleisli(_.log(fields.toMap))
@@ -43,26 +61,5 @@ object Trace extends TraceLow {
 
   implicit def kleisliInstance[F[_]: Bracket[?[_], Throwable]]: KleisliTrace[F] =
     new KleisliTrace[F]
-
-}
-
-trait TraceLow {
-
-  /**
-   * A no-op `Trace` implementation is freely available, at low priority, for any applicative. This
-   * lets us add a `Trace` constraint to existing code.
-   */
-  implicit def noopTrace[F[_]: Applicative]: Trace[F] =
-    new Trace[F] {
-      final val void = ().pure[F]
-      final val item = Option.empty[String].pure[F]
-      final val map  = Map.empty[String, String].pure[F]
-      def getBaggageItem(key: String): F[Option[String]] = item
-      def httpHeaders: F[Map[String,String]] = map
-      def log(fields: (String, TraceValue)*): F[Unit] = void
-      def setBaggageItem(key: String, value: String): F[Unit] = void
-      def setTag(key: String, value: TraceValue): F[Unit] = void
-      def span[A](label: String)(k: F[A]): F[A] = k
-    }
 
 }

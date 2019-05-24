@@ -48,7 +48,7 @@ object Main extends IOApp {
     }
 
   def run(args: List[String]): IO[ExitCode] =
-    runF[IO] *> // first with the free no-op tracer
+    runF[IO](Trace.noopTrace[IO], implicitly, implicitly) *> // first with the free no-op tracer
     JaegerTracer.fromEnv[IO]("natchez-example").use { t =>
       t.root("root").use { span =>
         runF[Kleisli[IO, Span[IO], ?]].run(span) // now with a real tracer
