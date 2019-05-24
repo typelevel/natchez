@@ -7,6 +7,8 @@ package natchez
 import cats.effect._
 import cats.implicits._
 import scala.collection.JavaConverters._
+import io.opentracing.propagation.Format
+import io.opentracing.propagation.TextMapInjectAdapter
 
 trait Span[F[_]] {
   def setTag(key: String, value: TraceValue): F[Unit]
@@ -14,6 +16,7 @@ trait Span[F[_]] {
   def setBaggageItem(key: String, value: String): F[Unit]
   def span(label: String): Resource[F, Span[F]]
   def log(fields: Map[String, TraceValue]): F[Unit]
+  def toHttpHeaders: F[Map[String, String]]
 }
 
 object Span {
@@ -47,6 +50,17 @@ object Span {
 
       def setBaggageItem(key: String, value: String): F[Unit] =
         Sync[F].delay(otSpan.setBaggageItem(key, value)).void
+
+      def toHttpHeaders: F[Map[String, String]] =
+        Sync[F].delay {
+          val m = new java.util.HashMap[String, String]
+          otTracer.inject(
+            otSpan.context,
+            Format.Builtin.HTTP_HEADERS,
+            new TextMapInjectAdapter(m)
+          )
+          m.asScala.toMap
+        }
 
     }
 

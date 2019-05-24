@@ -13,6 +13,7 @@ trait Trace[F[_]] {
   def setBaggageItem(key: String, value: String): F[Unit]
   def log(fields: (String, TraceValue)*): F[Unit]
   def span[A](label: String)(k: F[A]): F[A]
+  def httpHeaders: F[Map[String, String]]
 }
 
 object Trace {
@@ -32,6 +33,8 @@ object Trace {
           Kleisli(e => f(e).setBaggageItem(key, value))
         def getBaggageItem(key: String): Kleisli[F, E, Option[String]] =
           Kleisli(e => f(e).getBaggageItem(key))
+        def httpHeaders: Kleisli[F, E, Map[String, String]] =
+          Kleisli(e => f(e).toHttpHeaders)
       }
   }
 
@@ -47,6 +50,8 @@ object Trace {
         Kleisli(_.setBaggageItem(key, value))
       def getBaggageItem(key: String): Kleisli[F, Span[F], Option[String]] =
         Kleisli(_.getBaggageItem(key))
+      def httpHeaders: Kleisli[F, Span[F], Map[String, String]] =
+        Kleisli(_.toHttpHeaders)
     }
 
 }
