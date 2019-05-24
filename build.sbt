@@ -85,20 +85,20 @@ lazy val natchez = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core, jaeger)
-  .aggregate(core, jaeger)
+  .dependsOn(core, jaeger, examples)
+  .aggregate(core, jaeger, examples)
 
 lazy val core = project
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name := "natchez-core",
+    name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core"       % "1.6.0",
       "org.typelevel" %% "cats-effect"     % "1.3.0",
-      "io.opentracing" % "opentracing-api" % "0.31.0"
+      "io.opentracing" % "opentracing-api" % "0.33.0"
     )
   )
 
@@ -108,11 +108,24 @@ lazy val jaeger = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name := "natchez-jaeger",
+    name        := "natchez-jaeger",
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.jaegertracing" % "jaeger-client" % "0.32.0",
+      "io.jaegertracing" % "jaeger-client" % "0.35.5",
       "org.slf4j"        % "slf4j-jdk14"   % "1.7.26",
+    )
+  )
+
+lazy val examples = project
+  .in(file("modules/examples"))
+  .dependsOn(core, jaeger)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := true,
+    name           := "natchez-examples",
+    description    := "Example programs for Natchez.",
+    libraryDependencies ++= Seq(
       "org.tpolecat"    %% "skunk-core"    % "0.0.3"
     )
   )

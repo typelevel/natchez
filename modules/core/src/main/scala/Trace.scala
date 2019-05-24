@@ -6,7 +6,10 @@ package natchez
 
 import cats.effect._
 import cats.data.Kleisli
+import cats.implicits._
+import cats.Applicative
 
+/** A tracing effect. */
 trait Trace[F[_]] {
   def setTag(key: String, value: TraceValue): F[Unit]
   def getBaggageItem(key: String): F[Option[String]]
@@ -16,42 +19,50 @@ trait Trace[F[_]] {
   def httpHeaders: F[Map[String, String]]
 }
 
-object Trace {
+object Trace extends TraceLow {
 
   def apply[F[_]](implicit ev: Trace[F]): ev.type = ev
 
-  abstract class KleisliTrace[F[_]: Bracket[?[_], Throwable]] extends Trace[Kleisli[F, Span[F], ?]] { outer =>
+  class KleisliTrace[F[_]: Bracket[?[_], Throwable]] extends Trace[Kleisli[F, Span[F], ?]] {
+    def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =             Kleisli(_.log(fields.toMap))
+    def span[A](label: String)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] = Kleisli(_.span(label).use(s => k(s)))
+    def setTag(key: String, value: TraceValue): Kleisli[F, Span[F], Unit] =         Kleisli(_.setTag(key, value))
+    def setBaggageItem(key: String, value: String): Kleisli[F, Span[F], Unit] =     Kleisli(_.setBaggageItem(key, value))
+    def getBaggageItem(key: String): Kleisli[F, Span[F], Option[String]] =          Kleisli(_.getBaggageItem(key))
+    def httpHeaders: Kleisli[F, Span[F], Map[String, String]] =                     Kleisli(_.toHttpHeaders)
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, ?]] =
       new Trace[Kleisli[F, E, ?]] {
-        def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
-          Kleisli(e => f(e).log(fields.toMap))
-        def span[A](label: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          Kleisli(e => f(e).span(label).use(s => k(g(e, s))))
-        def setTag(key: String, value: TraceValue): Kleisli[F, E, Unit] =
-          Kleisli(e => f(e).setTag(key, value))
-        def setBaggageItem(key: String, value: String): Kleisli[F, E, Unit] =
-          Kleisli(e => f(e).setBaggageItem(key, value))
-        def getBaggageItem(key: String): Kleisli[F, E, Option[String]] =
-          Kleisli(e => f(e).getBaggageItem(key))
-        def httpHeaders: Kleisli[F, E, Map[String, String]] =
-          Kleisli(e => f(e).toHttpHeaders)
+        def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =         Kleisli(e => f(e).log(fields.toMap))
+        def span[A](label: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =   Kleisli(e => f(e).span(label).use(s => k(g(e, s))))
+        def setTag(key: String, value: TraceValue): Kleisli[F, E, Unit] =     Kleisli(e => f(e).setTag(key, value))
+        def setBaggageItem(key: String, value: String): Kleisli[F, E, Unit] = Kleisli(e => f(e).setBaggageItem(key, value))
+        def getBaggageItem(key: String): Kleisli[F, E, Option[String]] =      Kleisli(e => f(e).getBaggageItem(key))
+        def httpHeaders: Kleisli[F, E, Map[String, String]] =                 Kleisli(e => f(e).toHttpHeaders)
       }
   }
 
   implicit def kleisliInstance[F[_]: Bracket[?[_], Throwable]]: KleisliTrace[F] =
-    new KleisliTrace[F] {
-      def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
-        Kleisli(_.log(fields.toMap))
-      def span[A](label: String)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-        Kleisli(_.span(label).use(s => k(s)))
-      def setTag(key: String, value: TraceValue): Kleisli[F, Span[F], Unit] =
-        Kleisli(_.setTag(key, value))
-      def setBaggageItem(key: String, value: String): Kleisli[F, Span[F], Unit] =
-        Kleisli(_.setBaggageItem(key, value))
-      def getBaggageItem(key: String): Kleisli[F, Span[F], Option[String]] =
-        Kleisli(_.getBaggageItem(key))
-      def httpHeaders: Kleisli[F, Span[F], Map[String, String]] =
-        Kleisli(_.toHttpHeaders)
+    new KleisliTrace[F]
+
+}
+
+trait TraceLow {
+
+  /**
+   * A no-op `Trace` implementation is freely available, at low priority, for any applicative. This
+   * lets us add a `Trace` constraint to existing code.
+   */
+  implicit def noopTrace[F[_]: Applicative]: Trace[F] =
+    new Trace[F] {
+      final val void = ().pure[F]
+      final val item = Option.empty[String].pure[F]
+      final val map  = Map.empty[String, String].pure[F]
+      def getBaggageItem(key: String): F[Option[String]] = item
+      def httpHeaders: F[Map[String,String]] = map
+      def log(fields: (String, TraceValue)*): F[Unit] = void
+      def setBaggageItem(key: String, value: String): F[Unit] = void
+      def setTag(key: String, value: TraceValue): F[Unit] = void
+      def span[A](label: String)(k: F[A]): F[A] = k
     }
 
 }

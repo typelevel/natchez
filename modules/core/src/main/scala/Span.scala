@@ -8,7 +8,7 @@ import cats.effect._
 import cats.implicits._
 import scala.collection.JavaConverters._
 import io.opentracing.propagation.Format
-import io.opentracing.propagation.TextMapInjectAdapter
+import io.opentracing.propagation.TextMapAdapter
 
 trait Span[F[_]] {
   def setTag(key: String, value: TraceValue): F[Unit]
@@ -57,7 +57,7 @@ object Span {
           otTracer.inject(
             otSpan.context,
             Format.Builtin.HTTP_HEADERS,
-            new TextMapInjectAdapter(m)
+            new TextMapAdapter(m)
           )
           m.asScala.toMap
         }

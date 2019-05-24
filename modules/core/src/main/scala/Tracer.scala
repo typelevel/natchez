@@ -8,7 +8,7 @@ import cats.effect.Resource
 import cats.effect.Sync
 import io.opentracing.propagation.Format
 import scala.collection.JavaConverters._
-import io.opentracing.propagation.TextMapExtractAdapter
+import io.opentracing.propagation.TextMapAdapter
 
 trait Tracer[F[_]] {
   def root(label: String): Resource[F, Span[F]]
@@ -17,9 +17,11 @@ trait Tracer[F[_]] {
 
 object Tracer {
 
-  def fromOpenTracing[F[_]: Sync](
-    otTracer: io.opentracing.Tracer
-  ): Tracer[F] =
+  def fromOpenTracing[F[_]] = new FromOpenTracingPartiallyApplied[F]
+  class FromOpenTracingPartiallyApplied[F[_]] {
+    def apply[K <: io.opentracing.Tracer](otTracer: K)(
+      implicit ev: Sync[F]
+    ): Tracer[F] =
     new Tracer[F] {
 
       def root(label: String): Resource[F, Span[F]] =
@@ -31,11 +33,12 @@ object Tracer {
       def fromHttpHeaders(label: String, headers: Map[String, String]): Resource[F, Span[F]] =
         Resource.make(
           Sync[F].delay {
-            val p = otTracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapExtractAdapter(headers.asJava))
+            val p = otTracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(headers.asJava))
             otTracer.buildSpan(label).asChildOf(p).start()
           }
         )(s => Sync[F].delay(s.finish())).map(Span.fromOpenTracing(otTracer, _))
 
     }
+  }
 
 }

@@ -4,29 +4,17 @@
 
 package example
 
+import cats._
 import cats.data.Kleisli
 import cats.effect._
 import cats.implicits._
-import io.jaegertracing.Configuration
-import io.jaegertracing.Configuration._
-import natchez.Span
-import natchez.Trace
-import natchez.Tracer
+import natchez._, natchez.implicits._
+import natchez.jaeger.JaegerTracer
 import skunk._
 import skunk.codec.all._
 import skunk.implicits._
 
 object Main extends IOApp {
-
-  // A tracer built from an openTracing implementation, in this case Jaeger.
-  def tracer[F[_]: Sync]: Resource[F, Tracer[F]] =
-    Resource.make(Sync[F].delay(
-      new Configuration("natchez-example")
-        .withSampler(SamplerConfiguration.fromEnv)
-        .withReporter(ReporterConfiguration.fromEnv)
-        .getTracer
-    ))(t => Sync[F].delay(t.close))
-      .map(Tracer.fromOpenTracing(_))
 
   // A skunk session resource
   def session[F[_]: Concurrent: ContextShift]: Resource[F, Session[F]] =
@@ -36,9 +24,12 @@ object Main extends IOApp {
       database = "world"
     )
 
-  def names[F[_]: Trace](s: Session[F]): F[List[String]] =
+  def names[F[_]: FlatMap: Trace](s: Session[F]): F[List[String]] =
     Trace[F].span("names") {
-      s.execute(sql"select name from country where population < 200000".query(varchar))
+      for {
+        ss <- s.execute(sql"select name from country where population < 200000".query(varchar))
+        _  <- Trace[F].setTag("rows", ss.length)
+      } yield ss
     }
 
   def printNames[F[_]: Sync: Trace](ns: List[String]): F[Unit] =
@@ -57,10 +48,13 @@ object Main extends IOApp {
     }
 
   def run(args: List[String]): IO[ExitCode] =
-    tracer[IO].use { t =>
+    runF[IO] *> // first with the free no-op tracer
+    JaegerTracer.fromEnv[IO]("natchez-example").use { t =>
       t.root("root").use { span =>
-        runF[Kleisli[IO, Span[IO], ?]].run(span)
+        runF[Kleisli[IO, Span[IO], ?]].run(span) // now with a real tracer
       }
     }
 
-  }
+}
+
+
