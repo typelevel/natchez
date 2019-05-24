@@ -31,5 +31,5 @@ You'll also need to start up the Skunk test database. Sorry, the example does da
 docker run -p5432:5432 -d tpolecat/skunk-world
 ```
 
-Now, finally, if you run the example in `modules/jaeger` and go to [localhost:16686](http://localhost:16686) you can then select `natchez-example` and search for traces.
+Now, finally, if you run the example in `modules/examples` and go to [localhost:16686](http://localhost:16686) you can then select `natchez-example` and search for traces.
 
