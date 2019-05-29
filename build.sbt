@@ -85,8 +85,8 @@ lazy val natchez = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core, jaeger, examples)
-  .aggregate(core, jaeger, examples)
+  .dependsOn(core, jaeger, honeycomb, examples)
+  .aggregate(core, jaeger, honeycomb, examples)
 
 lazy val core = project
   .in(file("modules/core"))
