@@ -1,6 +1,6 @@
 # Natchez Trace
 
-This is an experimental tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing).
+This is an experimental distributed tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing).
 
 It currently has integration with:
 
@@ -13,8 +13,10 @@ Anyway it looks like this:
 ```scala
 def doStuff[F[_]: Trace]: F[Whatevs] =
   Trace[F].span("span here") {
-    // do stuff in F here, it will be associated with the span
-    // you can also use the instance to set baggage/tags and log things
+    // Do stuff in F here, it will be associated with the span.
+    // You can also use the instance to set baggage/tags and log things.
+    // You can turn the context into a set of headers you can pass on to a
+    // remote service, which can pick up and continue the trace.
   }
 ```
 
