@@ -17,6 +17,7 @@ trait Trace[F[_]] {
   def log(fields: (String, TraceValue)*): F[Unit]
   def span[A](label: String)(k: F[A]): F[A]
   def httpHeaders: F[Map[String, String]]
+  def resource(label: String): Resource[F, Unit]
 }
 
 object Trace {
@@ -39,8 +40,14 @@ object Trace {
       def setBaggageItem(key: String, value: String): F[Unit] = void
       def setTag(key: String, value: TraceValue): F[Unit] = void
       def span[A](label: String)(k: F[A]): F[A] = k
+      def resource(label: String): Resource[F, Unit] = Resource.liftF(void)
     }
 
+  /**
+   * A trace instance for `Kleisli[F, Span[F], ?]`, which is the mechanism we use to introduce
+   * context into our computations. We can also "lensMap" out to `Kleisli[F, E, ?]` given a lens
+   * from `E` to `Span[F]`.
+   */
   class KleisliTrace[F[_]: Bracket[?[_], Throwable]] extends Trace[Kleisli[F, Span[F], ?]] {
     def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =             Kleisli(_.log(fields.toMap))
     def span[A](label: String)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] = Kleisli(_.span(label).use(s => k(s)))
@@ -48,6 +55,14 @@ object Trace {
     def setBaggageItem(key: String, value: String): Kleisli[F, Span[F], Unit] =     Kleisli(_.setBaggageItem(key, value))
     def getBaggageItem(key: String): Kleisli[F, Span[F], Option[String]] =          Kleisli(_.getBaggageItem(key))
     def httpHeaders: Kleisli[F, Span[F], Map[String, String]] =                     Kleisli(_.toHttpHeaders)
+
+    def resource(label: String): Resource[Kleisli[F, Span[F], ?], Unit] = {
+      Resource.make(
+        Kleisli((s: Span[F]) => s.span(label).allocated)) { case (_, free) =>
+        Kleisli((_: Span[F]) => free)
+      } .void
+    }
+
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, ?]] =
       new Trace[Kleisli[F, E, ?]] {
         def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =         Kleisli(e => f(e).log(fields.toMap))
@@ -56,6 +71,11 @@ object Trace {
         def setBaggageItem(key: String, value: String): Kleisli[F, E, Unit] = Kleisli(e => f(e).setBaggageItem(key, value))
         def getBaggageItem(key: String): Kleisli[F, E, Option[String]] =      Kleisli(e => f(e).getBaggageItem(key))
         def httpHeaders: Kleisli[F, E, Map[String, String]] =                 Kleisli(e => f(e).toHttpHeaders)
+        def resource(label: String): Resource[Kleisli[F, E, ?], Unit] =
+          Resource.make(
+            Kleisli((e: E) => f(e).span(label).allocated)) { case (_, free) =>
+            Kleisli((_: E) => free)
+          } .void
       }
   }
 

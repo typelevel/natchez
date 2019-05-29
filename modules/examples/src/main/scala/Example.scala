@@ -9,10 +9,10 @@ import cats.data.Kleisli
 import cats.effect._
 import cats.implicits._
 import natchez._, natchez.implicits._
-import natchez.jaeger.JaegerTracer
 import skunk._
 import skunk.codec.all._
 import skunk.implicits._
+import natchez.jaeger.JaegerTracer
 
 object Main extends IOApp {
 
@@ -28,7 +28,7 @@ object Main extends IOApp {
     Trace[F].span("names") {
       for {
         ss <- s.execute(sql"select name from country where population < 200000".query(varchar))
-        _  <- Trace[F].setTag("rows", ss.length)
+        _  <- Trace[F].log("rows-count" -> ss.length)
       } yield ss
     }
 
@@ -37,23 +37,31 @@ object Main extends IOApp {
       ns.traverse_(n => Sync[F].delay(println(n)))
     }
 
-  def runF[F[_]: Trace: Concurrent: ContextShift]: F[ExitCode] =
-    session[F].use { s =>
-      Trace[F].span("runF") {
-        for {
-          ns <- names(s)
-          _  <- printNames[F](ns)
-        } yield ExitCode.Success
+  def runF[F[_]: Trace: Concurrent: ContextShift: Timer]: F[Unit] =
+    Trace[F].span("session") {
+      session[F].use { s =>
+        Trace[F].span("try-again") {
+          for {
+            _  <- names(s)
+            _  <- Trace[F].log("in-between" -> "yay!")
+            _  <- names(s)
+            _  <- Trace[F].setBaggageItem("foo", "❤️")
+            m  <- Trace[F].httpHeaders
+            _  <- Sync[F].delay(m.foreach(println))
+          } yield ()
+        }
       }
     }
 
+  def tracer[F[_]: Sync]: Resource[F, Tracer[F]] =
+    JaegerTracer.fromEnv("natchez-example")
+
   def run(args: List[String]): IO[ExitCode] =
-    runF[IO](Trace.noopTrace[IO], implicitly, implicitly) *> // first with the free no-op tracer
-    JaegerTracer.fromEnv[IO]("natchez-example").use { t =>
+    tracer[IO].use { t =>
       t.root("root").use { span =>
         runF[Kleisli[IO, Span[IO], ?]].run(span) // now with a real tracer
-      }
-    }
+      } .replicateA(3)
+    } as ExitCode.Success
 
 }
 
