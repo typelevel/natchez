@@ -1,12 +1,20 @@
 # Natchez Trace
 
-This is an experimental [OpenTracing](https://opentracing.io/) effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing).
+This is an experimental tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing).
+
+It currently has integration with:
+
+- [OpenTracing](https://opentracing.io/)
+- [Jaeger](https://www.jaegertracing.io/) (via OpenTracing)
+- [Honeycomb](https://www.honeycomb.io/)
+
+Anyway it looks like this:
 
 ```scala
 def doStuff[F[_]: Trace]: F[Whatevs] =
   Trace[F].span("span here") {
-    // do stuff in F here, will be associated with the span
-    // can also use the instance to set baggage/tags and log things
+    // do stuff in F here, it will be associated with the span
+    // you can also use the instance to set baggage/tags and log things
   }
 ```
 
@@ -33,3 +41,9 @@ docker run -p5432:5432 -d tpolecat/skunk-world
 
 Now, finally, if you run the example in `modules/examples` and go to [localhost:16686](http://localhost:16686) you can then select `natchez-example` and search for traces.
 
+To use it in your own projects (not recommended yet) you can do
+
+```scala
+// search at sonatype or central for latest version, sorry
+libraryDependencies += "org.tpolecat"  %% "natchez-jaeger" % <version>
+```

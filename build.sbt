@@ -116,9 +116,22 @@ lazy val jaeger = project
     )
   )
 
+lazy val honeycomb = project
+  .in(file("modules/honeycomb"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-honeycomb",
+    description := "Honeycomb support for Natchez.",
+    libraryDependencies ++= Seq(
+      "io.honeycomb.libhoney" % "libhoney-java" % "1.0.5",
+    )
+  )
+
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger)
+  .dependsOn(core, jaeger, honeycomb)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
