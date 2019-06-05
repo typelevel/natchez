@@ -141,3 +141,17 @@ lazy val examples = project
       "org.tpolecat"    %% "skunk-core"    % "0.0.3"
     )
   )
+
+lazy val http4sServer = project
+  .in(file("modules/http4s/server"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := true,
+    name           := "http4s-server",
+    description    := "Server middleware for http4s and natchez",
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-blaze-server" % "0.20.1"
+    )
+  )
