@@ -1,4 +1,4 @@
-// Copyright (c) 2018 by Rob Norris
+// Copyright (c) 2019 by Rob Norris
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -8,11 +8,12 @@ import cats._
 import cats.data.Kleisli
 import cats.effect._
 import cats.implicits._
-import natchez._, natchez.implicits._
+import natchez._
 import skunk._
 import skunk.codec.all._
 import skunk.implicits._
-import natchez.jaeger.JaegerTracer
+import natchez.jaeger.Jaeger
+import io.jaegertracing.Configuration._
 
 object Main extends IOApp {
 
@@ -28,7 +29,7 @@ object Main extends IOApp {
     Trace[F].span("names") {
       for {
         ss <- s.execute(sql"select name from country where population < 200000".query(varchar))
-        _  <- Trace[F].log("rows-count" -> ss.length)
+        _  <- Trace[F].put("rows-count" -> ss.length)
       } yield ss
     }
 
@@ -43,24 +44,39 @@ object Main extends IOApp {
         Trace[F].span("try-again") {
           for {
             _  <- names(s)
-            _  <- Trace[F].log("in-between" -> "yay!")
+            _  <- Trace[F].put("in-between" -> "yay!")
             _  <- names(s)
-            _  <- Trace[F].setBaggageItem("foo", "❤️")
-            m  <- Trace[F].httpHeaders
-            _  <- Sync[F].delay(m.foreach(println))
+            m  <- Trace[F].kernel
+            _  <- Sync[F].delay(m.toHeaders.foreach(println))
           } yield ()
         }
       }
     }
 
-  def tracer[F[_]: Sync]: Resource[F, Tracer[F]] =
-    JaegerTracer.fromEnv("natchez-example")
+  // For Honeycomb you would say
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
+  //   Honeycomb.entryPoint[F]("natchez-example") { ob =>
+  //     Sync[F].delay {
+  //       ob.setWriteKey("<your API key here>")
+  //         .setDataset("<your dataset>")
+  //         .build
+  //     }
+  //   }
+
+  def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
+    Jaeger.entryPoint[F]("natchez-example") { c =>
+      Sync[F].delay {
+        c.withSampler(SamplerConfiguration.fromEnv)
+         .withReporter(ReporterConfiguration.fromEnv)
+         .getTracer
+      }
+    }
 
   def run(args: List[String]): IO[ExitCode] =
-    tracer[IO].use { t =>
-      t.root("root").use { span =>
-        runF[Kleisli[IO, Span[IO], ?]].run(span) // now with a real tracer
-      } .replicateA(3)
+    entryPoint[IO].use { ep =>
+      ep.root("root").use { span =>
+        runF[Kleisli[IO, Span[IO], ?]].run(span)
+      }
     } as ExitCode.Success
 
 }

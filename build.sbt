@@ -12,7 +12,7 @@ lazy val commonSettings = Seq(
   // Headers
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
   headerLicense  := Some(HeaderLicense.Custom(
-    """|Copyright (c) 2018 by Rob Norris
+    """|Copyright (c) 2019 by Rob Norris
        |This software is licensed under the MIT License (MIT).
        |For more information see LICENSE or https://opensource.org/licenses/MIT
        |""".stripMargin
@@ -98,7 +98,6 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core"       % "1.6.0",
       "org.typelevel" %% "cats-effect"     % "1.3.0",
-      "io.opentracing" % "opentracing-api" % "0.33.0"
     )
   )
 
