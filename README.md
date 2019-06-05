@@ -1,26 +1,38 @@
 # Natchez Trace
 
-This is an experimental distributed tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing).
+This is an minimal distributed tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing). It currently has integration with:
 
-It currently has integration with:
-
-- [OpenTracing](https://opentracing.io/)
-- [Jaeger](https://www.jaegertracing.io/) (via OpenTracing)
+- [Jaeger](https://www.jaegertracing.io/)
 - [Honeycomb](https://www.honeycomb.io/)
 
-Anyway it looks like this:
+It supports
+
+- spans
+- numeric, string, and boolean fields
+- swizzling to and from http headers
+
+It does not support
+
+- logs
+- baggage
+
+If you can make a case for either of these ideas I will consider supporting them, but they seem unnecessary to me.
+
+The `Trace` effect looks like this:
 
 ```scala
 def doStuff[F[_]: Trace]: F[Whatevs] =
   Trace[F].span("span here") {
-    // Do stuff in F here, it will be associated with the span.
-    // You can also use the instance to set baggage/tags and log things.
-    // You can turn the context into a set of headers you can pass on to a
-    // remote service, which can pick up and continue the trace.
+    // Do stuff in F here. This is the extent of the span.
+    // You can use the instance to:
+    //  - create child spans
+    //  - set data fields
+    //  - extract a set of headers to pass to a remote
+    //    service, which can then continue the trace
   }
 ```
 
-To try it out start up [Jaeger](https://www.jaegertracing.io/) as an OpenTracing server.
+To try it out start up [Jaeger](https://www.jaegertracing.io/) as your trace collector.
 
 ```
 docker run -d --name jaeger \
@@ -49,3 +61,4 @@ To use it in your own projects (not recommended yet) you can do
 // search at sonatype or central for latest version, sorry
 libraryDependencies += "org.tpolecat"  %% "natchez-jaeger" % <version>
 ```
+
