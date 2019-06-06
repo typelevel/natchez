@@ -4,6 +4,8 @@
 
 package natchez
 
+case class Field(name: String, traceValue: TraceValue)
+
 sealed trait TraceValue extends Product with Serializable {
   def value: Any
 }
