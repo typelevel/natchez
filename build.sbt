@@ -149,7 +149,7 @@ lazy val http4sServer = project
   .settings(commonSettings)
   .settings(
     publish / skip := true,
-    name           := "http4s-server",
+    name           := "natchez-http4s-server",
     description    := "Server middleware for http4s and natchez",
     libraryDependencies ++= Seq(
       "org.http4s" %% "http4s-blaze-server" % "0.20.1"
