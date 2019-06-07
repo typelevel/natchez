@@ -13,7 +13,10 @@ import org.http4s.{Http, Request}
 
 object Middleware {
 
-  def tracedHttpApp[F[_]: Sync, G[_]](name: String, tracer: EntryPoint[F])(f: Trace[F] => F[Http[F, G]]): Http[F, G] =
+  def tracedHttpApp[F[_]: Sync, G[_]](name: String, tracer: EntryPoint[F])(f: Trace[F] => Http[F, G]): Http[F, G] =
+    tracedHttpAppF(name, tracer)(trace => f(trace).pure[F])
+
+  def tracedHttpAppF[F[_]: Sync, G[_]](name: String, tracer: EntryPoint[F])(f: Trace[F] => F[Http[F, G]]): Http[F, G] =
     Kleisli { request: Request[G] =>
 
       val kernel = Kernel(request.headers.toList.map(h => (h.name.value, h.value)).toMap)
