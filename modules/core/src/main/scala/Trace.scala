@@ -56,7 +56,7 @@ object Trace {
         def put(fields: (String, TraceValue)*): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
       }
-    
+
   }
 
   /**
