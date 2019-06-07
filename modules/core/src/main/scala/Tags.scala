@@ -108,7 +108,7 @@ object Tags {
   object span {
     /**
      * Either "client" or "server" for the appropriate roles in an RPC,
-     * and "producer" or "cosnsumer" for the appropriate roles in a messaging scenario.
+     * and "producer" or "consumer" for the appropriate roles in a messaging scenario.
      */
     def kind(k: String): (String, TraceValue) = ("span.kind", k)
   }
