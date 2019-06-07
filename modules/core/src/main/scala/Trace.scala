@@ -47,6 +47,17 @@ object Trace {
 
   }
 
+  implicit def blah[F[_]: Bracket[?[_], Throwable]](implicit S: Span[F]): Trace[F] = new Trace[F] {
+    def kernel: F[Kernel] =
+      S.kernel
+
+    def put(fields: (String, TraceValue)*): F[Unit] =
+      S.put(fields: _*)
+
+    def span[A](name: String)(k: F[A]): F[A] =
+      S.span(name).use(_ => k)
+  }
+
   /**
    * `Kleisli[F, Span[F], ?]` is a `Trace` given `Bracket[F, Throwable]`. The instance can be
    * widened to an environment that *contains* a `Span[F]` via the `lens` method.

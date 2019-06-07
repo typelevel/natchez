@@ -1,25 +1,32 @@
+// Copyright (c) 2019 by Rob Norris
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 package natchez.http4s.server
 
 import cats.implicits._
 import cats.data.Kleisli
 import cats.effect.Sync
-import natchez.{EntryPoint, Kernel, Trace}
+import natchez._
+import natchez.Tags._
 import org.http4s.{Http, Request}
 
 object Middlewares {
   import Trace._
-  def tracedHttpApp[F[_]: Sync, G[_]](tracer: EntryPoint[F])(f: Trace[F] => F[Http[F, G]]): Http[F, G] =
+  import TraceValue._
+  def tracedHttpApp[F[_]: Sync, G[_]](name: String, tracer: EntryPoint[F])(f: Trace[F] => F[Http[F, G]]): Http[F, G] =
     Kleisli { request: Request[G] =>
 
-      //trait HeaderExtractor ???
+      val kernel = Kernel(request.headers.toList.map(h => (h.name.value, h.value)).toMap)
 
-      val kernel = Kernel(request.headers.toList.map(h => (h.name.value, h.value)).toMap) //need a way to know which headers to grab
+      tracer.continue(name, kernel).use { span =>
 
-      tracer.continue("request-received", kernel).use { span =>
-        f(span).flatMap { server =>
+        val trace: Trace[F] = Trace[Kleisli[F, Span[F], ?]]
+
+        f(trace).flatMap { server =>
           for {
             resp <- server.run(request)
-            _ <- span.put(Tags.HTTP_STATUS)
+            _ <- span.put(http.status_code(resp.status.show))
           } yield ???
         }
       }
