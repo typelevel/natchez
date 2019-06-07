@@ -110,7 +110,7 @@ object Tags {
      * Either "client" or "server" for the appropriate roles in an RPC,
      * and "producer" or "consumer" for the appropriate roles in a messaging scenario.
      */
-    def kind(k: Strings) = ("span.kind", k)
+    def kind(k: String) = ("span.kind", k)
   }
 
 }
