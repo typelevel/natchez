@@ -21,7 +21,7 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   parentId:  Option[UUID],
   traceId:   UUID,
   timestamp: Instant,
-  fields:    Ref[F, Map[String, TraceValue]],
+  fields:    Ref[F, Map[String, TraceValue]]
 ) extends Span[F] {
   import HoneycombSpan._
 
@@ -101,12 +101,12 @@ private[honeycomb] object HoneycombSpan {
       parentId  = Some(parent.spanId),
       traceId   = parent.traceId,
       timestamp = timestamp,
-      fields    = fields,
+      fields    = fields
     )
 
   def root[F[_]: Sync](
     client:    HoneyClient,
-    name:      String,
+    name:      String
   ): F[HoneycombSpan[F]] =
     for {
       spanId    <- uuid[F]
@@ -120,7 +120,7 @@ private[honeycomb] object HoneycombSpan {
       parentId  = None,
       traceId   = traceId,
       timestamp = timestamp,
-      fields    = fields,
+      fields    = fields
     )
 
   def fromKernel[F[_]](
@@ -141,7 +141,15 @@ private[honeycomb] object HoneycombSpan {
       parentId  = Some(parentId),
       traceId   = traceId,
       timestamp = timestamp,
-      fields    = fields,
+      fields    = fields
     )
 
+  def fromKernelOrElseRoot[F[_]](
+    client: HoneyClient,
+    name:   String,
+    kernel: Kernel
+  )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
+    fromKernel(client, name, kernel).recoverWith {
+      case _: NoSuchElementException => root(client, name)
+    }
 }
