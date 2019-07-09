@@ -38,8 +38,8 @@ lazy val natchez = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core, jaeger, honeycomb, examples)
-  .aggregate(core, jaeger, honeycomb, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -78,6 +78,19 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "io.honeycomb.libhoney" % "libhoney-java" % "1.0.5",
+    )
+  )
+
+lazy val opencensus = project
+  .in(file("modules/opencensus"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-opencensus",
+    description := "Opencensus support for Natchez.",
+    libraryDependencies ++= Seq(
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.20.0",
     )
   )
 
