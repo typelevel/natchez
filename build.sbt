@@ -38,8 +38,8 @@ lazy val natchez = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core, jaeger, honeycomb, opencensus, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -91,6 +91,19 @@ lazy val opencensus = project
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
       "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.20.0",
+    )
+  )
+
+lazy val lightstep = project
+  .in(file("modules/lightstep"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-lightstep",
+    description := "Lightstep support for Natchez.",
+    libraryDependencies ++= Seq(
+      "com.lightstep.tracer" % "tracer-grpc" % "0.17.2",
     )
   )
 
