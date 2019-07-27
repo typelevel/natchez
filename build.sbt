@@ -103,8 +103,10 @@ lazy val lightstep = project
     name        := "natchez-lightstep",
     description := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.16.4",
-      "com.lightstep.tracer" % "tracer-grpc"          % "0.17.2",
+      "com.lightstep.tracer" % "lightstep-tracer-jre"            % "0.16.4",
+      "com.lightstep.tracer" % "tracer-grpc"                     % "0.17.2",
+      "io.grpc"              % "grpc-netty"                      % "1.22.1",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.25.Final",
     )
   )
 
