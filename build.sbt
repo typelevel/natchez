@@ -38,8 +38,8 @@ lazy val natchez = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(publish / skip := true)
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -100,19 +100,45 @@ lazy val lightstep = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name        := "natchez-lightstep",
-    description := "Lightstep support for Natchez.",
+    publish / skip := true,
+    name           := "natchez-lightstep",
+    description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "lightstep-tracer-jre"            % "0.16.4",
+      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.16.4",
+    )
+  )
+
+lazy val lightstepGrpc = project
+  .in(file("modules/lightstep-grpc"))
+  .dependsOn(lightstep)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-lightstep-grpc",
+    description := "Lightstep gRPC bindings for Natchez.",
+    libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.17.2",
       "io.grpc"              % "grpc-netty"                      % "1.20.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.25.Final",
     )
   )
 
+lazy val lightstepHttp = project
+  .in(file("modules/lightstep-http"))
+  .dependsOn(lightstep)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-lightstep-http",
+    description := "Lightstep HTTP bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "com.lightstep.tracer" % "tracer-okhttp" % "0.17.2",
+    )
+  )
+
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
