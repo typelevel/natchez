@@ -63,6 +63,20 @@ object Main extends IOApp {
   //     }
   //   }
 
+  // The following would be the entrypoint setup for Lighstep. Note that
+  // by default examples project uses lighstep HTTP binding. To change that,
+  // edit the project dependencies.
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+  //   val config = Lightstep.Configuration(
+  //     "<your access token>",
+  //     "<your app's name>",
+  //     "<your collector host>",
+  //     "<your collector protocol>",
+  //     <your collector port>
+  //   )
+  //   Lightstep.entryPoint[F](config)
+  // }
+
   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
     Jaeger.entryPoint[F]("natchez-example") { c =>
       Sync[F].delay {
