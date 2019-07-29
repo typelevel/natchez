@@ -5,6 +5,7 @@ This is an minimal distributed tracing effect for Cats, inspired by earlier work
 - [Jaeger](https://www.jaegertracing.io/)
 - [Honeycomb](https://www.honeycomb.io/)
 - [OpenCensus](https://www.opencensus.io/)
+- [LightStep](https://lightstep.com)
 
 It supports
 
