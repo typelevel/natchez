@@ -7,24 +7,15 @@ package lightstep
 
 import cats.effect.{ Resource, Sync }
 import cats.syntax.applicative._
-import com.lightstep.tracer.jre.JRETracer
-import com.lightstep.tracer.shared.Options
+import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 
 import scala.collection.JavaConverters._
 
 object Lightstep {
-  final case class Configuration(
-    accessToken: String,
-    componentName: String,
-    collectorHost: String,
-    collectorProtocol: String,
-    collectorPort: Int
-  )
-
-  def entryPoint[F[_]: Sync](config: Configuration): Resource[F, EntryPoint[F]] =
-    Resource.make(setupTracer(config))(t => Sync[F].delay(t.close())).map { t =>
+  def entryPoint[F[_]: Sync](configure: OptionsBuilder => F[Tracer]): Resource[F, EntryPoint[F]] =
+    Resource.make(configure(new OptionsBuilder()))(t => Sync[F].delay(t.close())).map { t =>
       new EntryPoint[F] {
         override def root(name: String): Resource[F, Span[F]] =
           Resource
@@ -45,18 +36,5 @@ object Lightstep {
             case a    => a.pure[Resource[F, ?]]
           }
       }
-    }
-
-  private def setupTracer[F[_]: Sync](config: Configuration): F[Tracer] =
-    Sync[F].delay {
-      val options = new Options.OptionsBuilder()
-        .withAccessToken(config.accessToken)
-        .withComponentName(config.componentName)
-        .withCollectorHost(config.collectorHost)
-        .withCollectorProtocol(config.collectorProtocol)
-        .withCollectorPort(config.collectorPort)
-        .build()
-
-      new JRETracer(options)
     }
 }
