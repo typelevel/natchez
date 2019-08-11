@@ -67,15 +67,17 @@ object Main extends IOApp {
   // by default examples project uses lighstep HTTP binding. To change that,
   // edit the project dependencies.
   // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
-  //   Lightstep.entryPoint[F] { optionsBuilder =>
+  //   Lightstep.entryPoint[F] { ob =>
   //     Sync[F].delay {
-  //       optionsBuilder
+  //       val options = ob
   //         .withAccessToken("<your access token>")
   //         .withComponentName("<your app's name>")
   //         .withCollectorHost("<your collector host>")
   //         .withCollectorProtocol("<your collector protocol>")
   //         .withCollectorPort(<your collector port>)
   //         .build()
+  //       
+  //       new JRETracer(options)
   //     }
   //   }
 
