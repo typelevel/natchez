@@ -9,19 +9,16 @@ import cats.effect.{Resource, Sync}
 import cats.syntax.applicative._
 import cats.syntax.applicativeError._
 import cats.syntax.functor._
-import io.opencensus.exporter.trace.ocagent.{
-  OcAgentTraceExporter,
-  OcAgentTraceExporterConfiguration
-}
-import io.opencensus.trace.Tracing
+import io.opencensus.exporter.trace.ocagent.{OcAgentTraceExporter, OcAgentTraceExporterConfiguration}
 import io.opencensus.trace.propagation.SpanContextParseException
 import io.opencensus.trace.propagation.TextFormat.Getter
+import io.opencensus.trace.{Sampler, Tracing}
 
 object OpenCensus {
 
   def ocAgentEntryPoint[F[_]: Sync](system: String)(
-      configure: OcAgentTraceExporterConfiguration.Builder => OcAgentTraceExporterConfiguration.Builder)
-    : Resource[F, EntryPoint[F]] =
+      configure: OcAgentTraceExporterConfiguration.Builder => OcAgentTraceExporterConfiguration.Builder,
+      sampler: Sampler): Resource[F, EntryPoint[F]] =
     Resource
       .make(
         Sync[F].delay(
@@ -31,9 +28,9 @@ object OpenCensus {
         Sync[F].delay(
           OcAgentTraceExporter.unregister()
       ))
-      .flatMap(_ => Resource.liftF(entryPoint[F]))
+      .flatMap(_ => Resource.liftF(entryPoint[F](sampler)))
 
-  def entryPoint[F[_]: Sync]: F[EntryPoint[F]] =
+  def entryPoint[F[_]: Sync](sampler: Sampler): F[EntryPoint[F]] =
     Sync[F]
       .delay(Tracing.getTracer)
       .map { t =>
@@ -41,7 +38,10 @@ object OpenCensus {
           override def root(name: String): Resource[F, Span[F]] =
             Resource
               .make(
-                Sync[F].delay(t.spanBuilder(name).startSpan())
+                Sync[F].delay(
+                  t.spanBuilder(name)
+                    .setSampler(sampler)
+                    .startSpan())
               )(s => Sync[F].delay(s.end()))
               .map(OpenCensusSpan(t, _))
 
@@ -64,6 +64,8 @@ object OpenCensus {
               _.pure[Resource[F, ?]]
             ) recoverWith {
               case _: SpanContextParseException => root(name)
+              case _: NoSuchElementException =>
+                root(name) // means headers are incomplete or invalid
               case _: NullPointerException =>
                 root(name) // means headers are incomplete or invalid
             }
