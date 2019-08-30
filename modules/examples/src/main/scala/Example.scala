@@ -13,7 +13,7 @@ import skunk._
 import skunk.codec.all._
 import skunk.implicits._
 import natchez.jaeger.Jaeger
-import io.jaegertracing.Configuration._
+import io.jaegertracing.Configuration.{ SamplerConfiguration, ReporterConfiguration }
 
 object Main extends IOApp {
 
@@ -29,7 +29,7 @@ object Main extends IOApp {
     Trace[F].span("names") {
       for {
         ss <- s.execute(sql"select name from country where population < 200000".query(varchar))
-        _  <- Trace[F].put("rows-count" -> ss.length)
+        _  <- Trace[F].put(Propagation.None, "rows-count" -> ss.length)
       } yield ss
     }
 
@@ -44,7 +44,7 @@ object Main extends IOApp {
         Trace[F].span("try-again") {
           for {
             _  <- names(s)
-            _  <- Trace[F].put("in-between" -> "yay!")
+            _  <- Trace[F].put(Propagation.None, "in-between" -> "yay!")
             _  <- names(s)
             m  <- Trace[F].kernel
             _  <- Sync[F].delay(m.toHeaders.foreach(println))
@@ -76,7 +76,7 @@ object Main extends IOApp {
   //         .withCollectorProtocol("<your collector protocol>")
   //         .withCollectorPort(<your collector port>)
   //         .build()
-  //       
+  //
   //       new JRETracer(options)
   //     }
   //   }

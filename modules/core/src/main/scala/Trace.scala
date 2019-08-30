@@ -13,7 +13,7 @@ import cats.implicits._
 trait Trace[F[_]] {
 
   /** Put a sequence of fields into the current span. */
-  def put(fields: (String, TraceValue)*): F[Unit]
+  def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit]
 
   /**
    * The kernel for the current span, which can be sent as headers to remote systems, which can
@@ -25,6 +25,8 @@ trait Trace[F[_]] {
   def span[A](name: String)(k: F[A]): F[A]
 
 }
+
+
 
 object Trace {
 
@@ -41,7 +43,7 @@ object Trace {
       new Trace[F] {
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-        def put(fields: (String, TraceValue)*): F[Unit] = void
+        def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
       }
 
@@ -56,7 +58,7 @@ object Trace {
 
   /**
    * A trace instance for `Kleisli[F, Span[F], ?]`, which is the mechanism we use to introduce
-   * context into our computations. We can also "lensMap" out to `Kleisli[F, E, ?]` given a lens
+   * context into our computations. We can also `local` out to `Kleisli[F, E, ?]` given a lens
    * from `E` to `Span[F]`.
    */
   class KleisliTrace[F[_]: Bracket[?[_], Throwable]] extends Trace[Kleisli[F, Span[F], ?]] {
@@ -64,20 +66,20 @@ object Trace {
     def kernel: Kleisli[F, Span[F], Kernel] =
       Kleisli(_.kernel)
 
-    def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
-      Kleisli(_.put(fields: _*))
+    def put(propagation: Propagation, fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
+      Kleisli(_.put(propagation, fields: _*))
 
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
 
-    def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, ?]] =
+    def local[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, ?]] =
       new Trace[Kleisli[F, E, ?]] {
 
         def kernel: Kleisli[F,E,Kernel] =
           Kleisli(e => f(e).kernel)
 
-        def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
-          Kleisli(e => f(e).put(fields: _*))
+        def put(propagation: Propagation, fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
+          Kleisli(e => f(e).put(propagation, fields: _*))
 
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))

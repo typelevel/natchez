@@ -10,7 +10,7 @@ import cats.effect.Resource
 trait Span[F[_]] {
 
   /** Put a sequence of fields into this span. */
-  def put(fields: (String, TraceValue)*): F[Unit]
+  def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit]
 
   /**
    * The kernel for this span, which can be sent as headers to remote systems, which can then
@@ -20,5 +20,20 @@ trait Span[F[_]] {
 
   /** Resource that yields a child span with the given name. */
   def span(name: String): Resource[F, Span[F]]
+
+}
+
+
+sealed trait Propagation extends Product with Serializable
+object Propagation {
+
+  /** Fields will not be propagated to child spans. */
+  case object None     extends Propagation
+
+  /** Fields will be propagated to child spans, but will not cross network boundaries. */
+  case object Local    extends Propagation
+
+  /** Fields will be propagated to child spans, and across network boundaries. */
+  case object Extended extends Propagation
 
 }

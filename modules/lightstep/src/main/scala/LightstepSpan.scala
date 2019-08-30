@@ -16,7 +16,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
   tracer: ot.Tracer,
   span: ot.Span
 ) extends Span[F] {
-  
+
   import TraceValue._
 
   override def kernel: F[Kernel] =
@@ -26,7 +26,8 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
       Kernel(m.asScala.toMap)
     }
 
-  override def put(fields: (String, TraceValue)*): F[Unit] =
+  // TODO: don't ignore propagation
+  override def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))

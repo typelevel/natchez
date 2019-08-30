@@ -19,7 +19,8 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     extends Span[F] {
   import OpenCensusSpan._
 
-  override def put(fields: (String, TraceValue)*): F[Unit] =
+  // TODO: don't ignore propagation
+  override def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v)) =>
         Sync[F].delay(

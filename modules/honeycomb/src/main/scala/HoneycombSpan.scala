@@ -21,24 +21,29 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   parentId:  Option[UUID],
   traceId:   UUID,
   timestamp: Instant,
-  fields:    Ref[F, Map[String, TraceValue]]
+  fields:    Ref[F, Map[String, (Propagation, TraceValue)]]
 ) extends Span[F] {
   import HoneycombSpan._
-
-  def get(key: String): F[Option[TraceValue]] =
-    fields.get.map(_.get(key))
 
   def kernel: F[Kernel] =
     Kernel(Map(
       Headers.TraceId -> traceId.toString,
       Headers.SpanId  -> spanId.toString
-    )).pure[F]
+    )).pure[F] // TODO: encode kernelFields!
 
-  def put(fields: (String, TraceValue)*): F[Unit] =
-    this.fields.update(_ ++ fields.toMap)
+  def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit] =
+    this.fields.update(_ ++ fields.map { case (k, v) => (k, (propagation, v)) } .toMap)
 
   def span(label: String): Resource[F, Span[F]] =
     Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen
+
+  // Fields that will be propagated to child spans.
+  def childFields: F[Map[String, (Propagation, TraceValue)]] =
+    fields.get.map(_.filterNot(_._2._1 == Propagation.None))
+
+  // Fields that will be appear in the kernel.
+  def kernelFields: F[Map[String, (Propagation, TraceValue)]] =
+    fields.get.map(_.filter(_._2._1 == Propagation.Extended))
 
 }
 
@@ -60,15 +65,15 @@ private[honeycomb] object HoneycombSpan {
       // collect error details, if any
       _  <- exitCase.some.collect {
               case ExitCase.Error(t: Fields) => t.fields
-            } .traverse(m => span.fields.update(_ ++ m))
+            } .traverse(m => span.fields.update(_ ++ m.map { case (k, v) => (k, (Propagation.None, v))}))
       n  <- now
       fs <- span.fields.get
       e  <- Sync[F].delay {
               val e = span.client.createEvent()
-              e.setTimestamp(span.timestamp.toEpochMilli)             // timestamp
-              fs.foreach { case (k, v) => e.addField(k, v.value) }    // user fields
-              span.parentId.foreach(e.addField("trace.parent_id", _)) // parent trace
-              e.addField("name",           span.name)                 // and other trace fields
+              e.setTimestamp(span.timestamp.toEpochMilli)               // timestamp
+              fs.foreach { case (k, (_, v)) => e.addField(k, v.value) } // user fields
+              span.parentId.foreach(e.addField("trace.parent_id", _))   // parent trace
+              e.addField("name",           span.name)                   // and other trace fields
               e.addField("trace.span_id",  span.spanId)
               e.addField("trace.trace_id", span.traceId)
               e.addField("duration_ms",    n.toEpochMilli - span.timestamp.toEpochMilli)
@@ -93,7 +98,7 @@ private[honeycomb] object HoneycombSpan {
     for {
       spanId    <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, TraceValue])
+      fields    <- parent.childFields >>= Ref[F].of
     } yield HoneycombSpan(
       client    = parent.client,
       name      = name,
@@ -112,7 +117,7 @@ private[honeycomb] object HoneycombSpan {
       spanId    <- uuid[F]
       traceId   <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, TraceValue])
+      fields    <- Ref[F].of(Map.empty[String, (Propagation, TraceValue)])
     } yield HoneycombSpan(
       client    = client,
       name      = name,
@@ -123,6 +128,7 @@ private[honeycomb] object HoneycombSpan {
       fields    = fields
     )
 
+  // todo: decode kernelFields
   def fromKernel[F[_]](
     client: HoneyClient,
     name:   String,
@@ -133,7 +139,7 @@ private[honeycomb] object HoneycombSpan {
       parentId <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
       spanId    <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, TraceValue])
+      fields    <- Ref[F].of(Map.empty[String, (Propagation, TraceValue)])
     } yield HoneycombSpan(
       client    = client,
       name      = name,

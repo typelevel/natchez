@@ -30,7 +30,8 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       Kernel(m.asScala.toMap)
     }
 
-  def put(fields: (String, TraceValue)*): F[Unit] =
+  // TODO: don't ignore propagation
+  def put(propagation: Propagation, fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))
