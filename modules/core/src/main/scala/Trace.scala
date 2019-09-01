@@ -86,4 +86,18 @@ object Trace {
 
   }
 
+  implicit def resourceInstance[F[_]: Bracket[?[_], Throwable]](implicit T: Trace[F]): Trace[Resource[F, ?]] =
+    new Trace[Resource[F, ?]] {
+
+      override def put(fields: (String, TraceValue)*): Resource[F, Unit] =
+        Resource.liftF(T.put(fields: _*))
+
+      override def kernel: Resource[F, Kernel] =
+        Resource.liftF(T.kernel)
+
+      override def span[A](name: String)(fa: Resource[F, A]): Resource[F, A] =
+        Resource(T.span(name)(fa.allocated))
+
+    }
+
 }
