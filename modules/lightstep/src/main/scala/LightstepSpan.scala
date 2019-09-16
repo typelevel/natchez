@@ -10,7 +10,7 @@ import cats.implicits._
 import io.{ opentracing => ot }
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 private[lightstep] final case class LightstepSpan[F[_]: Sync](
   tracer: ot.Tracer,

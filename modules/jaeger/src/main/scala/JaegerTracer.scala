@@ -8,11 +8,12 @@ package jaeger
 import cats.effect._
 import cats.implicits._
 import io.jaegertracing.Configuration
+import io.jaegertracing.internal.exceptions.UnsupportedFormatException
 import io.jaegertracing.internal.{ JaegerTracer => NativeJaegerTracer }
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
-import scala.collection.JavaConverters._
-import io.jaegertracing.internal.exceptions.UnsupportedFormatException
+
+import scala.jdk.CollectionConverters._
 
 object Jaeger {
 

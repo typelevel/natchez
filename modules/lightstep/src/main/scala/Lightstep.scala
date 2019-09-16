@@ -11,7 +11,7 @@ import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Lightstep {
   def entryPoint[F[_]: Sync](configure: OptionsBuilder => F[Tracer]): Resource[F, EntryPoint[F]] =
