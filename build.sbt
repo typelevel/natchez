@@ -1,3 +1,7 @@
+lazy val scala211Version = "2.11.12"
+lazy val scala212Version = "2.12.10"
+lazy val scala213Version = "2.13.0"
+
 // Global Settings
 lazy val commonSettings = Seq(
 
@@ -20,16 +24,20 @@ lazy val commonSettings = Seq(
   ),
 
   // Compilation
-  scalaVersion       := "2.12.8",
-  crossScalaVersions := Seq("2.11.12", scalaVersion.value),
+  scalaVersion       := scala212Version,
+  crossScalaVersions := Seq(scala211Version, scala212Version, scala213Version),
   Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
   Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc     / scalacOptions ++= Seq(
     "-groups",
     "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
-    "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala",
+    "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
+
+  // Blah
+  resolvers +=
+    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 )
 
@@ -37,7 +45,10 @@ lazy val natchez = project
   .in(file("."))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
-  .settings(publish / skip := true)
+  .settings(
+    crossScalaVersions := Nil,
+    publish / skip     := true
+  )
   .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
   .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
 
@@ -49,8 +60,9 @@ lazy val core = project
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"       % "1.6.0",
-      "org.typelevel" %% "cats-effect"     % "1.3.0",
+      "org.typelevel" %% "cats-core"   % "2.0.0",
+      "org.typelevel" %% "cats-effect" % "2.0.0",
+      "org.specs2"    %% "specs2-core" % "4.7.1"
     )
   )
 
@@ -63,8 +75,9 @@ lazy val jaeger = project
     name        := "natchez-jaeger",
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.jaegertracing" % "jaeger-client" % "0.35.5",
-      "org.slf4j"        % "slf4j-jdk14"   % "1.7.26",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
+      "io.jaegertracing"        % "jaeger-client"           % "1.0.0",
+      "org.slf4j"               % "slf4j-jdk14"             % "1.7.28"
     )
   )
 
@@ -77,7 +90,8 @@ lazy val honeycomb = project
     name        := "natchez-honeycomb",
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.honeycomb.libhoney" % "libhoney-java" % "1.0.5",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.1.0"
     )
   )
 
@@ -90,7 +104,7 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.23.0",
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.24.0"
     )
   )
 
@@ -103,7 +117,8 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.16.4",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.17.0"
     )
   )
 
@@ -116,9 +131,9 @@ lazy val lightstepGrpc = project
     name        := "natchez-lightstep-grpc",
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-grpc"                     % "0.17.2",
-      "io.grpc"              % "grpc-netty"                      % "1.20.0",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.25.Final",
+      "com.lightstep.tracer" % "tracer-grpc"                     % "0.18.0",
+      "io.grpc"              % "grpc-netty"                      % "1.23.0",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.25.Final"
     )
   )
 
@@ -131,20 +146,36 @@ lazy val lightstepHttp = project
     name        := "natchez-lightstep-http",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-okhttp" % "0.17.2",
+      "com.lightstep.tracer" % "tracer-okhttp" % "0.18.0"
+    )
+  )
+
+lazy val log = project
+  .in(file("modules/log"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-log",
+    description := "Logging bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "io.circe"          %% "circe-core"    % "0.11.1",
+      "io.chrisdavenport" %% "log4cats-core" % "1.0.0",
     )
   )
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp, log)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := true,
-    name           := "natchez-examples",
-    description    := "Example programs for Natchez.",
+    publish / skip       := true,
+    name                 := "natchez-examples",
+    description          := "Example programs for Natchez.",
+    crossScalaVersions  --= List(scala211Version, scala213Version), // until skunk is out for 2.13
     libraryDependencies ++= Seq(
-      "org.tpolecat"    %% "skunk-core"    % "0.0.3"
+      "org.tpolecat"      %% "skunk-core"     % "0.0.3+36-5e8dc7c3-SNAPSHOT",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.0",
     )
   )
