@@ -12,13 +12,12 @@ import natchez._
 import skunk._
 import skunk.codec.all._
 import skunk.implicits._
-import natchez.jaeger.Jaeger
-import io.jaegertracing.Configuration._
+import natchez.log.Log
 
 object Main extends IOApp {
 
   // A skunk session resource
-  def session[F[_]: Concurrent: ContextShift]: Resource[F, Session[F]] =
+  def session[F[_]: Concurrent: ContextShift: Trace]: Resource[F, Session[F]] =
     Session.single(
       host     = "localhost",
       user     = "postgres",
@@ -76,19 +75,23 @@ object Main extends IOApp {
   //         .withCollectorProtocol("<your collector protocol>")
   //         .withCollectorPort(<your collector port>)
   //         .build()
-  //       
+  //
   //       new JRETracer(options)
   //     }
   //   }
 
+  // Jaeger
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
+  //   Jaeger.entryPoint[F]("natchez-example") { c =>
+  //     Sync[F].delay {
+  //       c.withSampler(SamplerConfiguration.fromEnv)
+  //        .withReporter(ReporterConfiguration.fromEnv)
+  //        .getTracer
+  //     }
+  //   }
+
   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
-    Jaeger.entryPoint[F]("natchez-example") { c =>
-      Sync[F].delay {
-        c.withSampler(SamplerConfiguration.fromEnv)
-         .withReporter(ReporterConfiguration.fromEnv)
-         .getTracer
-      }
-    }
+    Log.entryPoint[F]("foo").pure[Resource[F, ?]]
 
   def run(args: List[String]): IO[ExitCode] =
     entryPoint[IO].use { ep =>
