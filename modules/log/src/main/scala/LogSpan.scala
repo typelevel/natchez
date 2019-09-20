@@ -16,8 +16,9 @@ import io.circe.Json
 import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
+import io.chrisdavenport.log4cats.Logger
 
-private[log] final case class LogSpan[F[_]: Sync](
+private[log] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,
   name:      String,
   spanId:    UUID,
@@ -118,18 +119,19 @@ private[log] object LogSpan {
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
+  def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
       j  <- span.json(n, exitCase)
       _  <- span.parent match {
-              case None | Some(Left(_)) => Sync[F].delay(java.util.logging.Logger.getLogger("natchez").info(Json.fromJsonObject(j).spaces2))
+              case None |
+                   Some(Left(_))  => Logger[F].info(Json.fromJsonObject(j).spaces2)
               case Some(Right(s)) => s.children.update(j :: _)
             }
     } yield ()
   }
 
-  def child[F[_]: Sync](
+  def child[F[_]: Sync: Logger](
     parent: LogSpan[F],
     name:   String
   ): F[LogSpan[F]] =
@@ -149,7 +151,7 @@ private[log] object LogSpan {
       children  = children
     )
 
-  def root[F[_]: Sync](
+  def root[F[_]: Sync: Logger](
     service: String,
     name:    String
   ): F[LogSpan[F]] =
@@ -170,14 +172,14 @@ private[log] object LogSpan {
       children  = children
     )
 
-  def fromKernel[F[_]](
+  def fromKernel[F[_]: Sync: Logger](
     service: String,
     name:    String,
     kernel:  Kernel
-  )(implicit ev: Sync[F]): F[LogSpan[F]] =
+  ): F[LogSpan[F]] =
     for {
-      traceId  <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      traceId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
+      parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
       spanId    <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, Json])
@@ -193,11 +195,11 @@ private[log] object LogSpan {
       children  = children
     )
 
-  def fromKernelOrElseRoot[F[_]](
+  def fromKernelOrElseRoot[F[_]: Sync: Logger](
     service: String,
     name:    String,
     kernel:  Kernel
-  )(implicit ev: Sync[F]): F[LogSpan[F]] =
+  ): F[LogSpan[F]] =
     fromKernel(service, name, kernel).recoverWith {
       case _: NoSuchElementException => root(service, name)
     }

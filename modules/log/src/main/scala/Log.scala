@@ -7,10 +7,11 @@ package log
 
 import cats.effect.{ Resource, Sync }
 import cats.implicits._
+import io.chrisdavenport.log4cats.Logger
 
 object Log {
 
-  def entryPoint[F[_]: Sync](
+  def entryPoint[F[_]: Sync: Logger](
     service: String,
   ): EntryPoint[F] =
     new EntryPoint[F] {

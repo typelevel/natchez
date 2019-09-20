@@ -148,7 +148,8 @@ lazy val log = project
     name        := "natchez-log",
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.11.1"
+      "io.circe"          %% "circe-core"    % "0.11.1",
+      "io.chrisdavenport" %% "log4cats-core" % "1.0.0",
     )
   )
 
@@ -162,6 +163,7 @@ lazy val examples = project
     name           := "natchez-examples",
     description    := "Example programs for Natchez.",
     libraryDependencies ++= Seq(
-      "org.tpolecat"    %% "skunk-core"    % "0.0.3+36-5e8dc7c3-SNAPSHOT"
+      "org.tpolecat"      %% "skunk-core"     % "0.0.3+36-5e8dc7c3-SNAPSHOT",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.0",
     )
   )

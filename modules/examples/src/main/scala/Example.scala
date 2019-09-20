@@ -13,6 +13,8 @@ import skunk._
 import skunk.codec.all._
 import skunk.implicits._
 import natchez.log.Log
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object Main extends IOApp {
 
@@ -90,15 +92,17 @@ object Main extends IOApp {
   //     }
   //   }
 
-  def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
+  def entryPoint[F[_]: Sync: Logger]: Resource[F, EntryPoint[F]] =
     Log.entryPoint[F]("foo").pure[Resource[F, ?]]
 
-  def run(args: List[String]): IO[ExitCode] =
+  def run(args: List[String]): IO[ExitCode] = {
+    implicit val log = Slf4jLogger.getLogger[IO]
     entryPoint[IO].use { ep =>
       ep.root("root").use { span =>
         runF[Kleisli[IO, Span[IO], ?]].run(span)
       }
     } as ExitCode.Success
+  }
 
 }
 
