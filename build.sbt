@@ -31,6 +31,10 @@ lazy val commonSettings = Seq(
   ),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
 
+  // Blah
+  resolvers +=
+    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
 )
 
 lazy val natchez = project
@@ -135,9 +139,23 @@ lazy val lightstepHttp = project
     )
   )
 
+lazy val log = project
+  .in(file("modules/log"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-log",
+    description := "Logging bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "io.circe"          %% "circe-core"    % "0.11.1",
+      "io.chrisdavenport" %% "log4cats-core" % "1.0.0",
+    )
+  )
+
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp, log)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -145,6 +163,7 @@ lazy val examples = project
     name           := "natchez-examples",
     description    := "Example programs for Natchez.",
     libraryDependencies ++= Seq(
-      "org.tpolecat"    %% "skunk-core"    % "0.0.3"
+      "org.tpolecat"      %% "skunk-core"     % "0.0.3+36-5e8dc7c3-SNAPSHOT",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.0",
     )
   )
