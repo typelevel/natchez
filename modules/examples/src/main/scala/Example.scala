@@ -12,13 +12,14 @@ import natchez._
 import skunk._
 import skunk.codec.all._
 import skunk.implicits._
-import natchez.jaeger.Jaeger
-import io.jaegertracing.Configuration._
+import natchez.log.Log
+import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
 object Main extends IOApp {
 
   // A skunk session resource
-  def session[F[_]: Concurrent: ContextShift]: Resource[F, Session[F]] =
+  def session[F[_]: Concurrent: ContextShift: Trace]: Resource[F, Session[F]] =
     Session.single(
       host     = "localhost",
       user     = "postgres",
@@ -76,26 +77,32 @@ object Main extends IOApp {
   //         .withCollectorProtocol("<your collector protocol>")
   //         .withCollectorPort(<your collector port>)
   //         .build()
-  //       
+  //
   //       new JRETracer(options)
   //     }
   //   }
 
-  def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
-    Jaeger.entryPoint[F]("natchez-example") { c =>
-      Sync[F].delay {
-        c.withSampler(SamplerConfiguration.fromEnv)
-         .withReporter(ReporterConfiguration.fromEnv)
-         .getTracer
-      }
-    }
+  // Jaeger
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
+  //   Jaeger.entryPoint[F]("natchez-example") { c =>
+  //     Sync[F].delay {
+  //       c.withSampler(SamplerConfiguration.fromEnv)
+  //        .withReporter(ReporterConfiguration.fromEnv)
+  //        .getTracer
+  //     }
+  //   }
 
-  def run(args: List[String]): IO[ExitCode] =
+  def entryPoint[F[_]: Sync: Logger]: Resource[F, EntryPoint[F]] =
+    Log.entryPoint[F]("foo").pure[Resource[F, ?]]
+
+  def run(args: List[String]): IO[ExitCode] = {
+    implicit val log = Slf4jLogger.getLogger[IO]
     entryPoint[IO].use { ep =>
       ep.root("root").use { span =>
         runF[Kleisli[IO, Span[IO], ?]].run(span)
       }
     } as ExitCode.Success
+  }
 
 }
 
