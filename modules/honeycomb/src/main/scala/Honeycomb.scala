@@ -10,7 +10,8 @@ import cats.implicits._
 import io.honeycomb.libhoney._
 import io.honeycomb.libhoney.responses._
 import org.slf4j.LoggerFactory
-import scala.collection.JavaConverters._
+
+import scala.jdk.CollectionConverters._
 
 object Honeycomb {
 
