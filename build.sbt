@@ -76,7 +76,7 @@ lazy val jaeger = project
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
       "io.jaegertracing"        % "jaeger-client"           % "1.0.0",
-      "org.slf4j"               % "slf4j-jdk14"             % "1.7.28"
+      "org.slf4j"               % "slf4j-jdk14"             % "1.7.29"
     )
   )
 
@@ -117,7 +117,7 @@ lazy val lightstep = project
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.17.0"
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.17.1"
     )
   )
 
@@ -174,7 +174,7 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     crossScalaVersions  --= List(scala211Version, scala213Version), // until skunk is out for 2.13
     libraryDependencies ++= Seq(
-      "org.tpolecat"      %% "skunk-core"     % "0.0.4",
-      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
+      "org.tpolecat"      %% "skunk-core"     % "0.0.5",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.0",
     )
   )
