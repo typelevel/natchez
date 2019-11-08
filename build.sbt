@@ -117,7 +117,7 @@ lazy val lightstep = project
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2",
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.17.1"
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.17.3"
     )
   )
 
@@ -131,7 +131,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.18.0",
-      "io.grpc"              % "grpc-netty"                      % "1.24.2",
+      "io.grpc"              % "grpc-netty"                      % "1.25.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.26.Final"
     )
   )
