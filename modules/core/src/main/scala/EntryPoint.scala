@@ -4,7 +4,10 @@
 
 package natchez
 
+import cats.Applicative
 import cats.effect.Resource
+import cats.kernel.Semigroup
+import cats.syntax.semigroup._
 
 /**
  * An entry point, for creating root spans or continuing traces that were started on another
@@ -31,4 +34,25 @@ trait EntryPoint[F[_]] {
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]]
 
 
+}
+
+object EntryPoint {
+  implicit def entryPointSemigroup[F[_]: Applicative]: Semigroup[EntryPoint[F]] = new Semigroup[EntryPoint[F]] {
+    private def combineSpanResources(sxResource: Resource[F, Span[F]], syResource: Resource[F, Span[F]]) =
+      for {
+        sx <- sxResource
+        sy <- syResource
+      } yield sx |+| sy
+
+    override def combine(x: EntryPoint[F], y: EntryPoint[F]): EntryPoint[F] = new EntryPoint[F] {
+      override def root(name: String): Resource[F, Span[F]] =
+        combineSpanResources(x.root(name), y.root(name))
+
+      override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+       combineSpanResources(x.continue(name, kernel), y.continue(name, kernel))
+
+      override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+       combineSpanResources(x.continueOrElseRoot(name, kernel), y.continueOrElseRoot(name, kernel))
+    }
+  }
 }
