@@ -9,49 +9,31 @@ import cats.data.Kleisli
 import cats.effect._
 import cats.implicits._
 import natchez._
-import skunk._
-import skunk.codec.all._
-import skunk.implicits._
-import natchez.log.Log
-import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import scala.util.Random
+import scala.concurrent.duration._
 
 object Main extends IOApp {
 
-  // A skunk session resource
-  def session[F[_]: Concurrent: ContextShift: Trace]: Resource[F, Session[F]] =
-    Session.single(
-      host     = "localhost",
-      user     = "postgres",
-      database = "world"
-    )
-
-  def names[F[_]: FlatMap: Trace](s: Session[F]): F[List[String]] =
-    Trace[F].span("names") {
-      for {
-        ss <- s.execute(sql"select name from country where population < 200000".query(varchar))
-        _  <- Trace[F].put("rows-count" -> ss.length)
-      } yield ss
-    }
-
-  def printNames[F[_]: Sync: Trace](ns: List[String]): F[Unit] =
-    Trace[F].span("printNames") {
-      ns.traverse_(n => Sync[F].delay(println(n)))
-    }
-
-  def runF[F[_]: Trace: Concurrent: ContextShift: Timer]: F[Unit] =
-    Trace[F].span("session") {
-      session[F].use { s =>
-        Trace[F].span("try-again") {
-          for {
-            _  <- names(s)
-            _  <- Trace[F].put("in-between" -> "yay!")
-            _  <- names(s)
-            m  <- Trace[F].kernel
-            _  <- Sync[F].delay(m.toHeaders.foreach(println))
-          } yield ()
+  // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
+  // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
+  def qsort[F[_]: Monad: Parallel: Trace: Timer, A: Order](as: List[A]): F[List[A]] =
+    Trace[F].span(as.mkString(",")) {
+      Timer[F].sleep(10.milli) *> {
+          as match {
+          case Nil    => Monad[F].pure(Nil)
+          case h :: t =>
+            val (a, b) = t.partition(_ <= h)
+            (qsort[F, A](a), qsort[F, A](b)).parMapN(_ ++ List(h) ++ _)
         }
       }
+    }
+
+  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
+    Trace[F].span("Sort some stuff!") {
+      for {
+        as <- Sync[F].delay(List.fill(100)(Random.nextInt(1000)))
+        _  <- qsort[F, Int](as)
+      } yield ()
     }
 
   // For Honeycomb you would say
@@ -83,22 +65,31 @@ object Main extends IOApp {
   //   }
 
   // Jaeger
-  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
-  //   Jaeger.entryPoint[F]("natchez-example") { c =>
-  //     Sync[F].delay {
-  //       c.withSampler(SamplerConfiguration.fromEnv)
-  //        .withReporter(ReporterConfiguration.fromEnv)
-  //        .getTracer
-  //     }
-  //   }
+  def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+    import natchez.jaeger.Jaeger
+    import io.jaegertracing.Configuration.SamplerConfiguration
+    import io.jaegertracing.Configuration.ReporterConfiguration
+    Jaeger.entryPoint[F]("natchez-example") { c =>
+      Sync[F].delay {
+        c.withSampler(SamplerConfiguration.fromEnv)
+         .withReporter(ReporterConfiguration.fromEnv)
+         .getTracer
+      }
+    }
+  }
 
-  def entryPoint[F[_]: Sync: Logger]: Resource[F, EntryPoint[F]] =
-    Log.entryPoint[F]("foo").pure[Resource[F, ?]]
+  // Log
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+  //   import natchez.log.Log
+  //   import io.chrisdavenport.log4cats.Logger
+  //   import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+  //   implicit val log: Logger[F] = Slf4jLogger.getLogger[IO]
+  //   Log.entryPoint[F]("foo").pure[Resource[F, ?]]
+  // }
 
   def run(args: List[String]): IO[ExitCode] = {
-    implicit val log = Slf4jLogger.getLogger[IO]
     entryPoint[IO].use { ep =>
-      ep.root("root").use { span =>
+      ep.root("this is the root span").use { span =>
         runF[Kleisli[IO, Span[IO], ?]].run(span)
       }
     } as ExitCode.Success
