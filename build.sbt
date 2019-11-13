@@ -174,7 +174,6 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     crossScalaVersions  --= List(scala211Version, scala213Version), // until skunk is out for 2.13
     libraryDependencies ++= Seq(
-      "org.tpolecat"      %% "skunk-core"     % "0.0.5",
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
     )
   )
