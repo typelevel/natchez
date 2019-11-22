@@ -32,7 +32,7 @@ object Jaeger {
               Sync[F].delay {
                 val p = t.extract(
                   Format.Builtin.HTTP_HEADERS,
-                  new TextMapAdapter(kernel.toHeaders.asJava)
+                  new TextMapAdapter(kernel.toHeaders { case JaegerHeaderKey(k) => k }.asJava)
                 )
                 t.buildSpan(name).asChildOf(p).start()
               }

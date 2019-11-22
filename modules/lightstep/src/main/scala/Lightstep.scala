@@ -25,7 +25,8 @@ object Lightstep {
         override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
           Resource.make(
             Sync[F].delay {
-              val p = t.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+              val p = t.extract(Format.Builtin.HTTP_HEADERS,
+                new TextMapAdapter(kernel.toHeaders { case LightstepHeaderKey(k) => k }.asJava))
               t.buildSpan(name).asChildOf(p).start()
             }
           )(s => Sync[F].delay(s.finish())).map(LightstepSpan(t, _))

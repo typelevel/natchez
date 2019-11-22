@@ -23,7 +23,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
     Sync[F].delay {
       val m = new java.util.HashMap[String, String]
       tracer.inject(span.context, Format.Builtin.HTTP_HEADERS, new TextMapAdapter(m))
-      Kernel(m.asScala.toMap)
+      Kernel.fromHeaders(m.asScala.toMap)(LightstepHeaderKey)
     }
 
   override def put(fields: (String, TraceValue)*): F[Unit] =

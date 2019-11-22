@@ -38,7 +38,7 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     val headers: mutable.Map[String, String] = mutable.Map.empty[String, String]
     Tracing.getPropagationComponent.getB3Format
       .inject(span.getContext, headers, spanContextSetter)
-    Kernel(headers.toMap)
+    Kernel.fromHeaders(headers.toMap)(OpenCensusHeaderKey)
   }
 
   override def span(name: String): Resource[F, Span[F]] =

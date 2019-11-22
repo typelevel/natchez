@@ -109,8 +109,8 @@ private[log] object LogSpan {
     }
 
   object Headers {
-    val TraceId       = "X-Natchez-Trace-Id"
-    val SpanId        = "X-Natchez-Parent-Span-Id"
+    val TraceId       = LogHeaderKey("X-Natchez-Trace-Id")
+    val SpanId        = LogHeaderKey("X-Natchez-Parent-Span-Id")
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =
@@ -178,8 +178,8 @@ private[log] object LogSpan {
     kernel:  Kernel
   ): F[LogSpan[F]] =
     for {
-      traceId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      traceId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.keyedHeaders(Headers.TraceId)))
+      parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.keyedHeaders(Headers.SpanId)))
       spanId    <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, Json])

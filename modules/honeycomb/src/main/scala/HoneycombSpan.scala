@@ -45,8 +45,8 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
 private[honeycomb] object HoneycombSpan {
 
   object Headers {
-    val TraceId       = "X-Natchez-Trace-Id"
-    val SpanId        = "X-Natchez-Parent-Span-Id"
+    val TraceId       = HoneycombHeaderKey("X-Natchez-Trace-Id")
+    val SpanId        = HoneycombHeaderKey("X-Natchez-Parent-Span-Id")
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =
@@ -129,8 +129,8 @@ private[honeycomb] object HoneycombSpan {
     kernel: Kernel
   )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
     for {
-      traceId  <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      traceId  <- ev.catchNonFatal(UUID.fromString(kernel.keyedHeaders(Headers.TraceId)))
+      parentId <- ev.catchNonFatal(UUID.fromString(kernel.keyedHeaders(Headers.SpanId)))
       spanId    <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, TraceValue])

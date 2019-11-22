@@ -5,7 +5,7 @@
 package natchez
 package jaeger
 
-import io.{ opentracing => ot }
+import io.{opentracing => ot}
 import cats.effect.Sync
 import cats.effect.Resource
 import cats.implicits._
@@ -28,7 +28,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
         Format.Builtin.HTTP_HEADERS,
         new TextMapAdapter(m)
       )
-      Kernel(m.asScala.toMap)
+      Kernel.fromHeaders(m.asScala.toMap)(JaegerHeaderKey)
     }
 
   def put(fields: (String, TraceValue)*): F[Unit] =

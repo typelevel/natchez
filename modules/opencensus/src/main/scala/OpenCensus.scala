@@ -50,8 +50,9 @@ object OpenCensus {
             Resource
               .make(
                 Sync[F].delay {
+                  val headers = kernel.toHeaders { case OpenCensusHeaderKey(k) => k }
                   val ctx = Tracing.getPropagationComponent.getB3Format
-                    .extract(kernel, spanContextGetter)
+                    .extract(headers, spanContextGetter)
                   t.spanBuilderWithRemoteParent(name, ctx).startSpan()
                 }
               )(s => Sync[F].delay(s.end()))
@@ -72,8 +73,8 @@ object OpenCensus {
         }
       }
 
-  private val spanContextGetter: Getter[Kernel] = new Getter[Kernel] {
-    override def get(carrier: Kernel, key: String): String =
-      carrier.toHeaders(key)
+  private val spanContextGetter: Getter[Map[String, String]] = new Getter[Map[String, String]] {
+    override def get(carrier: Map[String, String], key: String): String =
+      carrier(key)
   }
 }
