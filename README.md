@@ -49,12 +49,6 @@ docker run -d --name jaeger \
   jaegertracing/all-in-one:1.8
 ```
 
-You'll also need to start up the Skunk test database. Sorry, the example does database stuff for no particularly good reason.
-
-```
-docker run -p5432:5432 -d tpolecat/skunk-world
-```
-
 Now, finally, if you run the example in `modules/examples` and go to [localhost:16686](http://localhost:16686) you can then select `natchez-example` and search for traces.
 
 To use it in your own projects (not recommended yet) you can do
