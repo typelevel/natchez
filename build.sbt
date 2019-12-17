@@ -76,7 +76,7 @@ lazy val jaeger = project
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3",
       "io.jaegertracing"        % "jaeger-client"           % "1.1.0",
-      "org.slf4j"               % "slf4j-jdk14"             % "1.7.29"
+      "org.slf4j"               % "slf4j-jdk14"             % "1.7.30"
     )
   )
 
