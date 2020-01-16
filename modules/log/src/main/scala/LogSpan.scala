@@ -17,6 +17,7 @@ import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
 import io.chrisdavenport.log4cats.Logger
+import natchez.log.MapValuesToJson._
 
 private[log] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,
@@ -78,7 +79,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           exitCase match {
             case Completed                  => List("exit.case" -> "completed".asJson)
             case Canceled                   => List("exit.case" -> "canceled".asJson)
-            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.mapValues(_.asJson).toList
+            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.mapValuesToJson.toList
             case Error(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)

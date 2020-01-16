@@ -49,8 +49,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -157,8 +157,9 @@ lazy val log = project
   .settings(
     name        := "natchez-log",
     description := "Logging bindings for Natchez.",
+    crossScalaVersions := Seq(scala212Version, scala213Version),
     libraryDependencies ++= Seq(
-      "io.circe"          %% "circe-core"    % "0.11.1",
+      "io.circe"          %% "circe-core"    % "0.12.1",
       "io.chrisdavenport" %% "log4cats-core" % "1.0.0",
     )
   )
