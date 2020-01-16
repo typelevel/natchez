@@ -7,7 +7,7 @@ package natchez
 import cats.effect.Resource
 
 /** An span that can be passed around and used to create child spans. */
-trait Span[F[_]] { self =>
+trait Span[F[_]] {
 
   /** Put a sequence of fields into this span. */
   def put(fields: (String, TraceValue)*): F[Unit]
