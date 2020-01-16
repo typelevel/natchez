@@ -24,7 +24,7 @@ trait Trace[F[_]] {
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
 
-  def spanR(name: String): Resource[F, Span[F]]
+  def spanR(name: String): Resource[F, Unit]
 }
 
 object Trace {
@@ -44,15 +44,7 @@ object Trace {
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
-        
-        //todo should probably at least have a name
-        private lazy val emptySpan: Resource[F, Span[F]] = Resource.pure(new Span[F] {
-          def put(fields: (String, TraceValue)*): F[Unit] = ().pure[F]
-          def kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-          def span(name: String): Resource[F,Span[F]] = emptySpan
-        })
-
-        def spanR(name: String): Resource[F,Span[F]] = emptySpan
+        def spanR(name: String): Resource[F,Unit] = Resource.pure(())
       }
 
   }
@@ -80,7 +72,7 @@ object Trace {
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       spanR(name).use(_ => k)
 
-    def spanR(name: String): Resource[Kleisli[F, Span[F], *], Span[Kleisli[F, Span[F], *]]] = lens[Span[F]](s=>s, (_:Any, s) => s).spanR(name)
+    def spanR(name: String): Resource[Kleisli[F, Span[F], *], Unit] = lens[Span[F]](s=>s, (_:Any, s) => s).spanR(name)
     
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, ?]] =
       new Trace[Kleisli[F, E, ?]] {
@@ -94,10 +86,10 @@ object Trace {
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
         
-        def spanR(name: String): Resource[Kleisli[F, E, *], Span[Kleisli[F, E, *]]] = 
+        def spanR(name: String): Resource[Kleisli[F, E, *], Unit] =
           Resource.suspend {
-            Kleisli[F, E, Resource[F, Span[F]]](f(_).span(name).pure[F])
-              .map(_.mapK(Kleisli.liftK[F, E]).map(_.mapK(Kleisli.liftK[F, E])))
+            Kleisli[F, E, Resource[F, Unit]](f(_).span(name).void.pure[F])
+              .map(_.mapK(Kleisli.liftK[F, E]))
           }
       }
 
