@@ -188,6 +188,21 @@ lazy val http4sServer = project
     name           := "natchez-http4s-server",
     description    := "Server middleware for http4s and natchez",
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-blaze-server" % "0.20.1"
+      "org.http4s" %% "http4s-server" % "0.21.0-M6"
+    )
+  )
+
+
+lazy val http4sClient = project
+  .in(file("modules/http4s/client"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := true,
+    name           := "natchez-http4s-server",
+    description    := "Server middleware for http4s and natchez",
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-client" % "0.21.0-M6"
     )
   )

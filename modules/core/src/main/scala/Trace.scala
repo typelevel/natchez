@@ -30,18 +30,6 @@ object Trace {
 
   def apply[F[_]](implicit ev: Trace[F]): ev.type = ev
 
-  def fromSpan[F[_]: Bracket[?[_], Throwable]](s: Span[F]): Trace[F] =
-    new Trace[F] {
-      def kernel: F[Kernel] =
-        s.kernel
-
-      def put(fields: (String, TraceValue)*): F[Unit] =
-        s.put(fields: _*)
-
-      def span[A](name: String)(k: F[A]): F[A] =
-        s.span(name).use(_ => k)
-    }
-
   object Implicits {
 
     /**

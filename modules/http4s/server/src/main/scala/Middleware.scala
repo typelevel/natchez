@@ -13,24 +13,24 @@ import org.http4s.{Http, Request}
 
 object Middleware {
 
-  def tracedHttpApp[F[_]: Sync, G[_]](name: String, tracer: EntryPoint[F])(f: Trace[F] => Http[F, G]): Http[F, G] =
-    tracedHttpAppF(name, tracer)(trace => f(trace).pure[F])
+  def tracedHttpApp[F[_]: Sync, G[_]](name: String, entryPoint: EntryPoint[F])(f: Span[F] => Http[F, G]): Http[F, G] =
+    tracedHttpAppF(name, entryPoint)(span => f(span).pure[F])
 
-  def tracedHttpAppF[F[_]: Sync, G[_]](name: String, tracer: EntryPoint[F])(f: Trace[F] => F[Http[F, G]]): Http[F, G] =
+  def tracedHttpAppF[F[_]: Sync, G[_]](name: String, entryPoint: EntryPoint[F])(f: Span[F] => F[Http[F, G]]): Http[F, G] =
     Kleisli { request: Request[G] =>
 
       val kernel = Kernel(request.headers.toList.map(h => (h.name.value, h.value)).toMap)
 
-      tracer.continue(name, kernel).use { span =>
-        val trace = Trace.fromSpan(span)
-
-        for {
-          _      <- trace.put(http.url(request.uri.renderString))
-          _      <- trace.put(http.method(request.method.renderString))
-          server <- f(trace)
-          resp   <- server.run(request)
-          _      <- trace.put(http.status_code(resp.status.show))
-        } yield resp
+      entryPoint.continueOrElseRoot(name, kernel).use { parent =>
+        parent.span("request_received").use { s =>
+          for {
+            _      <- s.put(http.url(request.uri.renderString))
+            _      <- s.put(http.method(request.method.renderString))
+            server <- f(s)
+            resp   <- server.run(request)
+            _      <- s.put(http.status_code(resp.status.show))
+          } yield resp
+        }
       }
     }
 }
