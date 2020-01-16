@@ -8,10 +8,12 @@ package jaeger
 import cats.effect._
 import cats.implicits._
 import io.jaegertracing.Configuration
+import io.jaegertracing.internal.exceptions.UnsupportedFormatException
 import io.jaegertracing.internal.{ JaegerTracer => NativeJaegerTracer }
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
-import scala.collection.JavaConverters._
+
+import scala.jdk.CollectionConverters._
 
 object Jaeger {
 
@@ -41,6 +43,14 @@ object Jaeger {
               Sync[F].delay(t.buildSpan(name).start()))(
               s => Sync[F].delay(s.finish)
             ).map(JaegerSpan(t, _))
+
+          def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
+            continue(name, kernel) flatMap {
+              case null => root(name) // hurr, means headers are incomplete or invalid
+              case a    => a.pure[Resource[F, ?]]
+            } recoverWith {
+              case _: UnsupportedFormatException => root(name)
+            }
 
         }
       }

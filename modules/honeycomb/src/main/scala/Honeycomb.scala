@@ -10,7 +10,8 @@ import cats.implicits._
 import io.honeycomb.libhoney._
 import io.honeycomb.libhoney.responses._
 import org.slf4j.LoggerFactory
-import scala.collection.JavaConverters._
+
+import scala.jdk.CollectionConverters._
 
 object Honeycomb {
 
@@ -33,6 +34,9 @@ object Honeycomb {
 
         def root(name: String): Resource[F, Span[F]] =
           Resource.makeCase(HoneycombSpan.root(c, name))(HoneycombSpan.finish).widen
+
+        def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
+          Resource.makeCase(HoneycombSpan.fromKernelOrElseRoot(c, name, kernel))(HoneycombSpan.finish).widen
 
       }
     }
