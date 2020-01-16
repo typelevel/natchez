@@ -21,8 +21,8 @@ object Middleware {
 
       val kernel = Kernel(request.headers.toList.map(h => (h.name.value, h.value)).toMap)
 
-      entryPoint.continueOrElseRoot(name, kernel).use { parent =>
-        parent.span("request_received").use { s =>
+      entryPoint.continueOrElseRoot(name, kernel).use {
+        _.span("request_received").use { s =>
           for {
             _      <- s.put(http.url(request.uri.renderString))
             _      <- s.put(http.method(request.method.renderString))
