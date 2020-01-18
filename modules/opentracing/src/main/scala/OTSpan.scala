@@ -3,21 +3,18 @@
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package natchez
-package jaeger
+package opentracing
 
-import io.{ opentracing => ot }
-import cats.effect.Sync
-import cats.effect.Resource
+import cats.effect.{Resource, Sync}
 import cats.implicits._
-import io.opentracing.propagation.Format
-import io.opentracing.propagation.TextMapAdapter
+import io.opentracing.propagation.{Format, TextMapAdapter}
+import io.{opentracing => ot}
+import natchez.opentracing.OTTracer.makeSpan
 
 import scala.jdk.CollectionConverters._
 
-private[jaeger] final case class JaegerSpan[F[_]: Sync](
-  tracer: ot.Tracer,
-  span:   ot.Span
-) extends Span[F] {
+private[opentracing] final case class OTSpan[F[_] : Sync](tracer: ot.Tracer,
+                                                          span: ot.Span) extends Span[F] {
   import TraceValue._
 
   def kernel: F[Kernel] =
@@ -33,15 +30,12 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
 
   def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
-      case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))
+      case (k, StringValue(v)) => Sync[F].delay(span.setTag(k, v))
+      case (k, NumberValue(v)) => Sync[F].delay(span.setTag(k, v))
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  def span(name: String): Resource[F,Span[F]] =
-    Resource.make(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
-      s => Sync[F].delay(s.finish)
-    ).map(JaegerSpan(tracer, _))
+  def span(name: String): Resource[F, Span[F]] =
+    makeSpan(tracer)(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))
 
 }

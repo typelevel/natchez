@@ -49,8 +49,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, opentracing, lightstep, lightstepGrpc, lightstepHttp, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, opentracing, lightstep, lightstepGrpc, lightstepHttp, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -65,9 +65,23 @@ lazy val core = project
     )
   )
 
+lazy val opentracing = project
+  .in(file("modules/opentracing"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-opentracing-core",
+    description := "OpenTracing support for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.3",
+      "io.opentracing" % "opentracing-api" % "0.33.0",
+    )
+  )
+
 lazy val jaeger = project
   .in(file("modules/jaeger"))
-  .dependsOn(core)
+  .dependsOn(core, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
