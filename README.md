@@ -1,5 +1,7 @@
 # Natchez Trace
 
+[![Join the chat at https://gitter.im/tpolecat/natchez](https://badges.gitter.im/tpolecat/natchez.svg)](https://gitter.im/tpolecat/natchez?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This is an minimal distributed tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing). It currently has integration with:
 
 - [Jaeger](https://www.jaegertracing.io/)
