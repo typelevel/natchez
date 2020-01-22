@@ -48,18 +48,18 @@ object Trace {
   }
 
   /**
-   * `Kleisli[F, Span[F], ?]` is a `Trace` given `Bracket[F, Throwable]`. The instance can be
+   * `Kleisli[F, Span[F], *]` is a `Trace` given `Bracket[F, Throwable]`. The instance can be
    * widened to an environment that *contains* a `Span[F]` via the `lens` method.
    */
-  implicit def kleisliInstance[F[_]: Bracket[?[_], Throwable]]: KleisliTrace[F] =
+  implicit def kleisliInstance[F[_]: Bracket[*[_], Throwable]]: KleisliTrace[F] =
     new KleisliTrace[F]
 
   /**
-   * A trace instance for `Kleisli[F, Span[F], ?]`, which is the mechanism we use to introduce
-   * context into our computations. We can also "lensMap" out to `Kleisli[F, E, ?]` given a lens
+   * A trace instance for `Kleisli[F, Span[F], *]`, which is the mechanism we use to introduce
+   * context into our computations. We can also "lensMap" out to `Kleisli[F, E, *]` given a lens
    * from `E` to `Span[F]`.
    */
-  class KleisliTrace[F[_]: Bracket[?[_], Throwable]] extends Trace[Kleisli[F, Span[F], ?]] {
+  class KleisliTrace[F[_]: Bracket[*[_], Throwable]] extends Trace[Kleisli[F, Span[F], *]] {
 
     def kernel: Kleisli[F, Span[F], Kernel] =
       Kleisli(_.kernel)
@@ -70,8 +70,8 @@ object Trace {
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
 
-    def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, ?]] =
-      new Trace[Kleisli[F, E, ?]] {
+    def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, *]] =
+      new Trace[Kleisli[F, E, *]] {
 
         def kernel: Kleisli[F,E,Kernel] =
           Kleisli(e => f(e).kernel)
