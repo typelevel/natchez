@@ -36,6 +36,9 @@ private[opentracing] final case class OTSpan[F[_] : Sync](tracer: ot.Tracer,
     }
 
   def span(name: String): Resource[F, Span[F]] =
-    makeSpan(tracer)(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))
-
+    makeSpan(tracer)(Sync[F].delay {
+      val newSpan: ot.Span = tracer.buildSpan(name).asChildOf(span).start()
+      tracer.scopeManager().activate(newSpan)
+      newSpan
+    })
 }
