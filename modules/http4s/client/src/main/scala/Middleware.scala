@@ -12,10 +12,10 @@ import org.http4s.{Header, Headers}
 
 object Middleware {
 
-  def spannedClient[F[_]](client: Client[F], clientName: String)(implicit F: Sync[F], S: Span[F]): Client[F] = {
+  def spannedClient[F[_]](span: Span[F], client: Client[F])(implicit F: Sync[F]): Client[F] = {
     Client[F](request =>
       for {
-        s      <- S.span(s"http4s-request-$clientName")
+        s      <- span.span(s"http4s-request")
         _      <- Resource.liftF(s.put(span.kind("client")))
         _      <- Resource.liftF(s.put(http.method(request.method.name)))
         _      <- Resource.liftF(s.put(http.url(request.uri.renderString)))
