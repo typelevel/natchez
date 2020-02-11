@@ -84,13 +84,13 @@ object Main extends IOApp {
   //   import io.chrisdavenport.log4cats.Logger
   //   import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
   //   implicit val log: Logger[F] = Slf4jLogger.getLogger[IO]
-  //   Log.entryPoint[F]("foo").pure[Resource[F, ?]]
+  //   Log.entryPoint[F]("foo").pure[Resource[F, *]]
   // }
 
   def run(args: List[String]): IO[ExitCode] = {
     entryPoint[IO].use { ep =>
       ep.root("this is the root span").use { span =>
-        runF[Kleisli[IO, Span[IO], ?]].run(span)
+        runF[Kleisli[IO, Span[IO], *]].run(span)
       }
     } as ExitCode.Success
   }
