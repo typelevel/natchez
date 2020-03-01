@@ -157,8 +157,8 @@ lazy val log = project
     name        := "natchez-log",
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"          %% "circe-core"    % "0.11.0",
-      "io.chrisdavenport" %% "log4cats-core" % "1.0.0",
+      "io.circe"          %% "circe-core"    % "0.13.0",
+      "io.chrisdavenport" %% "log4cats-core" % "1.0.1",
     )
   )
 
