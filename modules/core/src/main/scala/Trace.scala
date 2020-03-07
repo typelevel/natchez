@@ -95,14 +95,8 @@ object Trace {
       override def kernel: Resource[F, Kernel] =
         Resource.liftF(T.kernel)
 
-      override def span[A](name: String)(fa: Resource[F, A]): Resource[F, A] = {
-        val resource = T.span(name + "-acquire")(fa.allocated).map {
-          case (acquire, release) =>
-            (acquire, T.span(name + "-release")(release))
-        }
-
-        Resource(resource)
-      }
+      override def span[A](name: String)(fa: Resource[F, A]): Resource[F, A] =
+        Resource(T.span(name)(fa.allocated))
 
     }
 
