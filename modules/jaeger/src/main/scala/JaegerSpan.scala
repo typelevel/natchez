@@ -11,7 +11,8 @@ import cats.effect.Resource
 import cats.implicits._
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
-import scala.collection.JavaConverters._
+
+import scala.jdk.CollectionConverters._
 
 private[jaeger] final case class JaegerSpan[F[_]: Sync](
   tracer: ot.Tracer,

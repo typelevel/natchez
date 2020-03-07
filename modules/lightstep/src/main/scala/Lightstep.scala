@@ -11,7 +11,7 @@ import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Lightstep {
   def entryPoint[F[_]: Sync](configure: OptionsBuilder => F[Tracer]): Resource[F, EntryPoint[F]] =
@@ -33,7 +33,7 @@ object Lightstep {
         override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
           continue(name, kernel).flatMap {
             case null => root(name)
-            case a    => a.pure[Resource[F, ?]]
+            case a    => a.pure[Resource[F, *]]
           }
       }
     }

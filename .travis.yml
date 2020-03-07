@@ -15,7 +15,7 @@ jobs:
   include:
     # stage="test" if no stage is specified
     - env: TEST="build"
-      script: sbt headerCheck compile test
+      script: sbt ";headerCheck; + compile; + test"
     # run ci-release only if previous stages passed
     - stage: release
       script: sbt ci-release
@@ -24,6 +24,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
+    - $HOME/.cache
 
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
