@@ -15,7 +15,7 @@ object TraceSpec extends Specification {
     "generate spans" in {
       val fa = for {
         collector <- CollectorSpan.create[IO]
-        _         <- mkSpans[Kleisli[IO, Span[IO], ?]].run(collector)
+        _         <- mkSpans[Kleisli[IO, Span[IO], *]].run(collector)
         result    <- collector.state.get
       } yield result
 
@@ -25,7 +25,7 @@ object TraceSpec extends Specification {
     "generate spans for Resource" in {
       val fa = for {
         collector <- CollectorSpan.create[IO]
-        _         <- mkSpans[Resource[Kleisli[IO, Span[IO], ?], ?]].use(_ => Kleisli.pure(())).run(collector)
+        _         <- mkSpans[Resource[Kleisli[IO, Span[IO], *], *]].use(_ => Kleisli.pure(())).run(collector)
         result    <- collector.state.get
       } yield result
 
@@ -37,11 +37,11 @@ object TraceSpec extends Specification {
   "Noop Trace" should {
 
     "not generate spans" in {
-      implicit val trace: Trace[Kleisli[IO, Span[IO], ?]] = Trace.Implicits.noop
+      implicit val trace: Trace[Kleisli[IO, Span[IO], *]] = Trace.Implicits.noop
 
       val fa = for {
         collector <- CollectorSpan.create[IO]
-        _         <- mkSpans[Kleisli[IO, Span[IO], ?]].run(collector)
+        _         <- mkSpans[Kleisli[IO, Span[IO], *]].run(collector)
         result    <- collector.state.get
       } yield result
 
