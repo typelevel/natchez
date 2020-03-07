@@ -1,6 +1,6 @@
 lazy val scala211Version = "2.11.12"
 lazy val scala212Version = "2.12.10"
-lazy val scala213Version = "2.13.0"
+lazy val scala213Version = "2.13.1"
 
 // Global Settings
 lazy val commonSettings = Seq(
@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
     "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
 
   // Blah
   resolvers +=
