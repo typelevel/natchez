@@ -130,8 +130,8 @@ lazy val lightstepGrpc = project
     name        := "natchez-lightstep-grpc",
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-grpc"                     % "0.20.0",
-      "io.grpc"              % "grpc-netty"                      % "1.27.2",
+      "com.lightstep.tracer" % "tracer-grpc"                     % "0.19.3",
+      "io.grpc"              % "grpc-netty"                      % "1.28.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.29.Final"
     )
   )
