@@ -30,5 +30,4 @@ trait EntryPoint[F[_]] {
    */
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]]
 
-
 }

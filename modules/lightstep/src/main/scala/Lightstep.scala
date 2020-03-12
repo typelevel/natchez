@@ -5,11 +5,11 @@
 package natchez
 package lightstep
 
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.syntax.applicative._
 import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
-import io.opentracing.propagation.{ Format, TextMapAdapter }
+import io.opentracing.propagation.{Format, TextMapAdapter}
 
 import scala.jdk.CollectionConverters._
 
@@ -23,12 +23,14 @@ object Lightstep {
             .map(LightstepSpan(t, _))
 
         override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-          Resource.make(
-            Sync[F].delay {
-              val p = t.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
-              t.buildSpan(name).asChildOf(p).start()
-            }
-          )(s => Sync[F].delay(s.finish())).map(LightstepSpan(t, _))
+          Resource
+            .make(
+              Sync[F].delay {
+                val p = t.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+                t.buildSpan(name).asChildOf(p).start()
+              }
+            )(s => Sync[F].delay(s.finish()))
+            .map(LightstepSpan(t, _))
 
         override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
           continue(name, kernel).flatMap {

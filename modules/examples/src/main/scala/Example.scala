@@ -19,8 +19,8 @@ object Main extends IOApp {
   def qsort[F[_]: Monad: Parallel: Trace: Timer, A: Order](as: List[A]): F[List[A]] =
     Trace[F].span(as.mkString(",")) {
       Timer[F].sleep(10.milli) *> {
-          as match {
-          case Nil    => Monad[F].pure(Nil)
+        as match {
+          case Nil => Monad[F].pure(Nil)
           case h :: t =>
             val (a, b) = t.partition(_ <= h)
             (qsort[F, A](a), qsort[F, A](b)).parMapN(_ ++ List(h) ++ _)
@@ -32,7 +32,7 @@ object Main extends IOApp {
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(100)(Random.nextInt(1000)))
-        _  <- qsort[F, Int](as)
+        _ <- qsort[F, Int](as)
       } yield ()
     }
 
@@ -72,8 +72,8 @@ object Main extends IOApp {
     Jaeger.entryPoint[F]("natchez-example") { c =>
       Sync[F].delay {
         c.withSampler(SamplerConfiguration.fromEnv)
-         .withReporter(ReporterConfiguration.fromEnv)
-         .getTracer
+          .withReporter(ReporterConfiguration.fromEnv)
+          .getTracer
       }
     }
   }
@@ -87,14 +87,13 @@ object Main extends IOApp {
   //   Log.entryPoint[F]("foo").pure[Resource[F, *]]
   // }
 
-  def run(args: List[String]): IO[ExitCode] = {
-    entryPoint[IO].use { ep =>
-      ep.root("this is the root span").use { span =>
-        runF[Kleisli[IO, Span[IO], *]].run(span)
+  def run(args: List[String]): IO[ExitCode] =
+    entryPoint[IO]
+      .use { ep =>
+        ep.root("this is the root span").use { span =>
+          runF[Kleisli[IO, Span[IO], *]].run(span)
+        }
       }
-    } as ExitCode.Success
-  }
+      .as(ExitCode.Success)
 
 }
-
-

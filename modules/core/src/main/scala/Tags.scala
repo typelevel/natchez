@@ -57,6 +57,7 @@ object Tags {
   }
 
   object message_bus {
+
     /**
      * An address at which messages can be exchanged.
      * E.g. A Kafka record has an associated "topic name" that
@@ -97,6 +98,7 @@ object Tags {
   }
 
   object sampling {
+
     /**
      * If greater than 0, a hint to the Tracer to do its best to capture the trace.
      * If 0, a hint to the trace to not-capture the trace.
@@ -106,6 +108,7 @@ object Tags {
   }
 
   object span {
+
     /**
      * Either "client" or "server" for the appropriate roles in an RPC,
      * and "producer" or "consumer" for the appropriate roles in a messaging scenario.

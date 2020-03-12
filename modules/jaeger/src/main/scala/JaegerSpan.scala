@@ -5,7 +5,7 @@
 package natchez
 package jaeger
 
-import io.{ opentracing => ot }
+import io.{opentracing => ot}
 import cats.effect.Sync
 import cats.effect.Resource
 import cats.implicits._
@@ -14,9 +14,9 @@ import io.opentracing.propagation.TextMapAdapter
 
 import scala.jdk.CollectionConverters._
 
-private[jaeger] final case class JaegerSpan[F[_]: Sync](
+final private[jaeger] case class JaegerSpan[F[_]: Sync](
   tracer: ot.Tracer,
-  span:   ot.Span
+  span: ot.Span
 ) extends Span[F] {
   import TraceValue._
 
@@ -38,10 +38,9 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  def span(name: String): Resource[F,Span[F]] =
-    Resource.make(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
-      s => Sync[F].delay(s.finish)
-    ).map(JaegerSpan(tracer, _))
+  def span(name: String): Resource[F, Span[F]] =
+    Resource
+      .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(s => Sync[F].delay(s.finish))
+      .map(JaegerSpan(tracer, _))
 
 }

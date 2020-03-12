@@ -5,18 +5,18 @@
 package natchez
 package lightstep
 
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.implicits._
-import io.{ opentracing => ot }
-import io.opentracing.propagation.{ Format, TextMapAdapter }
+import io.{opentracing => ot}
+import io.opentracing.propagation.{Format, TextMapAdapter}
 
 import scala.jdk.CollectionConverters._
 
-private[lightstep] final case class LightstepSpan[F[_]: Sync](
+final private[lightstep] case class LightstepSpan[F[_]: Sync](
   tracer: ot.Tracer,
   span: ot.Span
 ) extends Span[F] {
-  
+
   import TraceValue._
 
   override def kernel: F[Kernel] =
@@ -33,7 +33,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  override def span(name: String): Resource[F,Span[F]] =
+  override def span(name: String): Resource[F, Span[F]] =
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
       .map(LightstepSpan(tracer, _))

@@ -5,7 +5,7 @@
 package natchez
 package honeycomb
 
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.implicits._
 import io.honeycomb.libhoney._
 import io.honeycomb.libhoney.responses._
@@ -16,30 +16,32 @@ import scala.jdk.CollectionConverters._
 object Honeycomb {
 
   def entryPoint[F[_]: Sync](
-    service:          String,
+    service: String,
     responseObserver: ResponseObserver = DefaultResponseObserver
   )(f: Options.Builder => F[Options]): Resource[F, EntryPoint[F]] =
-    Resource.make {
-      for {
-        b <- Sync[F].delay(LibHoney.options.setGlobalFields(Map("service_name" -> service).asJava))
-        o <- f(b)
-        c <- Sync[F].delay(LibHoney.create(o))
-        _ <- Sync[F].delay(c.addResponseObserver(responseObserver))
-      } yield c
-    } (c => Sync[F].delay(c.close)) map { c =>
-      new EntryPoint[F] {
+    Resource
+      .make {
+        for {
+          b <- Sync[F].delay(LibHoney.options.setGlobalFields(Map("service_name" -> service).asJava))
+          o <- f(b)
+          c <- Sync[F].delay(LibHoney.create(o))
+          _ <- Sync[F].delay(c.addResponseObserver(responseObserver))
+        } yield c
+      }(c => Sync[F].delay(c.close))
+      .map { c =>
+        new EntryPoint[F] {
 
-        def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-          Resource.makeCase(HoneycombSpan.fromKernel(c, name, kernel))(HoneycombSpan.finish).widen
+          def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+            Resource.makeCase(HoneycombSpan.fromKernel(c, name, kernel))(HoneycombSpan.finish).widen
 
-        def root(name: String): Resource[F, Span[F]] =
-          Resource.makeCase(HoneycombSpan.root(c, name))(HoneycombSpan.finish).widen
+          def root(name: String): Resource[F, Span[F]] =
+            Resource.makeCase(HoneycombSpan.root(c, name))(HoneycombSpan.finish).widen
 
-        def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
-          Resource.makeCase(HoneycombSpan.fromKernelOrElseRoot(c, name, kernel))(HoneycombSpan.finish).widen
+          def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+            Resource.makeCase(HoneycombSpan.fromKernelOrElseRoot(c, name, kernel))(HoneycombSpan.finish).widen
 
+        }
       }
-    }
 
   // a minimal side-effecting observer
   val DefaultResponseObserver: ResponseObserver =

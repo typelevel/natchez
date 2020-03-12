@@ -13,17 +13,22 @@ import io.opencensus.trace.{Sampler, Tracing}
 object OpenCensus {
 
   def ocAgentEntryPoint[F[_]: Sync](system: String)(
-      configure: OcAgentTraceExporterConfiguration.Builder => OcAgentTraceExporterConfiguration.Builder,
-      sampler: Sampler): Resource[F, EntryPoint[F]] =
+    configure: OcAgentTraceExporterConfiguration.Builder => OcAgentTraceExporterConfiguration.Builder,
+    sampler: Sampler
+  ): Resource[F, EntryPoint[F]] =
     Resource
       .make(
         Sync[F].delay(
-          OcAgentTraceExporter.createAndRegister(configure(
-            OcAgentTraceExporterConfiguration.builder().setServiceName(system))
-            .build())))(_ =>
+          OcAgentTraceExporter.createAndRegister(
+            configure(OcAgentTraceExporterConfiguration.builder().setServiceName(system))
+              .build()
+          )
+        )
+      )(_ =>
         Sync[F].delay(
           OcAgentTraceExporter.unregister()
-      ))
+        )
+      )
       .flatMap(_ => Resource.liftF(entryPoint[F](sampler)))
 
   def entryPoint[F[_]: Sync](sampler: Sampler): F[EntryPoint[F]] =
@@ -33,12 +38,14 @@ object OpenCensus {
         new EntryPoint[F] {
           def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
             Resource.makeCase(OpenCensusSpan.fromKernel(t, name, kernel))(OpenCensusSpan.finish).widen
-  
+
           def root(name: String): Resource[F, Span[F]] =
             Resource.makeCase(OpenCensusSpan.root(t, name, sampler))(OpenCensusSpan.finish).widen
-  
-          def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
-            Resource.makeCase(OpenCensusSpan.fromKernelOrElseRoot(t, name, kernel, sampler))(OpenCensusSpan.finish).widen
+
+          def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+            Resource
+              .makeCase(OpenCensusSpan.fromKernelOrElseRoot(t, name, kernel, sampler))(OpenCensusSpan.finish)
+              .widen
         }
       }
 }
