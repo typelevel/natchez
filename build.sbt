@@ -1,6 +1,5 @@
-lazy val scala211Version = "2.11.12"
 lazy val scala212Version = "2.12.10"
-lazy val scala213Version = "2.13.0"
+lazy val scala213Version = "2.13.1"
 
 // Global Settings
 lazy val commonSettings = Seq(
@@ -25,7 +24,7 @@ lazy val commonSettings = Seq(
 
   // Compilation
   scalaVersion       := scala212Version,
-  crossScalaVersions := Seq(scala211Version, scala212Version, scala213Version),
+  crossScalaVersions := Seq(scala212Version, scala213Version),
   Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
   Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc     / scalacOptions ++= Seq(
@@ -33,7 +32,7 @@ lazy val commonSettings = Seq(
     "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
 
   // Blah
   resolvers +=
@@ -49,8 +48,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -75,7 +74,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
-      "io.jaegertracing"        % "jaeger-client"           % "1.1.0",
+      "io.jaegertracing"        % "jaeger-client"           % "1.2.0",
       "org.slf4j"               % "slf4j-jdk14"             % "1.7.30"
     )
   )
@@ -158,8 +157,8 @@ lazy val log = project
     name        := "natchez-log",
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"          %% "circe-core"    % "0.11.1",
-      "io.chrisdavenport" %% "log4cats-core" % "1.0.0",
+      "io.circe"          %% "circe-core"    % "0.13.0",
+      "io.chrisdavenport" %% "log4cats-core" % "1.0.1",
     )
   )
 
@@ -172,7 +171,7 @@ lazy val examples = project
     publish / skip       := true,
     name                 := "natchez-examples",
     description          := "Example programs for Natchez.",
-    crossScalaVersions  --= List(scala211Version, scala213Version), // until skunk is out for 2.13
+    crossScalaVersions  --= List(scala213Version), // until skunk is out for 2.13
     libraryDependencies ++= Seq(
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
     )
