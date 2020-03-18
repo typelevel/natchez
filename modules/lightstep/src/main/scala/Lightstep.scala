@@ -33,7 +33,7 @@ object Lightstep {
         override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
           continue(name, kernel).flatMap {
             case null => root(name)
-            case a    => a.pure[Resource[F, ?]]
+            case a    => a.pure[Resource[F, *]]
           }
       }
     }
