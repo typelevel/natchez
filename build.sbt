@@ -74,7 +74,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
-      "io.jaegertracing"        % "jaeger-client"           % "1.1.0",
+      "io.jaegertracing"        % "jaeger-client"           % "1.2.0",
       "org.slf4j"               % "slf4j-jdk14"             % "1.7.30"
     )
   )
@@ -130,7 +130,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.19.3",
-      "io.grpc"              % "grpc-netty"                      % "1.27.2",
+      "io.grpc"              % "grpc-netty"                      % "1.28.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.29.Final"
     )
   )
