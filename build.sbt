@@ -48,8 +48,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, logOdin, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, logOdin, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -155,16 +155,31 @@ lazy val log = project
   .settings(commonSettings)
   .settings(
     name        := "natchez-log",
-    description := "Logging bindings for Natchez.",
+    description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %% "circe-core"    % "0.13.0",
       "io.chrisdavenport" %% "log4cats-core" % "1.0.1",
     )
   )
 
+lazy val logOdin = project
+  .in(file("modules/log-odin"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-log-odin",
+    description := "Logging bindings for Natchez, using Odin.",
+    libraryDependencies ++= Seq(
+      "io.circe"              %% "circe-core" % "0.13.0",
+      "com.github.valskalla"  %% "odin-core"  % "0.7.0",
+      "com.github.valskalla"  %% "odin-json"  % "0.7.0"
+    )
+  )
+
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp, log)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp, log, logOdin)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
