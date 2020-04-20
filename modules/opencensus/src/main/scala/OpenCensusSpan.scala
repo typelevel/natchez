@@ -27,8 +27,10 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v)) =>
+        val safeString =
+          if (v == null) "null" else v
         Sync[F].delay(
-          span.putAttribute(k, AttributeValue.stringAttributeValue(v)))
+          span.putAttribute(k, AttributeValue.stringAttributeValue(safeString)))
       case (k, NumberValue(v)) =>
         Sync[F].delay(
           span.putAttribute(
@@ -72,9 +74,10 @@ private[opencensus] object OpenCensusSpan {
                 case Completed          => outer.span.setStatus(io.opencensus.trace.Status.OK)
                 case Canceled           => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
                 case ExitCase.Error(ex) =>
-                  outer.span.putAttribute("error.stack", AttributeValue.stringAttributeValue(ex.getMessage))
-                  outer.span.putAttribute("error.msg",   AttributeValue.stringAttributeValue(ex.getStackTrace.mkString("\n")))
-
+                  outer.put(
+                    ("error.msg", ex.getMessage),
+                    ("error.stack", ex.getStackTrace.mkString("\n"))
+                  )
                   outer.span.setStatus(io.opencensus.trace.Status.INTERNAL.withDescription(ex.getMessage))
               }
             }
