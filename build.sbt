@@ -158,7 +158,7 @@ lazy val log = project
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe"          %% "circe-core"    % "0.13.0",
-      "io.chrisdavenport" %% "log4cats-core" % "1.0.1",
+      "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
     )
   )
 
@@ -173,6 +173,6 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     crossScalaVersions  --= List(scala213Version), // until skunk is out for 2.13
     libraryDependencies ++= Seq(
-      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
     )
   )
