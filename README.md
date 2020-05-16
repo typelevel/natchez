@@ -51,7 +51,7 @@ docker run -d --name jaeger \
   jaegertracing/all-in-one:1.8
 ```
 
-Now, finally, if you run the example in `modules/examples` and go to [localhost:16686](http://localhost:16686) you can then select `natchez-example` and search for traces.
+Now, finally, if you run the example in `modules/examples` (with `sbt examples/run`) and go to [localhost:16686](http://localhost:16686) you can then select `natchez-example` and search for traces.
 
 To use it in your own projects (not recommended yet) you can do
 
