@@ -64,6 +64,19 @@ object Main extends IOApp {
   //     }
   //   }
 
+  // DataDog
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+  //   import natchez.datadog.DDTracer
+  //   DDTracer.entryPoint[F](builder =>
+  //     Sync[F].delay(builder
+  //       .withProperties(new Properties() {
+  //         put("writer.type", "LoggingWriter")
+  //       })
+  //       .serviceName("natchez-sample")
+  //       .build())
+  //   )
+  // }
+
   // Jaeger
   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
     import natchez.jaeger.Jaeger

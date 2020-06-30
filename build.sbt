@@ -148,6 +148,21 @@ lazy val lightstepHttp = project
     )
   )
 
+lazy val datadog = project
+  .in(file("modules/datadog"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-datadog",
+    description := "Lightstep HTTP bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+      "com.datadoghq" % "dd-trace-ot" % "0.56.0",
+      "com.datadoghq" % "dd-trace-api" % "0.56.0"
+    )
+  )
+
 lazy val log = project
   .in(file("modules/log"))
   .dependsOn(core)
@@ -164,7 +179,7 @@ lazy val log = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp, log)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp, datadog, log)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
