@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -33,10 +33,10 @@ object OpenCensus {
         new EntryPoint[F] {
           def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
             Resource.makeCase(OpenCensusSpan.fromKernel(t, name, kernel))(OpenCensusSpan.finish).widen
-  
+
           def root(name: String): Resource[F, Span[F]] =
             Resource.makeCase(OpenCensusSpan.root(t, name, sampler))(OpenCensusSpan.finish).widen
-  
+
           def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
             Resource.makeCase(OpenCensusSpan.fromKernelOrElseRoot(t, name, kernel, sampler))(OpenCensusSpan.finish).widen
         }
