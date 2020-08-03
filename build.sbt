@@ -70,7 +70,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "io.jaegertracing"        % "jaeger-client"           % "1.3.1",
+      "io.jaegertracing"        % "jaeger-client"           % "1.3.2",
     )
   )
 
