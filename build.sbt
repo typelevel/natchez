@@ -157,6 +157,18 @@ lazy val log = project
     )
   )
 
+lazy val noop = project
+  .in(file("modules/noop"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-noop",
+    description := "No-Op Open Tracing implementation",
+    libraryDependencies ++= Seq()
+    )
+
+
 lazy val examples = project
   .in(file("modules/examples"))
   .dependsOn(core, jaeger, honeycomb, lightstepHttp, log)
