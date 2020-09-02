@@ -192,7 +192,8 @@ lazy val mock = project
     name        := "natchez-mock",
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
-      "io.opentracing" % "opentracing-mock" % "0.33.0"
+      "io.opentracing" % "opentracing-mock" % "0.33.0",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
     ))
 
 
