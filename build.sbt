@@ -44,8 +44,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -143,6 +143,21 @@ lazy val lightstepHttp = project
     )
   )
 
+lazy val datadog = project
+  .in(file("modules/datadog"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-datadog",
+    description := "Lightstep HTTP bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+      "com.datadoghq" % "dd-trace-ot" % "0.60.1",
+      "com.datadoghq" % "dd-trace-api" % "0.60.1"
+    )
+  )
+
 lazy val log = project
   .in(file("modules/log"))
   .dependsOn(core)
@@ -171,7 +186,7 @@ lazy val noop = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp, log)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp, datadog, log)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
