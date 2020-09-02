@@ -44,8 +44,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -171,6 +171,18 @@ lazy val log = project
       "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
     )
   )
+
+lazy val noop = project
+  .in(file("modules/noop"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-noop",
+    description := "No-Op Open Tracing implementation",
+    libraryDependencies ++= Seq()
+    )
+
 
 lazy val examples = project
   .in(file("modules/examples"))
