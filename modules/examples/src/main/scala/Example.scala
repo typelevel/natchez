@@ -7,7 +7,7 @@ package example
 import cats._
 import cats.data.Kleisli
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import natchez._
 import scala.util.Random
 import scala.concurrent.duration._

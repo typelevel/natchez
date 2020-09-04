@@ -6,7 +6,7 @@ package natchez
 package datadog
 
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import _root_.datadog.opentracing.{DDTracer => NativeDDTracer}
 import _root_.datadog.opentracing.DDTracer.DDTracerBuilder
 import io.opentracing.propagation.{Format, TextMapAdapter}

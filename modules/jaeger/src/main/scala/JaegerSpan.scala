@@ -8,7 +8,7 @@ package jaeger
 import io.{ opentracing => ot }
 import cats.effect.Sync
 import cats.effect.Resource
-import cats.implicits._
+import cats.syntax.all._
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
 

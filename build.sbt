@@ -55,7 +55,7 @@ lazy val core = project
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % "2.1.1",
+      "org.typelevel" %% "cats-core"   % "2.2.0",
       "org.typelevel" %% "cats-effect" % "2.1.4"
     )
   )
