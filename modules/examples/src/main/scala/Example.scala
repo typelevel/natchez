@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -7,7 +7,7 @@ package example
 import cats._
 import cats.data.Kleisli
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import natchez._
 import scala.util.Random
 import scala.concurrent.duration._
@@ -63,6 +63,19 @@ object Main extends IOApp {
   //       new JRETracer(options)
   //     }
   //   }
+
+  // DataDog
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+  //   import natchez.datadog.DDTracer
+  //   DDTracer.entryPoint[F](builder =>
+  //     Sync[F].delay(builder
+  //       .withProperties(new Properties() {
+  //         put("writer.type", "LoggingWriter")
+  //       })
+  //       .serviceName("natchez-sample")
+  //       .build())
+  //   )
+  // }
 
   // Jaeger
   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
