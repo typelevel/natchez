@@ -6,7 +6,7 @@ package natchez
 package log
 
 import cats.effect.{ Resource, Sync }
-import cats.implicits._
+import cats.syntax.functor._
 import io.chrisdavenport.log4cats.Logger
 
 object Log {

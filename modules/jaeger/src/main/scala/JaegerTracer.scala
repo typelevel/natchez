@@ -6,7 +6,7 @@ package natchez
 package jaeger
 
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import io.jaegertracing.Configuration
 import io.jaegertracing.internal.exceptions.UnsupportedFormatException
 import io.jaegertracing.internal.{ JaegerTracer => NativeJaegerTracer }

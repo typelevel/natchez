@@ -8,7 +8,7 @@ import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.effect.ExitCase.Canceled
 import cats.effect.ExitCase.Completed
-import cats.implicits._
+import cats.syntax.all._
 import io.honeycomb.libhoney.HoneyClient
 import java.time.Instant
 import java.util.UUID

@@ -7,7 +7,7 @@ package natchez.log
 import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.effect.ExitCase._
-import cats.implicits._
+import cats.syntax.all._
 import java.time.Instant
 import java.util.UUID
 import natchez._
