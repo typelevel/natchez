@@ -44,8 +44,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -182,6 +182,19 @@ lazy val noop = project
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
     )
+
+lazy val mock = project
+  .in(file("modules/mock"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-mock",
+    description := "Mock Open Tracing implementation",
+    libraryDependencies ++= Seq(
+      "io.opentracing" % "opentracing-mock" % "0.33.0",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+    ))
 
 
 lazy val examples = project
