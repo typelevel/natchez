@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -8,7 +8,7 @@ package jaeger
 import io.{ opentracing => ot }
 import cats.effect.Sync
 import cats.effect.Resource
-import cats.implicits._
+import cats.syntax.all._
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
 

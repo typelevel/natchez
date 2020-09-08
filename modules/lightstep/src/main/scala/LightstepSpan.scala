@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -6,7 +6,7 @@ package natchez
 package lightstep
 
 import cats.effect.{ Resource, Sync }
-import cats.implicits._
+import cats.syntax.all._
 import io.{ opentracing => ot }
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 
@@ -16,7 +16,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
   tracer: ot.Tracer,
   span: ot.Span
 ) extends Span[F] {
-  
+
   import TraceValue._
 
   override def kernel: F[Kernel] =

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -8,7 +8,7 @@ package opencensus
 import cats.effect._
 import cats.effect.ExitCase.Canceled
 import cats.effect.ExitCase.Completed
-import cats.implicits._
+import cats.syntax.all._
 import io.opencensus.trace.propagation.TextFormat.Setter
 import io.opencensus.trace.{AttributeValue, Sampler, Tracer, Tracing}
 import io.opencensus.trace.propagation.SpanContextParseException
@@ -27,8 +27,10 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v)) =>
+        val safeString =
+          if (v == null) "null" else v
         Sync[F].delay(
-          span.putAttribute(k, AttributeValue.stringAttributeValue(v)))
+          span.putAttribute(k, AttributeValue.stringAttributeValue(safeString)))
       case (k, NumberValue(v)) =>
         Sync[F].delay(
           span.putAttribute(
@@ -72,9 +74,10 @@ private[opencensus] object OpenCensusSpan {
                 case Completed          => outer.span.setStatus(io.opencensus.trace.Status.OK)
                 case Canceled           => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
                 case ExitCase.Error(ex) =>
-                  outer.span.putAttribute("error.stack", AttributeValue.stringAttributeValue(ex.getMessage))
-                  outer.span.putAttribute("error.msg",   AttributeValue.stringAttributeValue(ex.getStackTrace.mkString("\n")))
-
+                  outer.put(
+                    ("error.msg", ex.getMessage),
+                    ("error.stack", ex.getStackTrace.mkString("\n"))
+                  )
                   outer.span.setStatus(io.opencensus.trace.Status.INTERNAL.withDescription(ex.getMessage))
               }
             }

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -7,7 +7,7 @@ package natchez
 import cats._
 import cats.data._
 import cats.effect._
-import cats.implicits._
+import cats.syntax.applicative._
 
 /** A tracing effect, which always has a current span. */
 trait Trace[F[_]] {
