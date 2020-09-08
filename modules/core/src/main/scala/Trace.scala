@@ -7,7 +7,7 @@ package natchez
 import cats._
 import cats.data._
 import cats.effect._
-import cats.implicits._
+import cats.syntax.applicative._
 
 /** A tracing effect, which always has a current span. */
 trait Trace[F[_]] {

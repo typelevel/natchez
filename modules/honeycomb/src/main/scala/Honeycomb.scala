@@ -6,7 +6,7 @@ package natchez
 package honeycomb
 
 import cats.effect.{ Resource, Sync }
-import cats.implicits._
+import cats.syntax.all._
 import io.honeycomb.libhoney._
 import io.honeycomb.libhoney.responses._
 import org.slf4j.LoggerFactory

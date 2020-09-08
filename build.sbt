@@ -55,8 +55,8 @@ lazy val core = project
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % "2.1.1",
-      "org.typelevel" %% "cats-effect" % "2.1.4"
+      "org.typelevel" %% "cats-core"   % "2.2.0",
+      "org.typelevel" %% "cats-effect" % "2.2.0"
     )
   )
 
@@ -70,7 +70,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "io.jaegertracing"        % "jaeger-client"           % "1.3.1",
+      "io.jaegertracing"        % "jaeger-client"           % "1.4.0",
     )
   )
 
@@ -84,7 +84,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.1.2"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
     )
   )
 
@@ -97,7 +97,7 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.26.0"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.27.0"
     )
   )
 
@@ -125,7 +125,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.0",
-      "io.grpc"              % "grpc-netty"                      % "1.30.2",
+      "io.grpc"              % "grpc-netty"                      % "1.31.1",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.34.Final"
     )
   )
@@ -152,9 +152,9 @@ lazy val datadog = project
     name        := "natchez-datadog",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
-      "com.datadoghq" % "dd-trace-ot" % "0.60.1",
-      "com.datadoghq" % "dd-trace-api" % "0.60.1"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      "com.datadoghq" % "dd-trace-ot"  % "0.61.0",
+      "com.datadoghq" % "dd-trace-api" % "0.61.0"
     )
   )
 
