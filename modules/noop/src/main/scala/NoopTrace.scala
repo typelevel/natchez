@@ -6,18 +6,24 @@ package natchez
 package noop
 
 import cats.Applicative
+import cats.syntax.all._
+import java.net.URI
 
 final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
-  override def put(fields: (String, TraceValue)*): F[Unit] = {
+  override def put(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit
-  }
 
-  override def kernel: F[Kernel] = {
+  override def kernel: F[Kernel] =
     Applicative[F].pure(Kernel(Map.empty))
-  }
 
-  override def span[A](name: String)(k: F[A]): F[A] = {
+  override def span[A](name: String)(k: F[A]): F[A] =
     k
-  }
+
+  def traceId: F[Option[String]] =
+    none.pure[F]
+
+  def traceUri: F[Option[URI]] =
+    none.pure[F]
+
 }

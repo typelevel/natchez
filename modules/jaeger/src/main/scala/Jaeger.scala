@@ -14,16 +14,20 @@ import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
 
 import scala.jdk.CollectionConverters._
+import java.net.URI
 
 object Jaeger {
 
-  def entryPoint[F[_]: Sync](system: String)(
+  def entryPoint[F[_]: Sync](
+    system: String,
+    uriPrefix: Option[URI] = None,
+  )(
     configure: Configuration => F[NativeJaegerTracer]
   ): Resource[F, EntryPoint[F]] =
     Resource.make(
       Sync[F].delay(
         new Configuration(system)).flatMap(configure))(
-        c => Sync[F].delay(c.close)
+        c => Sync[F].delay(c.close())
       ).map { t =>
         new EntryPoint[F] {
 
@@ -36,13 +40,13 @@ object Jaeger {
                 )
                 t.buildSpan(name).asChildOf(p).start()
               }
-            )(s => Sync[F].delay(s.finish)).map(JaegerSpan(t, _))
+            )(s => Sync[F].delay(s.finish)).map(JaegerSpan(t, _, uriPrefix))
 
           def root(name: String): Resource[F,Span[F]] =
             Resource.make(
               Sync[F].delay(t.buildSpan(name).start()))(
               s => Sync[F].delay(s.finish)
-            ).map(JaegerSpan(t, _))
+            ).map(JaegerSpan(t, _, uriPrefix))
 
           def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
             continue(name, kernel) flatMap {

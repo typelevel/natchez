@@ -7,7 +7,8 @@ package natchez
 import cats._
 import cats.data._
 import cats.effect._
-import cats.syntax.applicative._
+import cats.syntax.all._
+import java.net.URI
 
 /** A tracing effect, which always has a current span. */
 trait Trace[F[_]] {
@@ -23,6 +24,18 @@ trait Trace[F[_]] {
 
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
+
+  /**
+   * A unique ID for this trace, if available. This can be useful to include in error messages for
+   * example, so you can quickly find the associated trace.
+   */
+  def traceId: F[Option[String]]
+
+  /**
+   * A unique URI for this trace, if available. This can be useful to include in error messages for
+   * example, so you can quickly find the associated trace.
+   */
+  def traceUri: F[Option[URI]]
 
 }
 
@@ -43,6 +56,8 @@ object Trace {
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
+        def traceId: F[Option[String]] = none.pure[F]
+        def traceUri: F[Option[URI]] = none.pure[F]
       }
 
   }
@@ -82,7 +97,19 @@ object Trace {
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
 
+        def traceId: Kleisli[F,E,Option[String]] =
+          Kleisli(e => f(e).traceId)
+
+        def traceUri: Kleisli[F,E,Option[URI]] =
+          Kleisli(e => f(e).traceUri)
+
       }
+
+    def traceId: Kleisli[F,Span[F],Option[String]] =
+      Kleisli(_.traceId)
+
+    def traceUri: Kleisli[F,Span[F],Option[URI]] =
+      Kleisli(_.traceUri)
 
   }
 

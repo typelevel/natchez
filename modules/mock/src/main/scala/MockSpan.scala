@@ -12,6 +12,7 @@ import cats.implicits._
 import io.{ opentracing => ot }
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 import natchez.TraceValue.{ BooleanValue, NumberValue, StringValue }
+import java.net.URI
 
 final case class MockSpan[F[_] : Sync](
   tracer: ot.mock.MockTracer,
@@ -44,5 +45,9 @@ final case class MockSpan[F[_] : Sync](
         Sync[F].delay(s.finish())
       }
       .map(MockSpan(tracer, _))
+
+  // TODO
+  def traceId: F[Option[String]] = none.pure[F]
+  def traceUri: F[Option[URI]] = none.pure[F]
 
 }

@@ -13,6 +13,7 @@ import io.opentracing.propagation.{Format, TextMapAdapter}
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 
 import scala.jdk.CollectionConverters._
+import java.net.URI
 
 private[datadog] final case class DDSpan[F[_]: Sync](
   tracer: ot.Tracer,
@@ -41,5 +42,9 @@ private[datadog] final case class DDSpan[F[_]: Sync](
       Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
       s => Sync[F].delay(s.finish)
     ).map(DDSpan(tracer, _))
+
+  // TODO
+  def traceId: F[Option[String]] = none.pure[F]
+  def traceUri: F[Option[URI]] = none.pure[F]
 
 }

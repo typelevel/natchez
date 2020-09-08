@@ -11,6 +11,7 @@ import cats.syntax.all._
 import natchez._
 import scala.util.Random
 import scala.concurrent.duration._
+import java.net.URI
 
 object Main extends IOApp {
 
@@ -33,6 +34,9 @@ object Main extends IOApp {
       for {
         as <- Sync[F].delay(List.fill(100)(Random.nextInt(1000)))
         _  <- qsort[F, Int](as)
+        u  <- Trace[F].traceUri
+        _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
+        _  <- Sync[F].delay(println("Done."))
       } yield ()
     }
 
@@ -82,7 +86,10 @@ object Main extends IOApp {
     import natchez.jaeger.Jaeger
     import io.jaegertracing.Configuration.SamplerConfiguration
     import io.jaegertracing.Configuration.ReporterConfiguration
-    Jaeger.entryPoint[F]("natchez-example") { c =>
+    Jaeger.entryPoint[F](
+      system    = "natchez-example",
+      uriPrefix = Some(new URI("http://localhost:16686")),
+    ) { c =>
       Sync[F].delay {
         c.withSampler(SamplerConfiguration.fromEnv)
          .withReporter(ReporterConfiguration.fromEnv)
@@ -104,7 +111,7 @@ object Main extends IOApp {
     entryPoint[IO].use { ep =>
       ep.root("this is the root span").use { span =>
         runF[Kleisli[IO, Span[IO], *]].run(span)
-      }
+      } *> IO.sleep(1.second) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
     } as ExitCode.Success
   }
 

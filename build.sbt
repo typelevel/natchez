@@ -208,5 +208,6 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     libraryDependencies ++= Seq(
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
     )
   )

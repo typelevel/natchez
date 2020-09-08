@@ -42,6 +42,7 @@ out/
 # Bloop/Metals
 .bloop/
 .metals/
+metals.sbt
 
 # VS-Code
 .vscode/
