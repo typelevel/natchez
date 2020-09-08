@@ -8,7 +8,7 @@ package opencensus
 import cats.effect._
 import cats.effect.ExitCase.Canceled
 import cats.effect.ExitCase.Completed
-import cats.implicits._
+import cats.syntax.all._
 import io.opencensus.trace.propagation.TextFormat.Setter
 import io.opencensus.trace.{AttributeValue, Sampler, Tracer, Tracing}
 import io.opencensus.trace.propagation.SpanContextParseException
