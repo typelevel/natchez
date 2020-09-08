@@ -16,6 +16,7 @@ import io.opencensus.trace.propagation.TextFormat.Getter
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 
 import scala.collection.mutable
+import java.net.URI
 
 private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     tracer: Tracer,
@@ -51,6 +52,11 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
   override def span(name: String): Resource[F, Span[F]] =
     Resource
       .makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen
+
+  // TODO
+  def traceId: F[Option[String]] = none.pure[F]
+  def traceUri: F[Option[URI]] = none.pure[F]
+
 }
 
 private[opencensus] object OpenCensusSpan {

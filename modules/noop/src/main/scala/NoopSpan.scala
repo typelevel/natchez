@@ -5,20 +5,24 @@
 package natchez
 package noop
 
-import cats.Applicative
+import cats._
 import cats.effect.Resource
+import cats.syntax.all._
+import java.net.URI
 
 final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
 
-  override def put(fields: (String, TraceValue)*): F[Unit] = {
+  override def put(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit
-  }
 
-  override def kernel: F[Kernel] = {
+  override def kernel: F[Kernel] =
     Applicative[F].pure(Kernel(Map.empty))
-  }
 
-  override def span(name: String): Resource[F, Span[F]] = {
-    Resource.liftF(Applicative[F].pure(NoopSpan()))
-  }
+  override def span(name: String): Resource[F, Span[F]] =
+    Resource.liftF(NoopSpan[F]().pure[F])
+
+  // TODO
+  def traceId: F[Option[String]] = none.pure[F]
+  def traceUri: F[Option[URI]] = none.pure[F]
+
 }

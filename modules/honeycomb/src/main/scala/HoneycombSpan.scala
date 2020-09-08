@@ -13,13 +13,14 @@ import io.honeycomb.libhoney.HoneyClient
 import java.time.Instant
 import java.util.UUID
 import natchez._
+import java.net.URI
 
 private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   client:    HoneyClient,
   name:      String,
-  spanId:    UUID,
+  spanUUID:  UUID,
   parentId:  Option[UUID],
-  traceId:   UUID,
+  traceUUID: UUID,
   timestamp: Instant,
   fields:    Ref[F, Map[String, TraceValue]]
 ) extends Span[F] {
@@ -30,8 +31,8 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
 
   def kernel: F[Kernel] =
     Kernel(Map(
-      Headers.TraceId -> traceId.toString,
-      Headers.SpanId  -> spanId.toString
+      Headers.TraceId -> traceUUID.toString,
+      Headers.SpanId  -> spanUUID.toString
     )).pure[F]
 
   def put(fields: (String, TraceValue)*): F[Unit] =
@@ -39,6 +40,9 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
 
   def span(label: String): Resource[F, Span[F]] =
     Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen
+
+  def traceId: F[Option[String]] = traceUUID.toString.some.pure[F]
+  def traceUri: F[Option[URI]]   = none.pure[F] // TODO
 
 }
 
@@ -69,8 +73,8 @@ private[honeycomb] object HoneycombSpan {
               fs.foreach { case (k, v) => e.addField(k, v.value) }    // user fields
               span.parentId.foreach(e.addField("trace.parent_id", _)) // parent trace
               e.addField("name",           span.name)                 // and other trace fields
-              e.addField("trace.span_id",  span.spanId)
-              e.addField("trace.trace_id", span.traceId)
+              e.addField("trace.span_id",  span.spanUUID)
+              e.addField("trace.trace_id", span.traceUUID)
               e.addField("duration_ms",    n.toEpochMilli - span.timestamp.toEpochMilli)
               exitCase match {
                 case Completed          => e.addField("exit.case", "completed")
@@ -91,15 +95,15 @@ private[honeycomb] object HoneycombSpan {
     name:   String
   ): F[HoneycombSpan[F]] =
     for {
-      spanId    <- uuid[F]
+      spanUUID  <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, TraceValue])
     } yield HoneycombSpan(
       client    = parent.client,
       name      = name,
-      spanId    = spanId,
-      parentId  = Some(parent.spanId),
-      traceId   = parent.traceId,
+      spanUUID  = spanUUID,
+      parentId  = Some(parent.spanUUID),
+      traceUUID = parent.traceUUID,
       timestamp = timestamp,
       fields    = fields
     )
@@ -109,16 +113,16 @@ private[honeycomb] object HoneycombSpan {
     name:      String
   ): F[HoneycombSpan[F]] =
     for {
-      spanId    <- uuid[F]
-      traceId   <- uuid[F]
+      spanUUID  <- uuid[F]
+      traceUUID <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, TraceValue])
     } yield HoneycombSpan(
       client    = client,
       name      = name,
-      spanId    = spanId,
+      spanUUID  = spanUUID,
       parentId  = None,
-      traceId   = traceId,
+      traceUUID = traceUUID,
       timestamp = timestamp,
       fields    = fields
     )
@@ -129,17 +133,17 @@ private[honeycomb] object HoneycombSpan {
     kernel: Kernel
   )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
     for {
-      traceId  <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
-      spanId    <- uuid[F]
+      traceUUID <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
+      parentId  <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      spanUUID  <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, TraceValue])
     } yield HoneycombSpan(
       client    = client,
       name      = name,
-      spanId    = spanId,
+      spanUUID  = spanUUID,
       parentId  = Some(parentId),
-      traceId   = traceId,
+      traceUUID = traceUUID,
       timestamp = timestamp,
       fields    = fields
     )

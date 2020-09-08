@@ -11,6 +11,7 @@ import io.{ opentracing => ot }
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 
 import scala.jdk.CollectionConverters._
+import java.net.URI
 
 private[lightstep] final case class LightstepSpan[F[_]: Sync](
   tracer: ot.Tracer,
@@ -37,4 +38,9 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
       .map(LightstepSpan(tracer, _))
+
+  // TODO
+  def traceId: F[Option[String]] = none.pure[F]
+  def traceUri: F[Option[URI]] = none.pure[F]
+
 }

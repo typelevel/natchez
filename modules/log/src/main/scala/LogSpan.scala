@@ -17,13 +17,14 @@ import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
 import io.chrisdavenport.log4cats.Logger
+import java.net.URI
 
 private[log] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,
   name:      String,
   spanId:    UUID,
   parent:  Option[Either[UUID, LogSpan[F]]],
-  traceId:   UUID,
+  traceUUID:   UUID,
   timestamp: Instant,
   fields:    Ref[F, Map[String, Json]],
   children:  Ref[F, List[JsonObject]]
@@ -31,14 +32,14 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   import LogSpan._
 
   def parentId: Option[UUID] =
-    parent.map(_.fold(identity, _.traceId))
+    parent.map(_.fold(identity, _.traceUUID))
 
   def get(key: String): F[Option[Json]] =
     fields.get.map(_.get(key))
 
   def kernel: F[Kernel] =
     Kernel(Map(
-      Headers.TraceId -> traceId.toString,
+      Headers.TraceId -> traceUUID.toString,
       Headers.SpanId  -> spanId.toString
     )).pure[F]
 
@@ -73,7 +74,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "duration_ms"     -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
           "trace.span_id"   -> spanId.asJson,
           "trace.parent_id" -> parentId.asJson,
-          "trace.trace_id"  -> traceId.asJson,
+          "trace.trace_id"  -> traceUUID.asJson,
         ) ++ {
           exitCase match {
             case Completed                  => List("exit.case" -> "completed".asJson)
@@ -86,6 +87,10 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
       JsonObject.fromIterable(fields)
 
     }
+
+  // TODO
+  def traceId: F[Option[String]] = traceUUID.toString.some.pure[F]
+  def traceUri: F[Option[URI]]   = none.pure[F]
 
 }
 
@@ -145,7 +150,7 @@ private[log] object LogSpan {
       name      = name,
       spanId    = spanId,
       parent    = Some(Right(parent)),
-      traceId   = parent.traceId,
+      traceUUID = parent.traceUUID,
       timestamp = timestamp,
       fields    = fields,
       children  = children
@@ -157,7 +162,7 @@ private[log] object LogSpan {
   ): F[LogSpan[F]] =
     for {
       spanId    <- uuid[F]
-      traceId   <- uuid[F]
+      traceUUID <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, Json])
       children  <- Ref[F].of(List.empty[JsonObject])
@@ -166,7 +171,7 @@ private[log] object LogSpan {
       name      = name,
       spanId    = spanId,
       parent    = None,
-      traceId   = traceId,
+      traceUUID = traceUUID,
       timestamp = timestamp,
       fields    = fields,
       children  = children
@@ -178,8 +183,8 @@ private[log] object LogSpan {
     kernel:  Kernel
   ): F[LogSpan[F]] =
     for {
-      traceId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      traceUUID <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
+      parentId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
       spanId    <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, Json])
@@ -189,7 +194,7 @@ private[log] object LogSpan {
       name      = name,
       spanId    = spanId,
       parent    = Some(Left(parentId)),
-      traceId   = traceId,
+      traceUUID = traceUUID,
       timestamp = timestamp,
       fields    = fields,
       children  = children

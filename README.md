@@ -2,12 +2,15 @@
 
 [![Join the chat at https://gitter.im/tpolecat/natchez](https://badges.gitter.im/tpolecat/natchez.svg)](https://gitter.im/tpolecat/natchez?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-This is an minimal distributed tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing). It currently has integration with:
+This is a minimal distributed tracing effect for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing). There is very little documentation (sorry) but nevertheless people are using this at scale and it seems to work.
 
-- [Jaeger](https://www.jaegertracing.io/)
+Natchez currently has integration with:
+
+- [Datadog](https://www.datadoghq.com)
 - [Honeycomb](https://www.honeycomb.io/)
-- [OpenCensus](https://www.opencensus.io/)
+- [Jaeger](https://www.jaegertracing.io/)
 - [LightStep](https://lightstep.com)
+- [OpenCensus](https://www.opencensus.io/)
 
 It supports
 
@@ -56,7 +59,7 @@ Now, finally, if you run the example in `modules/examples` (with `sbt examples/r
 To use it in your own projects (not recommended yet) you can do
 
 ```scala
-// search at sonatype or central for latest version, sorry
+// or whichever module you need
 libraryDependencies += "org.tpolecat"  %% "natchez-jaeger" % <version>
 ```
 

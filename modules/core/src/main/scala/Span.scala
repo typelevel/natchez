@@ -5,6 +5,7 @@
 package natchez
 
 import cats.effect.Resource
+import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */
 trait Span[F[_]] {
@@ -20,5 +21,17 @@ trait Span[F[_]] {
 
   /** Resource that yields a child span with the given name. */
   def span(name: String): Resource[F, Span[F]]
+
+  /**
+   * A unique ID for this trace, if available. This can be useful to include in error messages for
+   * example, so you can quickly find the associated trace.
+   */
+  def traceId: F[Option[String]]
+
+  /**
+   * A unique URI for this trace, if available. This can be useful to include in error messages for
+   * example, so you can quickly find the associated trace.
+   */
+  def traceUri: F[Option[URI]]
 
 }
