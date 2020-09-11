@@ -69,7 +69,7 @@ lazy val jaeger = project
     name        := "natchez-jaeger",
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
       "io.jaegertracing"        % "jaeger-client"           % "1.4.0",
     )
   )
@@ -83,7 +83,7 @@ lazy val honeycomb = project
     name        := "natchez-honeycomb",
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
       "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
     )
   )
@@ -110,7 +110,7 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
       "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.1"
     )
   )
@@ -152,7 +152,7 @@ lazy val datadog = project
     name        := "natchez-datadog",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
       "com.datadoghq" % "dd-trace-ot"  % "0.61.0",
       "com.datadoghq" % "dd-trace-api" % "0.61.0"
     )
