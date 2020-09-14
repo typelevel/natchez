@@ -3,6 +3,7 @@ lazy val scala213Version = "2.13.3"
 
 // Global Settings
 lazy val commonSettings = Seq(
+
   // Publishing
   organization := "org.tpolecat",
   licenses     ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
@@ -10,16 +11,17 @@ lazy val commonSettings = Seq(
   developers := List(
     Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
   ),
+
   // Headers
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
-  headerLicense := Some(
-    HeaderLicense.Custom(
+  headerLicense  := Some(HeaderLicense.Custom(
       """|Copyright (c) 2019-2020 by Rob Norris and Contributors
        |This software is licensed under the MIT License (MIT).
        |For more information see LICENSE or https://opensource.org/licenses/MIT
        |""".stripMargin
     )
   ),
+
   // Compilation
   scalaVersion       := scala213Version,
   crossScalaVersions := Seq(scala212Version, scala213Version),
@@ -27,12 +29,11 @@ lazy val commonSettings = Seq(
   Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc / scalacOptions ++= Seq(
     "-groups",
-    "-sourcepath",
-    (baseDirectory in LocalRootProject).value.getAbsolutePath,
-    "-doc-source-url",
-    "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
+    "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
+    "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
-  addCompilerPlugin(("org.typelevel" % "kind-projector" % "0.11.0").cross(CrossVersion.full))
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
+
 )
 
 lazy val natchez = project
@@ -43,34 +44,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(
-    core,
-    jaeger,
-    honeycomb,
-    opencensus,
-    datadog,
-    lightstep,
-    lightstepGrpc,
-    lightstepHttp,
-    log,
-    noop,
-    mock,
-    examples
-  )
-  .aggregate(
-    core,
-    jaeger,
-    honeycomb,
-    opencensus,
-    datadog,
-    lightstep,
-    lightstepGrpc,
-    lightstepHttp,
-    log,
-    noop,
-    mock,
-    examples
-  )
+  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, newrelic, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, newrelic, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -95,7 +70,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "io.jaegertracing"       % "jaeger-client"            % "1.4.0"
+      "io.jaegertracing"        % "jaeger-client"           % "1.4.0",
     )
   )
 
@@ -193,7 +168,7 @@ lazy val log = project
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe"          %% "circe-core"    % "0.13.0",
-      "io.chrisdavenport" %% "log4cats-core" % "1.1.1"
+      "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
     )
   )
 
@@ -236,8 +211,8 @@ lazy val mock = project
     libraryDependencies ++= Seq(
       "io.opentracing"         % "opentracing-mock"         % "0.33.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
-    )
-  )
+    ))
+
 
 lazy val examples = project
   .in(file("modules/examples"))
