@@ -1,9 +1,10 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package natchez.newrelic
 
+import java.net.URI
 import java.util.UUID
 
 import cats.effect.concurrent.Ref
@@ -19,23 +20,24 @@ import scala.jdk.CollectionConverters._
 
 private[newrelic] final case class NewrelicSpan[F[_]: Sync](
     id: String,
-    traceId: String,
+    traceIdS: String,
     service: String,
     name: String,
     startTime: Long,
     attributes: Ref[F, Attributes],
     children: Ref[F, List[Span]],
     parent: Option[Either[String, NewrelicSpan[F]]],
-    sender: SpanBatchSender)
-    extends natchez.Span[F] {
+    sender: SpanBatchSender
+) extends natchez.Span[F] {
 
   def kernel: F[Kernel] =
     Sync[F].delay {
       Kernel(
         Map(
-          Headers.TraceId -> traceId,
+          Headers.TraceId -> traceIdS,
           Headers.SpanId  -> id
-        ))
+        )
+      )
 
     }
 
@@ -49,6 +51,9 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
   def span(name: String): Resource[F, natchez.Span[F]] =
     Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
 
+  override def traceId: F[Option[String]] = Sync[F].pure(traceIdS.some)
+
+  override def traceUri: F[Option[URI]] = none[URI].pure[F]
 }
 
 object NewrelicSpan {
@@ -69,18 +74,17 @@ object NewrelicSpan {
       timestamp  <- Sync[F].delay(System.currentTimeMillis())
       attributes <- Ref[F].of(new Attributes())
       children   <- Ref[F].of(List.empty[Span])
-    } yield
-      NewrelicSpan(
-        service = service,
-        name = name,
-        id = spanId,
-        parent = Some(parentId.asLeft[NewrelicSpan[F]]),
-        traceId = traceId,
-        startTime = timestamp,
-        attributes = attributes,
-        children = children,
-        sender = sender
-      )
+    } yield NewrelicSpan(
+      service = service,
+      name = name,
+      id = spanId,
+      parent = Some(parentId.asLeft[NewrelicSpan[F]]),
+      traceIdS = traceId,
+      startTime = timestamp,
+      attributes = attributes,
+      children = children,
+      sender = sender
+    )
 
   def root[F[_]: Sync](service: String, name: String, sender: SpanBatchSender): F[NewrelicSpan[F]] =
     for {
@@ -89,8 +93,17 @@ object NewrelicSpan {
       startTime  <- Sync[F].delay(System.currentTimeMillis())
       children   <- Ref[F].of(List.empty[Span])
       attributes <- Ref[F].of(new Attributes())
-    } yield
-      NewrelicSpan[F](spanId, traceId, service, name, startTime, attributes, children, None, sender)
+    } yield NewrelicSpan[F](
+      spanId,
+      traceId,
+      service,
+      name,
+      startTime,
+      attributes,
+      children,
+      None,
+      sender
+    )
 
   def child[F[_]: Sync](name: String, parent: NewrelicSpan[F]): F[NewrelicSpan[F]] =
     for {
@@ -98,16 +111,17 @@ object NewrelicSpan {
       startTime  <- Sync[F].delay(System.currentTimeMillis())
       children   <- Ref[F].of(List.empty[Span])
       attributes <- Ref[F].of(new Attributes())
-    } yield
-      NewrelicSpan[F](spanId,
-                      parent.traceId,
-                      parent.service,
-                      name,
-                      startTime,
-                      attributes,
-                      children,
-                      Some(Right(parent)),
-                      parent.sender)
+    } yield NewrelicSpan[F](
+      spanId,
+      parent.traceIdS,
+      parent.service,
+      name,
+      startTime,
+      attributes,
+      children,
+      Some(Right(parent)),
+      parent.sender
+    )
 
   def finish[F[_]: Sync](nrs: NewrelicSpan[F]): F[Unit] =
     nrs.parent match {
@@ -118,7 +132,7 @@ object NewrelicSpan {
           curChildren <- nrs.children.get
           curSpan = Span
             .builder(nrs.id)
-            .traceId(nrs.traceId)
+            .traceId(nrs.traceIdS)
             .name(nrs.name)
             .parentId(parent.fold(identity, _.id))
             .serviceName(nrs.service)
@@ -137,13 +151,13 @@ object NewrelicSpan {
           curChildren <- nrs.children.get
           curSpan = Span
             .builder(nrs.id)
-            .traceId(nrs.traceId)
+            .traceId(nrs.traceIdS)
             .name(nrs.name)
             .attributes(attributes)
             .durationMs((finish - nrs.startTime).toDouble)
             .serviceName(nrs.service)
             .build()
-          batch = new SpanBatch((curSpan :: curChildren).asJava, new Attributes(), nrs.traceId)
+          batch = new SpanBatch((curSpan :: curChildren).asJava, new Attributes(), nrs.traceIdS)
           _ <- Sync[F].delay(nrs.sender.sendBatch(batch))
         } yield ()
 
