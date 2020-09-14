@@ -6,16 +6,16 @@ lazy val commonSettings = Seq(
 
   // Publishing
   organization := "org.tpolecat",
-  licenses     ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
+  licenses    ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   homepage     := Some(url("https://github.com/tpolecat/natchez")),
-  developers := List(
+  developers   := List(
     Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
   ),
 
   // Headers
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
   headerLicense  := Some(HeaderLicense.Custom(
-      """|Copyright (c) 2019-2020 by Rob Norris and Contributors
+    """|Copyright (c) 2019-2020 by Rob Norris and Contributors
        |This software is licensed under the MIT License (MIT).
        |For more information see LICENSE or https://opensource.org/licenses/MIT
        |""".stripMargin
@@ -26,8 +26,8 @@ lazy val commonSettings = Seq(
   scalaVersion       := scala213Version,
   crossScalaVersions := Seq(scala212Version, scala213Version),
   Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
-  Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
-  Compile / doc / scalacOptions ++= Seq(
+  Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
+  Compile / doc     / scalacOptions ++= Seq(
     "-groups",
     "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
@@ -84,7 +84,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "io.honeycomb.libhoney"  % "libhoney-java"            % "1.2.0"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
     )
   )
 
@@ -107,11 +107,11 @@ lazy val lightstep = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name        := "natchez-lightstep",
-    description := "Lightstep support for Natchez.",
+    name           := "natchez-lightstep",
+    description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "com.lightstep.tracer"   % "lightstep-tracer-jre"     % "0.30.1"
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.1"
     )
   )
 
@@ -153,8 +153,8 @@ lazy val datadog = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "com.datadoghq"          % "dd-trace-ot"              % "0.61.0",
-      "com.datadoghq"          % "dd-trace-api"             % "0.61.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.61.0",
+      "com.datadoghq" % "dd-trace-api" % "0.61.0"
     )
   )
 
@@ -195,10 +195,10 @@ lazy val noop = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name                := "natchez-noop",
-    description         := "No-Op Open Tracing implementation",
+    name        := "natchez-noop",
+    description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
-  )
+    )
 
 lazy val mock = project
   .in(file("modules/mock"))
@@ -209,7 +209,7 @@ lazy val mock = project
     name        := "natchez-mock",
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
-      "io.opentracing"         % "opentracing-mock"         % "0.33.0",
+      "io.opentracing" % "opentracing-mock" % "0.33.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
     ))
 
@@ -220,9 +220,9 @@ lazy val examples = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := true,
-    name           := "natchez-examples",
-    description    := "Example programs for Natchez.",
+    publish / skip       := true,
+    name                 := "natchez-examples",
+    description          := "Example programs for Natchez.",
     libraryDependencies ++= Seq(
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
