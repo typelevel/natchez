@@ -44,8 +44,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, mtl, noop, mock, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, mtl, noop, mock, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -169,6 +169,19 @@ lazy val log = project
     libraryDependencies ++= Seq(
       "io.circe"          %% "circe-core"    % "0.13.0",
       "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
+    )
+  )
+
+lazy val mtl = project
+  .in(file("modules/mtl"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-mtl",
+    description := "cats-mtl bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.typelevel"          %% "cats-mtl"    % "1.0.0",
     )
   )
 
