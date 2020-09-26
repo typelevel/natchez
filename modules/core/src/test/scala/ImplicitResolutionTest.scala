@@ -1,0 +1,24 @@
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
+package natchez
+
+import cats.data._
+import cats.effect.Bracket
+
+object ImplicitResolutionTest {
+
+  // these should compile
+  def kleisliTrace[F[_]: Bracket[*[_], Throwable]] =
+    Trace[Kleisli[F, Span[F], *]]
+
+  def kleisliLiftedTrace[F[_]: Trace: Bracket[*[_], Throwable]] =
+    Trace[Kleisli[F, Int, *]]
+
+  def kleisliKleisliTrace[F[_]: Bracket[*[_], Throwable]] =
+    Trace[Kleisli[Kleisli[F, Span[F], *], Int, *]]
+
+  def kleisliKleisliTrace2[F[_]: Bracket[*[_], Throwable]] =
+    Trace[Kleisli[Kleisli[F, Int, *], Span[Kleisli[F, Int, *]], *]]
+}
