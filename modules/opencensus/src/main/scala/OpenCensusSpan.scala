@@ -50,8 +50,7 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
   }
 
   override def span(name: String): Resource[F, Span[F]] =
-    Resource
-      .makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen
+    Span.putErrorFields(Resource.makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen)
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]

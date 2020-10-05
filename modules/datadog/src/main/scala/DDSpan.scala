@@ -38,10 +38,13 @@ private[datadog] final case class DDSpan[F[_]: Sync](
     }
 
   def span(name: String): Resource[F,Span[F]] =
-    Resource.make(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
-      s => Sync[F].delay(s.finish)
-    ).map(DDSpan(tracer, _))
+    Span.putErrorFields(
+      Resource.make(
+        Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
+        s => Sync[F].delay(s.finish)
+      ).map(DDSpan(tracer, _))
+    )
+    
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]

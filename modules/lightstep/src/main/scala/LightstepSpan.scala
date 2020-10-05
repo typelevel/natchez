@@ -35,9 +35,11 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
     }
 
   override def span(name: String): Resource[F,Span[F]] =
-    Resource
-      .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
-      .map(LightstepSpan(tracer, _))
+    Span.putErrorFields(
+      Resource
+        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
+        .map(LightstepSpan(tracer, _))
+    )
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]

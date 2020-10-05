@@ -4,7 +4,8 @@
 
 package natchez
 
-import cats.effect.Resource
+import cats.Applicative, cats.syntax.applicative._
+import cats.effect.{Resource, ExitCase}
 import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */
@@ -34,4 +35,15 @@ trait Span[F[_]] {
    */
   def traceUri: F[Option[URI]]
 
+}
+
+object Span {
+  /** 
+   * Ensure that Fields mixin data is added to a span when an error is raised.
+   */
+  def putErrorFields[F[_]: Applicative](span: Resource[F, Span[F]]): Resource[F, Span[F]] = 
+    span.flatMap(span => Resource.makeCase(span.pure[F])((_, exit) => exit match {
+      case ExitCase.Error(f: Fields) => span.put(f.fields.toList: _*)
+      case _ => Applicative[F].unit
+    }))
 }

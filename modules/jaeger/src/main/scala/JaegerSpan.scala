@@ -42,10 +42,13 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
     }
 
   def span(name: String): Resource[F,Span[F]] =
-    Resource.make(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
-      s => Sync[F].delay(s.finish)
-    ).map(JaegerSpan(tracer, _, prefix))
+    Span.putErrorFields(
+      Resource.make(
+        Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
+        s => Sync[F].delay(s.finish)
+      ).map(JaegerSpan(tracer, _, prefix))
+    )
+    
 
   def traceId: F[Option[String]] =
     // this seems to work … is it legit?
