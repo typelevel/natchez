@@ -44,8 +44,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, examples)
+  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, newrelic, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, newrelic, examples)
 
 lazy val core = project
   .in(file("modules/core"))
@@ -172,6 +172,23 @@ lazy val log = project
     )
   )
 
+lazy val newrelic = project
+  .in(file("modules/newrelic"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "newrelic",
+    description := "Newrelic bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "io.circe"               %% "circe-core"              % "0.13.0",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
+      "com.newrelic.telemetry" % "telemetry"                % "0.4.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.4.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.4.0"
+    )
+  )
+
 lazy val noop = project
   .in(file("modules/noop"))
   .dependsOn(core)
@@ -199,7 +216,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp, datadog, log)
+  .dependsOn(core, jaeger, honeycomb, lightstepHttp, datadog, log, newrelic)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -208,6 +225,8 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     libraryDependencies ++= Seq(
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
+      "org.slf4j"         % "slf4j-simple"    % "1.7.30",
+      "eu.timepit"        %% "refined"        % "0.9.13",
+      "is.cir"            %% "ciris"          % "1.2.1"
     )
   )
