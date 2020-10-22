@@ -183,9 +183,9 @@ lazy val newrelic = project
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
-      "com.newrelic.telemetry" % "telemetry"                % "0.4.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.4.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.4.0"
+      "com.newrelic.telemetry" % "telemetry"                % "0.9.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
     )
   )
 
