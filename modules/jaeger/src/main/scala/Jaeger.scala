@@ -51,7 +51,7 @@ object Jaeger {
           def continueOrElseRoot(name: String, kernel: Kernel): Resource[F,Span[F]] =
             continue(name, kernel) flatMap {
               case null => root(name) // hurr, means headers are incomplete or invalid
-              case a    => a.pure[Resource[F, ?]]
+              case a    => Resource.pure[F, Span[F]](a)
             } recoverWith {
               case _: UnsupportedFormatException => root(name)
             }
