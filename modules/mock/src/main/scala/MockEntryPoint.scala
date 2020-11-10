@@ -7,7 +7,6 @@ package mock
 
 import scala.jdk.CollectionConverters._
 
-import cats.implicits._
 import cats.effect.{ Resource, Sync }
 import io.opentracing.mock.MockTracer
 import io.opentracing.propagation.{ Format, TextMapAdapter }
@@ -48,7 +47,7 @@ final case class MockEntrypoint[F[_] : Sync]() extends EntryPoint[F] {
     continue(name, kernel).flatMap {
       case null =>
         root(name)
-      case span => span.pure[Resource[F, ?]]
+      case span => Resource.pure[F, Span[F]](span)
     }
   }
 }
