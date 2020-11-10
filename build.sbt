@@ -1,5 +1,6 @@
 lazy val scala212Version = "2.12.12"
 lazy val scala213Version = "2.13.3"
+lazy val scala30Version = "3.0.0-M1"
 
 // Global Settings
 lazy val commonSettings = Seq(
@@ -24,7 +25,7 @@ lazy val commonSettings = Seq(
 
   // Compilation
   scalaVersion       := scala213Version,
-  crossScalaVersions := Seq(scala212Version, scala213Version),
+  crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
   Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
   Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc     / scalacOptions ++= Seq(
@@ -32,7 +33,35 @@ lazy val commonSettings = Seq(
     "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
-  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
+  libraryDependencies ++= Seq(
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
+  ).filterNot(_ => isDotty.value),
+  scalacOptions ++= {
+    if (isDotty.value) Seq(
+      "-Ykind-projector",
+      "-language:implicitConversions",
+    ) else Seq()
+  },
+
+  // Add some more source directories
+  unmanagedSourceDirectories in Compile ++= {
+    val sourceDir = (sourceDirectory in Compile).value
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _))  => Seq(sourceDir / "scala-3")
+      case Some((2, _))  => Seq(sourceDir / "scala-2")
+      case _             => Seq()
+    }
+  },
+
+  // Also for test
+  unmanagedSourceDirectories in Test ++= {
+    val sourceDir = (sourceDirectory in Test).value
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _))  => Seq(sourceDir / "scala-3")
+      case Some((2, _))  => Seq(sourceDir / "scala-2")
+      case _             => Seq()
+    }
+  },
 
 )
 
@@ -55,8 +84,8 @@ lazy val core = project
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % "2.2.0",
-      "org.typelevel" %% "cats-effect" % "2.2.0"
+      "org.typelevel" %% "cats-core"   % "2.3.0-M2",
+      "org.typelevel" %% "cats-effect" % "2.3.0-M1"
     )
   )
 
@@ -69,7 +98,7 @@ lazy val jaeger = project
     name        := "natchez-jaeger",
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
       "io.jaegertracing"        % "jaeger-client"           % "1.4.0",
     )
   )
@@ -83,7 +112,7 @@ lazy val honeycomb = project
     name        := "natchez-honeycomb",
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
       "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
     )
   )
@@ -110,8 +139,8 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.1"
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.2"
     )
   )
 
@@ -124,7 +153,7 @@ lazy val lightstepGrpc = project
     name        := "natchez-lightstep-grpc",
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.0",
+      "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
       "io.grpc"              % "grpc-netty"                      % "1.31.1",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.34.Final"
     )
@@ -139,7 +168,7 @@ lazy val lightstepHttp = project
     name        := "natchez-lightstep-http",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-okhttp" % "0.30.0"
+      "com.lightstep.tracer" % "tracer-okhttp" % "0.30.1"
     )
   )
 
@@ -152,7 +181,7 @@ lazy val datadog = project
     name        := "natchez-datadog",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
       "com.datadoghq" % "dd-trace-ot"  % "0.61.0",
       "com.datadoghq" % "dd-trace-api" % "0.61.0"
     )
@@ -164,12 +193,13 @@ lazy val log = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
+    publish / skip := isDotty.value,
     name        := "natchez-log",
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe"          %% "circe-core"    % "0.13.0",
       "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
-    )
+    ).filterNot(_ => isDotty.value)
   )
 
 lazy val newrelic = project
@@ -178,15 +208,16 @@ lazy val newrelic = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
+    publish / skip := isDotty.value,
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4",
-      "com.newrelic.telemetry" % "telemetry"                % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
-    )
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "com.newrelic.telemetry" % "telemetry"                % "0.4.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.4.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.4.0"
+    ).filterNot(_ => isDotty.value)
   )
 
 lazy val noop = project
@@ -210,7 +241,7 @@ lazy val mock = project
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
       "io.opentracing" % "opentracing-mock" % "0.33.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
     ))
 
 
@@ -228,5 +259,5 @@ lazy val examples = project
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.17",
       "is.cir"            %% "ciris"          % "1.2.1"
-    )
+    ).filterNot(_ => isDotty.value)
   )
