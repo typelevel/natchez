@@ -113,7 +113,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.1"
     )
   )
 
