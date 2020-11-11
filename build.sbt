@@ -82,10 +82,10 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, newrelic, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, log, noop, mock, newrelic, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, noop, mock, newrelic, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, noop, mock, newrelic, examples)
 
-lazy val core = project
+lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
@@ -93,14 +93,23 @@ lazy val core = project
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % "2.3.0-M2",
-      "org.typelevel" %% "cats-effect" % "2.3.0-M1"
+      "org.typelevel" %%% "cats-core"   % "2.3.0-M2",
+      "org.typelevel" %%% "cats-effect" % "2.3.0-M1"
     )
+  )
+
+lazy val coreJVM = core.jvm
+lazy val coreJS = core.js
+  .settings(
+    scalaJSStage in Test := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    crossScalaVersions := crossScalaVersions.value.filter(_.startsWith("2."))
   )
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -114,7 +123,7 @@ lazy val jaeger = project
 
 lazy val honeycomb = project
   .in(file("modules/honeycomb"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -128,7 +137,7 @@ lazy val honeycomb = project
 
 lazy val opencensus = project
   .in(file("modules/opencensus"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -141,7 +150,7 @@ lazy val opencensus = project
 
 lazy val lightstep = project
   .in(file("modules/lightstep"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -183,7 +192,7 @@ lazy val lightstepHttp = project
 
 lazy val datadog = project
   .in(file("modules/datadog"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -196,7 +205,7 @@ lazy val datadog = project
     )
   )
 
-lazy val log = project
+lazy val log = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/log"))
   .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
@@ -210,10 +219,18 @@ lazy val log = project
       "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
     ).filterNot(_ => isDotty.value)
   )
+lazy val logJVM = log.jvm
+lazy val logJS = log.js
+  .settings(
+    scalaJSStage in Test := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    crossScalaVersions := crossScalaVersions.value.filter(_.startsWith("2."))
+  )
 
 lazy val newrelic = project
   .in(file("modules/newrelic"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -231,7 +248,7 @@ lazy val newrelic = project
 
 lazy val noop = project
   .in(file("modules/noop"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -242,7 +259,7 @@ lazy val noop = project
 
 lazy val mock = project
   .in(file("modules/mock"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -256,7 +273,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core, jaeger, honeycomb, lightstepHttp, datadog, log, newrelic)
+  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
