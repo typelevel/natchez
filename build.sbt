@@ -74,6 +74,20 @@ lazy val commonSettings = Seq(
 
 )
 
+lazy val crossProjectSettings = Seq(
+  Compile / unmanagedSourceDirectories ++= {
+    val major = if (isDotty.value) "-3" else "-2"
+    List(CrossType.Pure, CrossType.Full).flatMap(
+      _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + major)))
+  },
+
+  Test / unmanagedSourceDirectories ++= {
+    val major = if (isDotty.value) "-3" else "-2"
+    List(CrossType.Pure, CrossType.Full).flatMap(
+      _.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + major)))
+  },
+)
+
 lazy val natchez = project
   .in(file("."))
   .enablePlugins(AutomateHeaderPlugin)
@@ -89,6 +103,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
+  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
@@ -207,20 +222,20 @@ lazy val datadog = project
 
 lazy val log = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/log"))
-  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
+  .settings(crossProjectSettings)
   .settings(
     publish / skip := isDotty.value,
     name        := "natchez-log",
     description := "Logging bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"          %% "circe-core"    % "0.13.0",
-      "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
+      "io.circe"          %%% "circe-core"    % "0.13.0",
+      "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
     ).filterNot(_ => isDotty.value)
   )
-lazy val logJVM = log.jvm
-lazy val logJS = log.js
+lazy val logJVM = log.jvm.dependsOn(coreJVM)
+lazy val logJS = log.js.dependsOn(coreJS)
   .settings(
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
