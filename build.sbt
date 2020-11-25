@@ -116,7 +116,7 @@ lazy val jaeger = project
     name        := "natchez-jaeger",
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
       "io.jaegertracing"        % "jaeger-client"           % "1.4.0",
     )
   )
@@ -130,7 +130,7 @@ lazy val honeycomb = project
     name        := "natchez-honeycomb",
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
       "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
     )
   )
@@ -157,7 +157,7 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
       "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.2"
     )
   )
@@ -199,7 +199,7 @@ lazy val datadog = project
     name        := "natchez-datadog",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
       "com.datadoghq" % "dd-trace-ot"  % "0.61.0",
       "com.datadoghq" % "dd-trace-api" % "0.61.0"
     )
@@ -239,7 +239,7 @@ lazy val newrelic = project
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
       "com.newrelic.telemetry" % "telemetry"                % "0.4.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.4.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.4.0"
@@ -267,7 +267,7 @@ lazy val mock = project
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
       "io.opentracing" % "opentracing-mock" % "0.33.0",
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
     ))
 
 
