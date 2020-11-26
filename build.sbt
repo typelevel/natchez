@@ -93,7 +93,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-core"   % "2.3.0-M2",
+      "org.typelevel" %%% "cats-core"   % "2.3.0",
       "org.typelevel" %%% "cats-effect" % "2.3.0-M1"
     )
   )
