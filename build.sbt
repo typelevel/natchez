@@ -1,6 +1,11 @@
-lazy val scala212Version = "2.12.12"
-lazy val scala213Version = "2.13.3"
-lazy val scala30Version = "3.0.0-M1"
+
+val scala212Version        = "2.12.12"
+val scala213Version        = "2.13.4"
+val scala30PreviousVersion = "3.0.0-M1"
+val scala30Version         = "3.0.0-M2"
+
+val catsVersion = "2.3.0"
+val catsEffectVersion = "2.3.0"
 
 // Global Settings
 lazy val commonSettings = Seq(
@@ -25,7 +30,7 @@ lazy val commonSettings = Seq(
 
   // Compilation
   scalaVersion       := scala213Version,
-  crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
+  crossScalaVersions := Seq(scala212Version, scala213Version, scala30PreviousVersion, scala30Version),
   Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
   Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc     / scalacOptions ++= Seq(
@@ -34,7 +39,7 @@ lazy val commonSettings = Seq(
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
   ).filterNot(_ => isDotty.value),
   scalacOptions ++= {
     if (isDotty.value) Seq(
@@ -93,8 +98,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-core"   % "2.3.0-M2",
-      "org.typelevel" %%% "cats-effect" % "2.3.0-M1"
+      "org.typelevel" %%% "cats-core"   % catsVersion,
+      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
     )
   )
 
@@ -104,7 +109,7 @@ lazy val coreJS = core.js
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    crossScalaVersions := crossScalaVersions.value.filter(_.startsWith("2."))
+    crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
   )
 
 lazy val jaeger = project
@@ -157,8 +162,8 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.3.1").withDottyCompat(scalaVersion.value),
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.2"
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.3"
     )
   )
 
@@ -225,7 +230,7 @@ lazy val logJS = log.js
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    crossScalaVersions := crossScalaVersions.value.filter(_.startsWith("2."))
+    crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
   )
 
 lazy val newrelic = project
