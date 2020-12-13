@@ -17,9 +17,9 @@ object Main extends IOApp {
 
   // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
   // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
-  def qsort[F[_]: Monad: Parallel: Trace: Timer, A: Order](as: List[A]): F[List[A]] =
+  def qsort[F[_]: Parallel: Trace: Temporal, A: Order](as: List[A]): F[List[A]] =
     Trace[F].span(as.mkString(",")) {
-      Timer[F].sleep(10.milli) *> {
+      Temporal[F].sleep(10.milli) *> {
           as match {
           case Nil    => Monad[F].pure(Nil)
           case h :: t =>
@@ -29,7 +29,7 @@ object Main extends IOApp {
       }
     }
 
-  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
+  def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(100)(Random.nextInt(1000)))

@@ -6,8 +6,8 @@ package natchez
 package opencensus
 
 import cats.effect._
-import cats.effect.ExitCase.Canceled
-import cats.effect.ExitCase.Completed
+import cats.effect.Resource.ExitCase
+import cats.effect.Resource.ExitCase._
 import cats.syntax.all._
 import io.opencensus.trace.propagation.TextFormat.Setter
 import io.opencensus.trace.{AttributeValue, Sampler, Tracer, Tracing}
@@ -69,17 +69,17 @@ private[opencensus] object OpenCensusSpan {
     }
   }
 
-  def finish[F[_]: Sync]: (OpenCensusSpan[F], ExitCase[Throwable]) => F[Unit] = { (outer, exitCase) =>
+  def finish[F[_]: Sync]: (OpenCensusSpan[F], ExitCase) => F[Unit] = { (outer, exitCase) =>
     for {
       // collect error details, if any
       _  <- exitCase.some.collect {
-              case ExitCase.Error(t: Fields) => t.fields.toList
+              case Errored(t: Fields) => t.fields.toList
             }.traverse(outer.put)
       _  <- Sync[F].delay {
               exitCase match {
-                case Completed          => outer.span.setStatus(io.opencensus.trace.Status.OK)
-                case Canceled           => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
-                case ExitCase.Error(ex) =>
+                case Succeeded   => outer.span.setStatus(io.opencensus.trace.Status.OK)
+                case Canceled    => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
+                case Errored(ex) =>
                   outer.put(
                     ("error.msg", ex.getMessage),
                     ("error.stack", ex.getStackTrace.mkString("\n"))

@@ -4,10 +4,10 @@
 
 package natchez.honeycomb
 
-import cats.effect.concurrent.Ref
 import cats.effect._
-import cats.effect.ExitCase.Canceled
-import cats.effect.ExitCase.Completed
+import cats.effect.Resource.ExitCase
+import cats.effect.Resource.ExitCase._
+
 import cats.syntax.all._
 import io.honeycomb.libhoney.HoneyClient
 import java.time.Instant
@@ -59,11 +59,11 @@ private[honeycomb] object HoneycombSpan {
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync]: (HoneycombSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
+  def finish[F[_]: Sync]: (HoneycombSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
       // collect error details, if any
       _  <- exitCase.some.collect {
-              case ExitCase.Error(t: Fields) => t.fields
+              case Errored(t: Fields) => t.fields
             } .traverse(m => span.fields.update(_ ++ m))
       n  <- now
       fs <- span.fields.get
@@ -77,9 +77,9 @@ private[honeycomb] object HoneycombSpan {
               e.addField("trace.trace_id", span.traceUUID)
               e.addField("duration_ms",    n.toEpochMilli - span.timestamp.toEpochMilli)
               exitCase match {
-                case Completed          => e.addField("exit.case", "completed")
-                case Canceled           => e.addField("exit.case", "canceled")
-                case ExitCase.Error(ex) =>
+                case Succeeded   => e.addField("exit.case", "completed")
+                case Canceled    => e.addField("exit.case", "canceled")
+                case Errored(ex) =>
                   e.addField("exit.case",          "error")
                   e.addField("exit.error.class",    ex.getClass.getName)
                   e.addField("exit.error.message",  ex.getMessage)
