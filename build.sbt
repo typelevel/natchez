@@ -95,6 +95,7 @@ lazy val commonSettings = Seq(
 )
 
 // root project
+commonSettings
 publish / skip := true
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
