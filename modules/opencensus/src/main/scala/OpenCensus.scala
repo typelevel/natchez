@@ -24,7 +24,7 @@ object OpenCensus {
         Sync[F].delay(
           OcAgentTraceExporter.unregister()
       ))
-      .flatMap(_ => Resource.liftF(entryPoint[F](sampler)))
+      .flatMap(_ => Resource.eval(entryPoint[F](sampler)))
 
   def entryPoint[F[_]: Sync](sampler: Sampler): F[EntryPoint[F]] =
     Sync[F]

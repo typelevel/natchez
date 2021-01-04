@@ -6,12 +6,11 @@ package natchez
 package datadog
 
 import io.{opentracing => ot}
-import cats.effect.Sync
-import cats.effect.Resource
+import cats.effect.{Resource, Sync}
+import cats.effect.Resource.ExitCase
 import cats.syntax.all._
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
-
 import scala.jdk.CollectionConverters._
 import java.net.URI
 
@@ -38,10 +37,11 @@ private[datadog] final case class DDSpan[F[_]: Sync](
     }
 
   def span(name: String): Resource[F,Span[F]] =
-    Resource.make(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
-      s => Sync[F].delay(s.finish)
-    ).map(DDSpan(tracer, _))
+    Resource.makeCase(
+      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
+      case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
+      case (span, _) => Sync[F].delay(span.finish())
+    }.map(DDSpan(tracer, _))
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]
