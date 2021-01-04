@@ -1,11 +1,11 @@
 
 val scala212Version        = "2.12.12"
 val scala213Version        = "2.13.4"
-val scala30PreviousVersion = "3.0.0-M1"
-val scala30Version         = "3.0.0-M2"
+val scala30PreviousVersion = "3.0.0-M2"
+val scala30Version         = "3.0.0-M3"
 
-val catsVersion = "2.3.0"
-val catsEffectVersion = "3.0.0-M4"
+val catsVersion = "2.3.1"
+val catsEffectVersion = "3.0.0-M5"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -54,14 +54,8 @@ lazy val commonSettings = Seq(
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
   ).filterNot(_ => isDotty.value),
-  scalacOptions ++= {
-    if (isDotty.value) Seq(
-      "-Ykind-projector",
-      "-language:implicitConversions",
-    ) else Seq()
-  },
 
   // Add some more source directories
   unmanagedSourceDirectories in Compile ++= {
@@ -186,7 +180,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
-      "io.grpc"              % "grpc-netty"                      % "1.34.0",
+      "io.grpc"              % "grpc-netty"                      % "1.34.1",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.35.Final"
     )
   )
@@ -214,8 +208,8 @@ lazy val datadog = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "com.datadoghq" % "dd-trace-ot"  % "0.69.0",
-      "com.datadoghq" % "dd-trace-api" % "0.69.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.70.0",
+      "com.datadoghq" % "dd-trace-api" % "0.70.0"
     )
   )
 
