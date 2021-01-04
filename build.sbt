@@ -122,7 +122,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "io.jaegertracing"        % "jaeger-client"           % "1.4.0",
+      "io.jaegertracing"        % "jaeger-client"           % "1.5.0",
     )
   )
 
@@ -136,7 +136,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.2.0"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.1"
     )
   )
 
@@ -149,7 +149,7 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.27.1"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.2"
     )
   )
 
@@ -177,8 +177,8 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
-      "io.grpc"              % "grpc-netty"                      % "1.31.1",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.34.Final"
+      "io.grpc"              % "grpc-netty"                      % "1.34.1",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.35.Final"
     )
   )
 
@@ -205,8 +205,8 @@ lazy val datadog = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "com.datadoghq" % "dd-trace-ot"  % "0.61.0",
-      "com.datadoghq" % "dd-trace-api" % "0.61.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.70.0",
+      "com.datadoghq" % "dd-trace-api" % "0.70.0"
     )
   )
 
@@ -245,9 +245,9 @@ lazy val newrelic = project
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
       ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "com.newrelic.telemetry" % "telemetry"                % "0.4.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.4.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.4.0"
+      "com.newrelic.telemetry" % "telemetry"                % "0.9.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
     ).filterNot(_ => isDotty.value)
   )
 
@@ -285,6 +285,7 @@ lazy val examples = project
     publish / skip       := true,
     name                 := "natchez-examples",
     description          := "Example programs for Natchez.",
+    scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
