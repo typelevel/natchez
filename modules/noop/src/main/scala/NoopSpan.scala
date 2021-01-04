@@ -19,7 +19,7 @@ final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
     Applicative[F].pure(Kernel(Map.empty))
 
   override def span(name: String): Resource[F, Span[F]] =
-    Resource.liftF(NoopSpan[F]().pure[F])
+    Resource.eval(NoopSpan[F]().pure[F])
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]
