@@ -41,12 +41,6 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
   ).filterNot(_ => isDotty.value),
-  scalacOptions ++= {
-    if (isDotty.value) Seq(
-      "-Ykind-projector",
-      "-language:implicitConversions",
-    ) else Seq()
-  },
 
   // Add some more source directories
   unmanagedSourceDirectories in Compile ++= {
