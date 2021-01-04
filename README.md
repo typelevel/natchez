@@ -2,8 +2,8 @@
 
 [![Join the chat at https://gitter.im/tpolecat/natchez](https://badges.gitter.im/tpolecat/natchez.svg)](https://gitter.im/tpolecat/natchez?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-> **Note on Versioning
-> - Versions 0.0.x are built with Cats-Effect 2 from branch `master`. This is a terminal series and will end sometime in 2021. 
+> **Note on Versioning**
+> - Versions 0.0.x are built with Cats-Effect 2 from branch `master`. This is a terminal series and will end sometime in 2021.
 > - Versions 0.1.x are built with Cats-Effect 3 from branch `series/0.1`. This will be the continuing series moving forward.
 > - **Contibutions should target `master`**. Maintainers will merge these into `series/0.1` as needed.
 
