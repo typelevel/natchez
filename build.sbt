@@ -239,9 +239,9 @@ lazy val newrelic = project
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
-      "com.newrelic.telemetry" % "telemetry"                % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
+      "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.10.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.10.0"
     ).filterNot(_ => isDotty.value)
   )
 
