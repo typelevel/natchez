@@ -143,7 +143,7 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.2"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.3"
     )
   )
 
