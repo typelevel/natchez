@@ -42,13 +42,13 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
   def traceId: F[Option[String]] =
     Sync[F].pure {
       val rawId = span.context.toTraceId
-      Option.when(rawId.nonEmpty)(rawId)
+      if (rawId.nonEmpty) rawId.some else none
     }
 
   def spanId: F[Option[String]] =
     Sync[F].pure {
       val rawId = span.context.toSpanId
-      Option.when(rawId.nonEmpty)(rawId)
+      if (rawId.nonEmpty) rawId.some else none
     }
 
   // TODO
