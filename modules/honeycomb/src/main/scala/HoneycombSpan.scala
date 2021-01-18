@@ -41,8 +41,14 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def span(label: String): Resource[F, Span[F]] =
     Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen
 
-  def traceId: F[Option[String]] = traceUUID.toString.some.pure[F]
-  def traceUri: F[Option[URI]]   = none.pure[F] // TODO
+  def traceId: F[Option[String]] =
+    traceUUID.toString.some.pure[F]
+
+  def spanId: F[Option[String]] =
+    spanUUID.toString.some.pure[F]
+
+  def traceUri: F[Option[URI]] =
+    none.pure[F] // TODO
 
 }
 

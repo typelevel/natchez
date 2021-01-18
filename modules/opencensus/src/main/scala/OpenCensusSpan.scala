@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 by Rob Norris and Contributors
+// Copyright (c) 2019-2021 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -53,8 +53,18 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Resource
       .makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen
 
-  // TODO
-  def traceId: F[Option[String]] = none.pure[F]
+  def traceId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.getContext.getTraceId.toLowerBase16
+      Option.when(rawId.nonEmpty)(rawId)
+    }
+
+  def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.getContext.getSpanId.toLowerBase16
+      Option.when(rawId.nonEmpty)(rawId)
+    }
+
   def traceUri: F[Option[URI]] = none.pure[F]
 
 }

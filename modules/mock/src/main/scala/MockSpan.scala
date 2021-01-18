@@ -46,8 +46,13 @@ final case class MockSpan[F[_] : Sync](
       }
       .map(MockSpan(tracer, _))
 
-  // TODO
-  def traceId: F[Option[String]] = none.pure[F]
-  def traceUri: F[Option[URI]] = none.pure[F]
+  def traceId: F[Option[String]] =
+    span.context.toTraceId.some.pure[F]
+
+  def spanId: F[Option[String]] =
+    span.context.toSpanId.some.pure[F]
+
+  def traceUri: F[Option[URI]] =
+    none.pure[F]
 
 }

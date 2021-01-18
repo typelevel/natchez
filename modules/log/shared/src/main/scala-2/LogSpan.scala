@@ -88,10 +88,13 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
 
     }
 
-  // TODO
-  def traceId: F[Option[String]] = traceUUID.toString.some.pure[F]
-  def traceUri: F[Option[URI]]   = none.pure[F]
+  def traceId: F[Option[String]] =
+    traceUUID.toString.some.pure[F]
 
+ def spanId: F[Option[String]] =
+   spanId.toString.some.pure[F]
+
+  def traceUri: F[Option[URI]]   = none.pure[F]
 }
 
 private[log] object LogSpan {

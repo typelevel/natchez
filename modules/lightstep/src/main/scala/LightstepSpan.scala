@@ -39,8 +39,19 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
       .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
       .map(LightstepSpan(tracer, _))
 
+  def traceId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toTraceId
+      Option.when(rawId.nonEmpty)(rawId)
+    }
+
+  def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toSpanId
+      Option.when(rawId.nonEmpty)(rawId)
+    }
+
   // TODO
-  def traceId: F[Option[String]] = none.pure[F]
   def traceUri: F[Option[URI]] = none.pure[F]
 
 }
