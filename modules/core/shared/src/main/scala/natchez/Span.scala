@@ -5,6 +5,7 @@
 package natchez
 
 import cats.effect.Resource
+
 import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */

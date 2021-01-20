@@ -9,9 +9,10 @@ import cats.data.Kleisli
 import cats.effect._
 import cats.syntax.all._
 import natchez._
-import scala.util.Random
-import scala.concurrent.duration._
+
 import java.net.URI
+import scala.concurrent.duration._
+import scala.util.Random
 
 object Main extends IOApp {
 
@@ -83,9 +84,8 @@ object Main extends IOApp {
 
   // Jaeger
   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+    import io.jaegertracing.Configuration._
     import natchez.jaeger.Jaeger
-    import io.jaegertracing.Configuration.SamplerConfiguration
-    import io.jaegertracing.Configuration.ReporterConfiguration
     Jaeger.entryPoint[F](
       system    = "natchez-example",
       uriPrefix = Some(new URI("http://localhost:16686")),

@@ -8,6 +8,7 @@ import cats._
 import cats.data._
 import cats.effect._
 import cats.syntax.all._
+
 import java.net.URI
 
 /** A tracing effect, which always has a current span. */
