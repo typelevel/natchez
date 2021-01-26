@@ -39,7 +39,7 @@ lazy val commonSettings = Seq(
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
   ).filterNot(_ => isDotty.value),
 
   // Add some more source directories
@@ -143,7 +143,7 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.2"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.3"
     )
   )
 
@@ -171,7 +171,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
-      "io.grpc"              % "grpc-netty"                      % "1.34.1",
+      "io.grpc"              % "grpc-netty"                      % "1.35.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.35.Final"
     )
   )
