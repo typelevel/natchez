@@ -95,8 +95,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, noop, mock, newrelic, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, noop, mock, newrelic, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -239,7 +239,6 @@ lazy val logJS = log.js.dependsOn(coreJS)
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
   )
 
 lazy val newrelic = project
@@ -258,6 +257,26 @@ lazy val newrelic = project
       "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
     ).filterNot(_ => isDotty.value)
+  )
+
+lazy val mtl = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/mtl"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-mtl",
+    description := "cats-mtl bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.typelevel"          %%% "cats-mtl"    % "1.1.1",
+    )
+  )
+
+lazy val mtlJVM = mtl.jvm.dependsOn(coreJVM)
+lazy val mtlJS = mtl.js.dependsOn(coreJS)
+  .settings(
+    scalaJSStage in Test := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
 lazy val noop = project
