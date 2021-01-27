@@ -113,7 +113,7 @@ object Trace {
 
   }
 
-  implicit def liftKleisli[F[_]: Bracket[*[_], Throwable], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
+  implicit def liftKleisli[F[_], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
     new Trace[Kleisli[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
@@ -132,7 +132,7 @@ object Trace {
         Kleisli.liftF(trace.traceUri)
     }
 
-  implicit def liftStateT[F[_]: Bracket[*[_], Throwable], S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
+  implicit def liftStateT[F[_]: Monad, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
     new Trace[StateT[F, S, *]] {
 
       def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
@@ -151,7 +151,7 @@ object Trace {
         StateT.liftF(trace.traceUri)
     }
 
-  implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]) =
+  implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
     new Trace[EitherT[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
