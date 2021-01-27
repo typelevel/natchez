@@ -13,7 +13,7 @@ object ImplicitResolutionTest {
   def kleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
     Trace[Kleisli[F, Span[F], *]]
 
-  def kleisliLiftedTrace[F[_]: Trace](implicit ev: Bracket[F, Throwable]) =
+  def kleisliLiftedTrace[F[_]: Trace] =
     Trace[Kleisli[F, Int, *]]
 
   def kleisliKleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
