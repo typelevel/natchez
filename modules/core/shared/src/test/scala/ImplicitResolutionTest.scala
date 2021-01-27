@@ -10,15 +10,15 @@ import cats.effect.Bracket
 object ImplicitResolutionTest {
 
   // these should compile
-  def kleisliTrace[F[_]: Bracket[*[_], Throwable]] =
+  def kleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
     Trace[Kleisli[F, Span[F], *]]
 
-  def kleisliLiftedTrace[F[_]: Trace: Bracket[*[_], Throwable]] =
+  def kleisliLiftedTrace[F[_]: Trace](implicit ev: Bracket[F, Throwable]) =
     Trace[Kleisli[F, Int, *]]
 
-  def kleisliKleisliTrace[F[_]: Bracket[*[_], Throwable]] =
+  def kleisliKleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
     Trace[Kleisli[Kleisli[F, Span[F], *], Int, *]]
 
-  def kleisliKleisliTrace2[F[_]: Bracket[*[_], Throwable]] =
+  def kleisliKleisliTrace2[F[_]](implicit ev: Bracket[F, Throwable]) =
     Trace[Kleisli[Kleisli[F, Int, *], Span[Kleisli[F, Int, *]], *]]
 }
