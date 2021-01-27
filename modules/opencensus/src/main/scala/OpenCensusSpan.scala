@@ -53,8 +53,18 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Resource
       .makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen
 
-  // TODO
-  def traceId: F[Option[String]] = none.pure[F]
+  def traceId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.getContext.getTraceId.toLowerBase16
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.getContext.getSpanId.toLowerBase16
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
   def traceUri: F[Option[URI]] = none.pure[F]
 
 }

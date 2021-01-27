@@ -22,9 +22,9 @@ import java.net.URI
 private[log] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,
   name:      String,
-  spanId:    UUID,
-  parent:  Option[Either[UUID, LogSpan[F]]],
-  traceUUID:   UUID,
+  sid:       UUID,
+  parent:    Option[Either[UUID, LogSpan[F]]],
+  traceUUID: UUID,
   timestamp: Instant,
   fields:    Ref[F, Map[String, Json]],
   children:  Ref[F, List[JsonObject]]
@@ -40,7 +40,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   def kernel: F[Kernel] =
     Kernel(Map(
       Headers.TraceId -> traceUUID.toString,
-      Headers.SpanId  -> spanId.toString
+      Headers.SpanId  -> sid.toString
     )).pure[F]
 
   def put(fields: (String, TraceValue)*): F[Unit] =
@@ -72,7 +72,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "service"         -> service.asJson,
           "timestamp"       -> timestamp.asJson,
           "duration_ms"     -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
-          "trace.span_id"   -> spanId.asJson,
+          "trace.span_id"   -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
           "trace.trace_id"  -> traceUUID.asJson,
         ) ++ {
@@ -88,10 +88,13 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
 
     }
 
-  // TODO
-  def traceId: F[Option[String]] = traceUUID.toString.some.pure[F]
-  def traceUri: F[Option[URI]]   = none.pure[F]
+  def traceId: F[Option[String]] =
+    traceUUID.toString.some.pure[F]
 
+ def spanId: F[Option[String]] =
+   sid.toString.some.pure[F]
+
+  def traceUri: F[Option[URI]]   = none.pure[F]
 }
 
 private[log] object LogSpan {
@@ -148,7 +151,7 @@ private[log] object LogSpan {
     } yield LogSpan(
       service   = parent.service,
       name      = name,
-      spanId    = spanId,
+      sid       = spanId,
       parent    = Some(Right(parent)),
       traceUUID = parent.traceUUID,
       timestamp = timestamp,
@@ -169,7 +172,7 @@ private[log] object LogSpan {
     } yield LogSpan(
       service   = service,
       name      = name,
-      spanId    = spanId,
+      sid       = spanId,
       parent    = None,
       traceUUID = traceUUID,
       timestamp = timestamp,
@@ -192,7 +195,7 @@ private[log] object LogSpan {
     } yield LogSpan(
       service   = service,
       name      = name,
-      spanId    = spanId,
+      sid       = spanId,
       parent    = Some(Left(parentId)),
       traceUUID = traceUUID,
       timestamp = timestamp,
