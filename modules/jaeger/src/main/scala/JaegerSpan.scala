@@ -48,8 +48,16 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
     ).map(JaegerSpan(tracer, _, prefix))
 
   def traceId: F[Option[String]] =
-    // this seems to work … is it legit?
-    kernel.map(_.toHeaders.get("uber-trace-id").map(_.takeWhile(_ != ':')))
+    Sync[F].pure {
+      val rawId = span.context.toTraceId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toSpanId
+      if (rawId.nonEmpty) rawId.some else none
+    }
 
   def traceUri: F[Option[URI]] =
     (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
