@@ -51,9 +51,11 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
   def span(name: String): Resource[F, natchez.Span[F]] =
     Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
 
-  override def traceId: F[Option[String]] = Sync[F].pure(traceIdS.some)
+  def traceId: F[Option[String]] = traceIdS.some.pure[F]
 
-  override def traceUri: F[Option[URI]] = none[URI].pure[F]
+  def spanId: F[Option[String]] = id.some.pure[F]
+
+  def traceUri: F[Option[URI]] = none[URI].pure[F]
 }
 
 object NewrelicSpan {
