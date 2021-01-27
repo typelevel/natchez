@@ -8,6 +8,9 @@ import cats.mtl.Local
 import cats.effect._
 
 package object mtl {
-  implicit def natchezMtlTraceForLocal[F[_]: Bracket[*[_], Throwable]](implicit ev: Local[F, Span[F]]): Trace[F] =
+  implicit def natchezMtlTraceForLocal[F[_]](
+    implicit ev: Local[F, Span[F]],
+             eb: Bracket[F, Throwable],
+  ): Trace[F] =
     new LocalTrace(ev)
 }

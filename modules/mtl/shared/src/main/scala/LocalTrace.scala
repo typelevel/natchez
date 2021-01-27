@@ -11,8 +11,9 @@ import cats.effect._
 import cats.syntax.all._
 import java.net.URI
 
-private[mtl] class LocalTrace[F[_]: Bracket[*[_], Throwable]](local: Local[F, Span[F]])
-  extends Trace[F] {
+private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
+  implicit ev: Bracket[F, Throwable]
+) extends Trace[F] {
 
     def kernel: F[Kernel] =
       local.ask.flatMap(_.kernel)
