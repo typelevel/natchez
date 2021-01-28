@@ -95,13 +95,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-<<<<<<< HEAD
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
-=======
-  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, logOdin, examples)
-  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, logOdin, examples)
->>>>>>> cb2b9ed976da3c390e23b2986028810ccd3244fc
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -123,7 +118,6 @@ lazy val coreJS = core.js
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
   )
 
 lazy val jaeger = project
@@ -329,15 +323,16 @@ lazy val examples = project
 
 lazy val logOdin = project
   .in(file("modules/log-odin"))
-  .dependsOn(core)
+  .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
+    publish / skip := isDotty.value,
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
     libraryDependencies ++= Seq(
       "io.circe"              %% "circe-core" % "0.13.0",
       "com.github.valskalla"  %% "odin-core"  % "0.7.0",
       "com.github.valskalla"  %% "odin-json"  % "0.7.0"
-    )
+    ).filterNot(_ => isDotty.value)
   )

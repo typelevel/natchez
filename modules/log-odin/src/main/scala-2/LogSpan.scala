@@ -1,4 +1,4 @@
-// Copyright (c) 2019 by Rob Norris
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -17,29 +17,39 @@ import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
 import io.odin.Logger
+import java.net.URI
 
 private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,
   name:      String,
-  spanId:    UUID,
-  parent:  Option[Either[UUID, LogSpan[F]]],
-  traceId:   UUID,
+  sid:       UUID,
+  parent:    Option[Either[UUID, LogSpan[F]]],
+  tid:       UUID,
   timestamp: Instant,
   fields:    Ref[F, Map[String, Json]],
   children:  Ref[F, List[JsonObject]]
 ) extends Span[F] {
   import LogSpan._
 
+  def spanId: F[Option[String]] =
+    sid.toString.some.pure[F]
+
+  def traceId: F[Option[String]] =
+    tid.toString.some.pure[F]
+
+  def traceUri: F[Option[URI]] =
+    none.pure[F]
+
   def parentId: Option[UUID] =
-    parent.map(_.fold(identity, _.traceId))
+    parent.map(_.fold(identity, _.tid))
 
   def get(key: String): F[Option[Json]] =
     fields.get.map(_.get(key))
 
   def kernel: F[Kernel] =
     Kernel(Map(
-      Headers.TraceId -> traceId.toString,
-      Headers.SpanId  -> spanId.toString
+      Headers.TraceId -> tid.toString,
+      Headers.SpanId  -> sid.toString
     )).pure[F]
 
   def put(fields: (String, TraceValue)*): F[Unit] =
@@ -71,9 +81,9 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
           "service"         -> service.asJson,
           "timestamp"       -> timestamp.asJson,
           "duration_ms"     -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
-          "trace.span_id"   -> spanId.asJson,
+          "trace.span_id"   -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
-          "trace.trace_id"  -> traceId.asJson,
+          "trace.trace_id"  -> tid.asJson,
         ) ++ {
           exitCase match {
             case Completed                  => List("exit.case" -> "completed".asJson)
@@ -142,9 +152,9 @@ private[logodin] object LogSpan {
     } yield LogSpan(
       service   = parent.service,
       name      = name,
-      spanId    = spanId,
+      sid       = spanId,
       parent    = Some(Right(parent)),
-      traceId   = parent.traceId,
+      tid       = parent.tid,
       timestamp = timestamp,
       fields    = fields,
       children  = children
@@ -163,9 +173,9 @@ private[logodin] object LogSpan {
     } yield LogSpan(
       service   = service,
       name      = name,
-      spanId    = spanId,
+      sid       = spanId,
       parent    = None,
-      traceId   = traceId,
+      tid       = traceId,
       timestamp = timestamp,
       fields    = fields,
       children  = children
@@ -186,9 +196,9 @@ private[logodin] object LogSpan {
     } yield LogSpan(
       service   = service,
       name      = name,
-      spanId    = spanId,
+      sid       = spanId,
       parent    = Some(Left(parentId)),
-      traceId   = traceId,
+      tid       = traceId,
       timestamp = timestamp,
       fields    = fields,
       children  = children
