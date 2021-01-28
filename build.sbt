@@ -18,7 +18,9 @@ inThisBuild(Seq(
     "io.opentracing.contrib" % "*" % "always",
     "com.squareup.okhttp3"   % "*" % "always",
     "com.squareup.okio"      % "*" % "always",
+    "com.newrelic.telemetry" % "*" % "always",
     "org.typelevel"          % "*" % "semver-spec",
+    "org.scala-js"           % "*" % "semver-spec",
   )
 ))
 
@@ -330,18 +332,18 @@ lazy val mock = project
 //     ).filterNot(_ => isDotty.value)
 //   )
 
-lazy val logOdin = project
-  .in(file("modules/log-odin"))
-  .dependsOn(coreJVM)
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(commonSettings)
-  .settings(
-    publish / skip := isDotty.value,
-    name        := "natchez-log-odin",
-    description := "Logging bindings for Natchez, using Odin.",
-    libraryDependencies ++= Seq(
-      "io.circe"              %% "circe-core" % "0.13.0",
-      "com.github.valskalla"  %% "odin-core"  % "0.9.1",
-      "com.github.valskalla"  %% "odin-json"  % "0.9.1"
-    ).filterNot(_ => isDotty.value)
-  )
+// lazy val logOdin = project
+//   .in(file("modules/log-odin"))
+//   .dependsOn(coreJVM)
+//   .enablePlugins(AutomateHeaderPlugin)
+//   .settings(commonSettings)
+//   .settings(
+//     publish / skip := isDotty.value,
+//     name        := "natchez-log-odin",
+//     description := "Logging bindings for Natchez, using Odin.",
+//     libraryDependencies ++= Seq(
+//       "io.circe"              %% "circe-core" % "0.13.0",
+//       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
+//       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
+//     ).filterNot(_ => isDotty.value)
+//   )
