@@ -39,7 +39,7 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
     this.fields.update(_ ++ fields.toMap)
 
   def span(label: String): Resource[F, Span[F]] =
-    Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen
+    Span.putErrorFields(Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen)
 
   def traceId: F[Option[String]] =
     traceUUID.toString.some.pure[F]
@@ -67,10 +67,6 @@ private[honeycomb] object HoneycombSpan {
 
   def finish[F[_]: Sync]: (HoneycombSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
     for {
-      // collect error details, if any
-      _  <- exitCase.some.collect {
-              case ExitCase.Error(t: Fields) => t.fields
-            } .traverse(m => span.fields.update(_ ++ m))
       n  <- now
       fs <- span.fields.get
       e  <- Sync[F].delay {

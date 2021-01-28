@@ -50,7 +50,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     this.fields.update(_ ++ fields.toMap)
 
   def span(label: String): Resource[F, Span[F]] =
-    Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen
+    Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen)
 
   def json(finish: Instant, exitCase: ExitCase[Throwable]): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
