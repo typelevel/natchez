@@ -186,7 +186,7 @@ lazy val lightstepGrpc = project
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
       "io.grpc"              % "grpc-netty"                      % "1.35.0",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.35.Final"
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.36.Final"
     )
   )
 
@@ -213,8 +213,8 @@ lazy val datadog = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
-      "com.datadoghq" % "dd-trace-ot"  % "0.70.0",
-      "com.datadoghq" % "dd-trace-api" % "0.70.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.72.0",
+      "com.datadoghq" % "dd-trace-api" % "0.72.0"
     )
   )
 
@@ -252,9 +252,9 @@ lazy val newrelic = project
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
-      "com.newrelic.telemetry" % "telemetry"                % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
+      "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.11.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.11.0"
     ).filterNot(_ => isDotty.value)
   )
 
