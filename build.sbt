@@ -95,8 +95,13 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
+<<<<<<< HEAD
   .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
   .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
+=======
+  .dependsOn(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, logOdin, examples)
+  .aggregate(core, jaeger, honeycomb, opencensus, lightstep, lightstepGrpc, lightstepHttp, log, logOdin, examples)
+>>>>>>> cb2b9ed976da3c390e23b2986028810ccd3244fc
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -227,7 +232,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
   .settings(
     publish / skip := isDotty.value,
     name        := "natchez-log",
-    description := "Logging bindings for Natchez.",
+    description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"    % "0.13.0",
       "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
@@ -306,7 +311,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic)
+  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -320,4 +325,19 @@ lazy val examples = project
       "eu.timepit"        %% "refined"        % "0.9.19",
       "is.cir"            %% "ciris"          % "1.2.1"
     ).filterNot(_ => isDotty.value)
+  )
+
+lazy val logOdin = project
+  .in(file("modules/log-odin"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-log-odin",
+    description := "Logging bindings for Natchez, using Odin.",
+    libraryDependencies ++= Seq(
+      "io.circe"              %% "circe-core" % "0.13.0",
+      "com.github.valskalla"  %% "odin-core"  % "0.7.0",
+      "com.github.valskalla"  %% "odin-json"  % "0.7.0"
+    )
   )
