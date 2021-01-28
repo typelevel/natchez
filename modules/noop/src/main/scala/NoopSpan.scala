@@ -23,6 +23,9 @@ final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]
+
+  def spanId: F[Option[String]] = none.pure[F]
+
   def traceUri: F[Option[URI]] = none.pure[F]
 
 }
