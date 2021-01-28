@@ -38,11 +38,11 @@ private[datadog] final case class DDSpan[F[_]: Sync](
     }
 
   def span(name: String): Resource[F,Span[F]] =
-    Resource.makeCase(
+    Span.putErrorFields(Resource.makeCase(
       Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
       case (span, ExitCase.Error(e)) => Sync[F].delay(span.log(e.toString).finish())
       case (span, _) => Sync[F].delay(span.finish())
-    }.map(DDSpan(tracer, _))
+    }.map(DDSpan(tracer, _)))
 
   def traceId: F[Option[String]] =
     Sync[F].pure {
