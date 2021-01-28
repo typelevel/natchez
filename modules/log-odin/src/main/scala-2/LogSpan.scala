@@ -2,12 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package natchez.log
+package natchez.logodin
 
-import cats.effect.concurrent.Ref
+import cats.effect.Ref
 import cats.effect._
-import cats.effect.ExitCase._
-import cats.syntax.all._
+import cats.effect.Resource.ExitCase
+import cats.effect.Resource.ExitCase._
+import cats.implicits._
 import java.time.Instant
 import java.util.UUID
 import natchez._
@@ -16,30 +17,39 @@ import io.circe.Json
 import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
-import io.chrisdavenport.log4cats.Logger
+import io.odin.Logger
 import java.net.URI
 
-private[log] final case class LogSpan[F[_]: Sync: Logger](
+private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,
   name:      String,
   sid:       UUID,
   parent:    Option[Either[UUID, LogSpan[F]]],
-  traceUUID: UUID,
+  tid:       UUID,
   timestamp: Instant,
   fields:    Ref[F, Map[String, Json]],
   children:  Ref[F, List[JsonObject]]
 ) extends Span[F] {
   import LogSpan._
 
+  def spanId: F[Option[String]] =
+    sid.toString.some.pure[F]
+
+  def traceId: F[Option[String]] =
+    tid.toString.some.pure[F]
+
+  def traceUri: F[Option[URI]] =
+    none.pure[F]
+
   def parentId: Option[UUID] =
-    parent.map(_.fold(identity, _.traceUUID))
+    parent.map(_.fold(identity, _.tid))
 
   def get(key: String): F[Option[Json]] =
     fields.get.map(_.get(key))
 
   def kernel: F[Kernel] =
     Kernel(Map(
-      Headers.TraceId -> traceUUID.toString,
+      Headers.TraceId -> tid.toString,
       Headers.SpanId  -> sid.toString
     )).pure[F]
 
@@ -50,9 +60,9 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     this.fields.update(_ ++ fields.toMap)
 
   def span(label: String): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen)
+    Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen
 
-  def json(finish: Instant, exitCase: ExitCase[Throwable]): F[JsonObject] =
+  def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
 
       // Assemble our JSON object such that the Natchez fields always come first, in the same
@@ -74,30 +84,22 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "duration_ms"     -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
           "trace.span_id"   -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
-          "trace.trace_id"  -> traceUUID.asJson,
+          "trace.trace_id"  -> tid.asJson,
         ) ++ {
           exitCase match {
-            case Completed                  => List("exit.case" -> "completed".asJson)
-            case Canceled                   => List("exit.case" -> "canceled".asJson)
-            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
-            case Error(ex)         => exitFields(ex)
+            case Succeeded           => List("exit.case" -> "completed".asJson)
+            case Canceled            => List("exit.case" -> "canceled".asJson)
+            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
+            case Errored(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
 
       JsonObject.fromIterable(fields)
 
     }
-
-  def traceId: F[Option[String]] =
-    traceUUID.toString.some.pure[F]
-
- def spanId: F[Option[String]] =
-   sid.toString.some.pure[F]
-
-  def traceUri: F[Option[URI]]   = none.pure[F]
 }
 
-private[log] object LogSpan {
+private[logodin] object LogSpan {
 
   implicit val EncodeTraceValue: Encoder[TraceValue] =
     Encoder.instance {
@@ -127,15 +129,15 @@ private[log] object LogSpan {
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
+  def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
       j  <- span.json(n, exitCase)
       _  <- span.parent match {
-              case None |
-                   Some(Left(_))  => Logger[F].info(Json.fromJsonObject(j).spaces2)
-              case Some(Right(s)) => s.children.update(j :: _)
-            }
+        case None |
+             Some(Left(_))  => Logger[F].info(Json.fromJsonObject(j).spaces2)
+        case Some(Right(s)) => s.children.update(j :: _)
+      }
     } yield ()
   }
 
@@ -153,7 +155,7 @@ private[log] object LogSpan {
       name      = name,
       sid       = spanId,
       parent    = Some(Right(parent)),
-      traceUUID = parent.traceUUID,
+      tid       = parent.tid,
       timestamp = timestamp,
       fields    = fields,
       children  = children
@@ -165,7 +167,7 @@ private[log] object LogSpan {
   ): F[LogSpan[F]] =
     for {
       spanId    <- uuid[F]
-      traceUUID <- uuid[F]
+      traceId   <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, Json])
       children  <- Ref[F].of(List.empty[JsonObject])
@@ -174,7 +176,7 @@ private[log] object LogSpan {
       name      = name,
       sid       = spanId,
       parent    = None,
-      traceUUID = traceUUID,
+      tid       = traceId,
       timestamp = timestamp,
       fields    = fields,
       children  = children
@@ -186,8 +188,8 @@ private[log] object LogSpan {
     kernel:  Kernel
   ): F[LogSpan[F]] =
     for {
-      traceUUID <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      traceId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
+      parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
       spanId    <- uuid[F]
       timestamp <- now[F]
       fields    <- Ref[F].of(Map.empty[String, Json])
@@ -197,7 +199,7 @@ private[log] object LogSpan {
       name      = name,
       sid       = spanId,
       parent    = Some(Left(parentId)),
-      traceUUID = traceUUID,
+      tid       = traceId,
       timestamp = timestamp,
       fields    = fields,
       children  = children

@@ -54,7 +54,7 @@ lazy val commonSettings = Seq(
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
   ).filterNot(_ => isDotty.value),
 
   // Add some more source directories
@@ -92,10 +92,25 @@ lazy val commonSettings = Seq(
 commonSettings
 publish / skip := true
 
+lazy val crossProjectSettings = Seq(
+  Compile / unmanagedSourceDirectories ++= {
+    val major = if (isDotty.value) "-3" else "-2"
+    List(CrossType.Pure, CrossType.Full).flatMap(
+      _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + major)))
+  },
+
+  Test / unmanagedSourceDirectories ++= {
+    val major = if (isDotty.value) "-3" else "-2"
+    List(CrossType.Pure, CrossType.Full).flatMap(
+      _.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + major)))
+  },
+)
+
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
+  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
@@ -112,7 +127,6 @@ lazy val coreJS = core.js
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
   )
 
 lazy val jaeger = project
@@ -124,7 +138,7 @@ lazy val jaeger = project
     name        := "natchez-jaeger",
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
       "io.jaegertracing"        % "jaeger-client"           % "1.5.0",
     )
   )
@@ -138,7 +152,7 @@ lazy val honeycomb = project
     name        := "natchez-honeycomb",
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
       "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.1"
     )
   )
@@ -152,7 +166,7 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.2"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.3"
     )
   )
 
@@ -165,7 +179,7 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
       "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.3"
     )
   )
@@ -180,8 +194,8 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
-      "io.grpc"              % "grpc-netty"                      % "1.34.1",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.35.Final"
+      "io.grpc"              % "grpc-netty"                      % "1.35.0",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.36.Final"
     )
   )
 
@@ -207,33 +221,32 @@ lazy val datadog = project
     name        := "natchez-datadog",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "com.datadoghq" % "dd-trace-ot"  % "0.70.0",
-      "com.datadoghq" % "dd-trace-api" % "0.70.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
+      "com.datadoghq" % "dd-trace-ot"  % "0.72.0",
+      "com.datadoghq" % "dd-trace-api" % "0.72.0"
     )
   )
 
 // lazy val log = crossProject(JSPlatform, JVMPlatform)
 //   .in(file("modules/log"))
-//   .dependsOn(core)
 //   .enablePlugins(AutomateHeaderPlugin)
 //   .settings(commonSettings)
+//   .settings(crossProjectSettings)
 //   .settings(
 //     publish / skip := isDotty.value,
 //     name        := "natchez-log",
-//     description := "Logging bindings for Natchez.",
+//     description := "Logging bindings for Natchez, using log4cats.",
 //     libraryDependencies ++= Seq(
-//       "io.circe"          %% "circe-core"    % "0.13.0",
-//       "io.chrisdavenport" %% "log4cats-core" % "1.1.1",
+//       "io.circe"          %%% "circe-core"    % "0.13.0",
+//       "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
 //     ).filterNot(_ => isDotty.value)
 //   )
-// lazy val logJVM = log.jvm
-// lazy val logJS = log.js
+// lazy val logJVM = log.jvm.dependsOn(coreJVM)
+// lazy val logJS = log.js.dependsOn(coreJS)
 //   .settings(
 //     scalaJSStage in Test := FastOptStage,
 //     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
 //     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-//     crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
 //   )
 
 lazy val newrelic = project
@@ -247,11 +260,31 @@ lazy val newrelic = project
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"              % "0.13.0",
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
-      "com.newrelic.telemetry" % "telemetry"                % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.9.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.9.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
+      "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.11.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.11.0"
     ).filterNot(_ => isDotty.value)
+  )
+
+lazy val mtl = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/mtl"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-mtl",
+    description := "cats-mtl bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.typelevel"          %%% "cats-mtl"    % "1.1.1",
+    )
+  )
+
+lazy val mtlJVM = mtl.jvm.dependsOn(coreJVM)
+lazy val mtlJS = mtl.js.dependsOn(coreJS)
+  .settings(
+    scalaJSStage in Test := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
 lazy val noop = project
@@ -275,21 +308,40 @@ lazy val mock = project
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
       "io.opentracing" % "opentracing-mock" % "0.33.0",
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6").withDottyCompat(scalaVersion.value),
+      "org.scala-lang.modules" %% "scala-collection-compat" % (if (scalaVersion.value == "3.0.0-M2") "2.3.1" else "2.3.2"),
     ))
 
 
 // lazy val examples = project
 //   .in(file("modules/examples"))
-//   .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic)
+//   .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
 //   .enablePlugins(AutomateHeaderPlugin)
 //   .settings(commonSettings)
 //   .settings(
 //     publish / skip       := true,
 //     name                 := "natchez-examples",
 //     description          := "Example programs for Natchez.",
+//     scalacOptions        -= "-Xfatal-warnings",
 //     libraryDependencies ++= Seq(
 //       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
 //       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
+//       "eu.timepit"        %% "refined"        % "0.9.19",
+//       "is.cir"            %% "ciris"          % "1.2.1"
 //     ).filterNot(_ => isDotty.value)
 //   )
+
+lazy val logOdin = project
+  .in(file("modules/log-odin"))
+  .dependsOn(coreJVM)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := isDotty.value,
+    name        := "natchez-log-odin",
+    description := "Logging bindings for Natchez, using Odin.",
+    libraryDependencies ++= Seq(
+      "io.circe"              %% "circe-core" % "0.13.0",
+      "com.github.valskalla"  %% "odin-core"  % "0.9.1",
+      "com.github.valskalla"  %% "odin-json"  % "0.9.1"
+    ).filterNot(_ => isDotty.value)
+  )
