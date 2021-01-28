@@ -95,8 +95,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -118,7 +118,6 @@ lazy val coreJS = core.js
     scalaJSStage in Test := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    crossScalaVersions := crossScalaVersions.value.filterNot(_ == "3.0.0-M1"),
   )
 
 lazy val jaeger = project
@@ -227,7 +226,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
   .settings(
     publish / skip := isDotty.value,
     name        := "natchez-log",
-    description := "Logging bindings for Natchez.",
+    description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"    % "0.13.0",
       "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
@@ -306,7 +305,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic)
+  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -319,5 +318,21 @@ lazy val examples = project
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.19",
       "is.cir"            %% "ciris"          % "1.2.1"
+    ).filterNot(_ => isDotty.value)
+  )
+
+lazy val logOdin = project
+  .in(file("modules/log-odin"))
+  .dependsOn(coreJVM)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := isDotty.value,
+    name        := "natchez-log-odin",
+    description := "Logging bindings for Natchez, using Odin.",
+    libraryDependencies ++= Seq(
+      "io.circe"              %% "circe-core" % "0.13.0",
+      "com.github.valskalla"  %% "odin-core"  % "0.7.0",
+      "com.github.valskalla"  %% "odin-json"  % "0.7.0"
     ).filterNot(_ => isDotty.value)
   )

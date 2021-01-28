@@ -32,7 +32,7 @@ object Main extends IOApp {
   def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
-        as <- Sync[F].delay(List.fill(100)(Random.nextInt(1000)))
+        as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
         _  <- qsort[F, Int](as)
         u  <- Trace[F].traceUri
         _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
@@ -103,7 +103,20 @@ object Main extends IOApp {
   //   import natchez.log.Log
   //   import io.chrisdavenport.log4cats.Logger
   //   import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-  //   implicit val log: Logger[F] = Slf4jLogger.getLogger[IO]
+  //   implicit val log: Logger[F] = Slf4jLogger.getLogger[F]
+  //   Log.entryPoint[F]("foo").pure[Resource[F, *]]
+  // }
+
+  // Log with Odin
+  // def entryPoint[F[_]: Sync: Timer]: Resource[F, EntryPoint[F]] = {
+  //   import natchez.logodin.Log
+  //   import io.odin.Logger
+  //   import io.odin.consoleLogger
+  //   import io.odin.{Level, formatter}
+  //   implicit val log: Logger[F] = consoleLogger[F](
+  //     formatter = formatter.Formatter.colorful,
+  //     minLevel = Level.Info
+  //   )
   //   Log.entryPoint[F]("foo").pure[Resource[F, *]]
   // }
 
