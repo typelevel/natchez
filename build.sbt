@@ -332,7 +332,7 @@ lazy val logOdin = project
     description := "Logging bindings for Natchez, using Odin.",
     libraryDependencies ++= Seq(
       "io.circe"              %% "circe-core" % "0.13.0",
-      "com.github.valskalla"  %% "odin-core"  % "0.7.0",
-      "com.github.valskalla"  %% "odin-json"  % "0.7.0"
+      "com.github.valskalla"  %% "odin-core"  % "0.9.1",
+      "com.github.valskalla"  %% "odin-json"  % "0.9.1"
     ).filterNot(_ => isDotty.value)
   )
