@@ -6,6 +6,7 @@ package natchez
 package datadog
 
 import io.{opentracing => ot}
+import cats.data.Nested
 import cats.effect.{ExitCase, Resource, Sync}
 import cats.syntax.all._
 import io.opentracing.propagation.{Format, TextMapAdapter}
@@ -16,7 +17,8 @@ import java.net.URI
 
 private[datadog] final case class DDSpan[F[_]: Sync](
   tracer: ot.Tracer,
-  span:   ot.Span
+  span:   ot.Span,
+  uriPrefix: Option[URI]
 ) extends Span[F] {
 
   def kernel: F[Kernel] =
@@ -42,7 +44,7 @@ private[datadog] final case class DDSpan[F[_]: Sync](
       Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
       case (span, ExitCase.Error(e)) => Sync[F].delay(span.log(e.toString).finish())
       case (span, _) => Sync[F].delay(span.finish())
-    }.map(DDSpan(tracer, _)))
+    }.map(DDSpan(tracer, _, uriPrefix)))
 
   def traceId: F[Option[String]] =
     Sync[F].pure {
@@ -56,6 +58,8 @@ private[datadog] final case class DDSpan[F[_]: Sync](
       if (rawId.nonEmpty) rawId.some else none
     }
 
-  def traceUri: F[Option[URI]] = none.pure[F]
-
+  def traceUri: F[Option[URI]] =
+    (Nested(uriPrefix.pure[F]), Nested(traceId), Nested(spanId)).mapN { (uri, traceId, spanId) =>
+      uri.resolve(s"/apm/trace/$traceId?spanID=$spanId")
+    } .value
 }

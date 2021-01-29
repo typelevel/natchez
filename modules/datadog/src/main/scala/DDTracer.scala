@@ -5,6 +5,8 @@
 package natchez
 package datadog
 
+import java.net.URI
+
 import cats.effect._
 import cats.syntax.all._
 import _root_.datadog.opentracing.{DDTracer => NativeDDTracer}
@@ -16,7 +18,8 @@ import scala.jdk.CollectionConverters._
 object DDTracer {
 
   def entryPoint[F[_]: Sync](
-    buildFunc: DDTracerBuilder => F[NativeDDTracer]
+    buildFunc: DDTracerBuilder => F[NativeDDTracer],
+    uriPrefix: Option[URI] = None
   ): Resource[F, EntryPoint[F]] = {
     Resource.make(
       Sync[F].delay(NativeDDTracer.builder()).flatMap(buildFunc))(
@@ -27,7 +30,7 @@ object DDTracer {
             Resource.make(
               Sync[F].delay(tracer.buildSpan(name).start()))(
               s => Sync[F].delay(s.finish()))
-            .map(DDSpan(tracer, _))
+            .map(DDSpan(tracer, _, uriPrefix))
 
           override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
             Resource.make(
@@ -38,7 +41,7 @@ object DDTracer {
                 )
                 tracer.buildSpan(name).asChildOf(spanContext).start()
               }
-            )(s => Sync[F].delay(s.finish())).map(DDSpan(tracer, _))
+            )(s => Sync[F].delay(s.finish())).map(DDSpan(tracer, _, uriPrefix))
 
           override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
             continue(name, kernel) flatMap {
