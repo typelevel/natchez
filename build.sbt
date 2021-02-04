@@ -382,3 +382,34 @@ lazy val logOdin = project
       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
     ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
+
+lazy val docs = project
+  .in(file("modules/docs"))
+  .dependsOn(jaeger)
+  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(ParadoxSitePlugin)
+  .enablePlugins(GhpagesPlugin)
+  .enablePlugins(MdocPlugin)
+  .settings(commonSettings)
+  .settings(
+    scalacOptions      := Nil,
+    git.remoteRepo     := "git@github.com:tpolecat/natchez.git",
+    ghpagesNoJekyll    := true,
+    publish / skip     := true,
+    paradoxTheme       := Some(builtinParadoxTheme("generic")),
+    version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
+    paradoxProperties ++= Map(
+      "scala-versions"            -> (crossScalaVersions in coreJVM).value.map(CrossVersion.partialVersion).flatten.distinct.map { case (a, b) => s"$a.$b"} .mkString("/"),
+      "org"                       -> organization.value,
+      "scala.binary.version"      -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "core-dep"                  -> s"${(coreJVM / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "version"                   -> version.value,
+      "scaladoc.natchez.base_url" -> s"https://static.javadoc.io/org.tpolecat/natchez-core_2.13/${version.value}",
+    ),
+    mdocIn := (baseDirectory.value) / "src" / "main" / "paradox",
+    Compile / paradox / sourceDirectory := mdocOut.value,
+    makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
+    mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
+  )
+
