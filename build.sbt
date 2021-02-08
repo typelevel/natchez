@@ -95,8 +95,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples, http4s)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples, http4s)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -305,7 +305,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
+  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin, http4s)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -317,7 +317,9 @@ lazy val examples = project
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.19",
-      "is.cir"            %% "ciris"          % "1.2.1"
+      "is.cir"            %% "ciris"          % "1.2.1",
+      "org.http4s"        %% "http4s-dsl"     % "0.21.15",
+      "org.http4s"        %% "http4s-ember-server" % "0.21.15",
     ).filterNot(_ => isDotty.value)
   )
 
@@ -334,5 +336,19 @@ lazy val logOdin = project
       "io.circe"              %% "circe-core" % "0.13.0",
       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
+    ).filterNot(_ => isDotty.value)
+  )
+
+lazy val http4s = project
+  .in(file("modules/http4s"))
+  .dependsOn(coreJVM)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    publish / skip := isDotty.value,
+    name        := "natchez-http4s",
+    description := "Natchez middleware for http4s.",
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-core" % "0.21.15"
     ).filterNot(_ => isDotty.value)
   )
