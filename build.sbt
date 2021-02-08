@@ -411,5 +411,8 @@ lazy val docs = project
     Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-dsl" % "0.21.15",
+    )
   )
 

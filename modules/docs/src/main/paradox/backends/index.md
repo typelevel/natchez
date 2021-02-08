@@ -1,6 +1,6 @@
 # Back Ends
 
-This section provides details about each back end supported by Natchez.
+Natchez supports the following tracing back ends. If you're not sure which one you'd like to use, you might start with @ref:[Jaeger](jaeger.md), which is easy to set up with Docker.
 
 @@@ index
 
@@ -16,7 +16,5 @@ This section provides details about each back end supported by Natchez.
 * [OpenCensus](opencensus.md)
 
 @@@
-
-## Table of Contents
 
 @@toc { depth=2 }

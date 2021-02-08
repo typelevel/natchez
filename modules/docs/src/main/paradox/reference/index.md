@@ -12,6 +12,4 @@
 
 This section provides details about the interfaces provided by Natchez.
 
-## Table of Contents
-
 @@toc { depth=2 }

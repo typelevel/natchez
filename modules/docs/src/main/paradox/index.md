@@ -18,9 +18,7 @@ _Credits: [Wikipedia](https://en.wikipedia.org/wiki/Natchez_Trace) and the [Nati
 
 ## Welcome!
 
-**Natchez** is a minimal distributed tracing library for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing).
-
-Natchez is published for **Scala $scala-versions$**, with limited support for Scala-JS.
+**Natchez** is a minimal distributed tracing library for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing). Natchez is published for **Scala $scala-versions$**, with limited support for Scala-JS.
 
 ## Quick Start
 
@@ -49,7 +47,6 @@ Natchez is published for **Scala $scala-versions$**, with limited support for Sc
 
 ## How to Contribute
 
-- Test it out and let us know how it goes!
 - If you see a typo in the doc, click the link at the bottom and fix it!
 - If you find a bug please open an issue (or fix it and open a PR) at our [GitHub Repository](https://github.com/tpolecat/natchez).
 - If you want to make a larger contribution, please open an issue first so we can discuss.
