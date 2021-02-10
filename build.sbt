@@ -4,8 +4,8 @@ val scala213Version        = "2.13.4"
 val scala30PreviousVersion = "3.0.0-M2"
 val scala30Version         = "3.0.0-M3"
 
-val catsVersion = "2.3.1"
-val catsEffectVersion = "2.3.1"
+val catsVersion = "2.4.1"
+val catsEffectVersion = "2.4.1"
 
 // Global Settings
 lazy val commonSettings = Seq(
