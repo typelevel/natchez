@@ -68,18 +68,23 @@ object Main extends IOApp {
   //     }
   //   }
 
-  // DataDog
-  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
-  //   import natchez.datadog.DDTracer
-  //   DDTracer.entryPoint[F](builder =>
-  //     Sync[F].delay(builder
-  //       .withProperties(new Properties() {
-  //         put("writer.type", "LoggingWriter")
-  //       })
-  //       .serviceName("natchez-sample")
-  //       .build())
-  //   )
-  // }
+//   DataDog
+//   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+//     import java.util.Properties
+//     import natchez.datadog.DDTracer
+//     DDTracer.entryPoint[F](
+//       buildFunc =
+//         builder =>
+//           Sync[F].delay(
+//             builder.withProperties(
+//               new Properties() {
+//                 put("writer.type", "LoggingWriter")
+//               }
+//             ).serviceName("natchez-sample").build()
+//           ),
+//       uriPrefix = Some(new URI("https://app.datadoghq.com")) // https://app.datadoghq.eu for Europe
+//     )
+//   }
 
   // Jaeger
   def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
