@@ -11,9 +11,7 @@ import cats.effect._
 import cats.syntax.all._
 import _root_.datadog.opentracing.{DDTracer => NativeDDTracer}
 import _root_.datadog.opentracing.DDTracer.DDTracerBuilder
-import io.opentracing.propagation.{Format, TextMapAdapter}
-
-import scala.jdk.CollectionConverters._
+import natchez.opentracing.GlobalTracer
 
 object DDTracer {
 
@@ -21,35 +19,12 @@ object DDTracer {
     buildFunc: DDTracerBuilder => F[NativeDDTracer],
     uriPrefix: Option[URI] = None
   ): Resource[F, EntryPoint[F]] = {
-    Resource.make(
-      Sync[F].delay(NativeDDTracer.builder()).flatMap(buildFunc))(
-      s => Sync[F].delay(s.close()).void)
-      .map { tracer =>
-        new EntryPoint[F] {
-          override def root(name: String): Resource[F, Span[F]] =
-            Resource.make(
-              Sync[F].delay(tracer.buildSpan(name).start()))(
-              s => Sync[F].delay(s.finish()))
-            .map(DDSpan(tracer, _, uriPrefix))
+    val createAndRegister = 
+      Sync[F].delay(NativeDDTracer.builder())
+        .flatMap(buildFunc)
+        .flatTap(GlobalTracer.registerTracer[F])
 
-          override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-            Resource.make(
-              Sync[F].delay {
-                val spanContext = tracer.extract(
-                  Format.Builtin.HTTP_HEADERS,
-                  new TextMapAdapter(kernel.toHeaders.asJava)
-                )
-                tracer.buildSpan(name).asChildOf(spanContext).start()
-              }
-            )(s => Sync[F].delay(s.finish())).map(DDSpan(tracer, _, uriPrefix))
-
-          override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-            continue(name, kernel) flatMap {
-              case null => root(name) // hurr, means headers are incomplete or invalid
-              case span => span.pure[Resource[F, *]]
-            }
-        }
-      }
+    Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
+        .map(new DDEntryPoint(_, uriPrefix))
   }
-
 }

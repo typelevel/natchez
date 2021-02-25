@@ -5,7 +5,7 @@
 package natchez
 package opentracing
 
-import cats.effect.{ Resource, Sync }
+import cats.effect.Sync
 import cats.implicits._
 import io.opentracing.util.{ GlobalTracer => GT }
 import io.{opentracing => ot}
