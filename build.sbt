@@ -122,7 +122,7 @@ lazy val coreJS = core.js
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
-  .dependsOn(coreJVM)
+  .dependsOn(coreJVM, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
