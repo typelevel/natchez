@@ -6,35 +6,16 @@ package natchez
 package lightstep
 
 import cats.effect.{ Resource, Sync }
-import cats.syntax.applicative._
+import cats.implicits._
 import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
-import io.opentracing.propagation.{ Format, TextMapAdapter }
-
-import scala.jdk.CollectionConverters._
+import natchez.opentracing.GlobalTracer
 
 object Lightstep {
-  def entryPoint[F[_]: Sync](configure: OptionsBuilder => F[Tracer]): Resource[F, EntryPoint[F]] =
-    Resource.make(configure(new OptionsBuilder()))(t => Sync[F].delay(t.close())).map { t =>
-      new EntryPoint[F] {
-        override def root(name: String): Resource[F, Span[F]] =
-          Resource
-            .make(Sync[F].delay(t.buildSpan(name).start()))(s => Sync[F].delay(s.finish()))
-            .map(LightstepSpan(t, _))
-
-        override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-          Resource.make(
-            Sync[F].delay {
-              val p = t.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
-              t.buildSpan(name).asChildOf(p).start()
-            }
-          )(s => Sync[F].delay(s.finish())).map(LightstepSpan(t, _))
-
-        override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-          continue(name, kernel).flatMap {
-            case null => root(name)
-            case a    => a.pure[Resource[F, *]]
-          }
-      }
-    }
+  def entryPoint[F[_]: Sync](configure: OptionsBuilder => F[Tracer]): Resource[F, EntryPoint[F]] = {
+    val createAndRegister = configure(new OptionsBuilder).flatTap(GlobalTracer.registerTracer[F])
+    
+    Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
+      .map(new LightstepEntryPoint[F](_))
+  }
 }

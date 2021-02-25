@@ -163,7 +163,7 @@ lazy val opencensus = project
 
 lazy val lightstep = project
   .in(file("modules/lightstep"))
-  .dependsOn(coreJVM)
+  .dependsOn(coreJVM, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
