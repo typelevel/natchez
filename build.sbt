@@ -203,14 +203,30 @@ lazy val lightstepHttp = project
     )
   )
 
-lazy val datadog = project
-  .in(file("modules/datadog"))
+lazy val opentracing = project
+  .in(file("modules/opentracing"))
   .dependsOn(coreJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
+    name        := "natchez-opentracing",
+    description := "Base OpenTracing Utilities for Natchez",
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2",
+      "io.opentracing" % "opentracing-api" % "0.33.0" % "provided",
+      "io.opentracing" % "opentracing-util" % "0.33.0" % "provided"
+    )
+  )
+
+
+lazy val datadog = project
+  .in(file("modules/datadog"))
+  .dependsOn(coreJVM, opentracing)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
     name        := "natchez-datadog",
-    description := "Lightstep HTTP bindings for Natchez.",
+    description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2",
       "com.datadoghq" % "dd-trace-ot"  % "0.72.0",
