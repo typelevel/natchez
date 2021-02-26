@@ -16,7 +16,7 @@ import io.circe.Json
 import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import java.net.URI
 
 private[log] final case class LogSpan[F[_]: Sync: Logger](

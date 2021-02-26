@@ -7,7 +7,7 @@ package log
 
 import cats.effect.{ Resource, Sync }
 import cats.syntax.functor._
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 
 object Log {
 
