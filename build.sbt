@@ -229,7 +229,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"    % "0.13.0",
-      "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
+      "io.chrisdavenport" %%% "log4cats-core" % "1.2.0",
     ).filterNot(_ => isDotty.value)
   )
 lazy val logJVM = log.jvm.dependsOn(coreJVM)
@@ -314,7 +314,7 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.2.0",
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.21",
       "is.cir"            %% "ciris"          % "1.2.1"
