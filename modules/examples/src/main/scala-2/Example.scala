@@ -15,25 +15,11 @@ import java.net.URI
 
 object Main extends IOApp {
 
-  // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
-  // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
-  def qsort[F[_]: Monad: Parallel: Trace: Timer, A: Order](as: List[A]): F[List[A]] =
-    Trace[F].span(as.mkString(",")) {
-      Timer[F].sleep(10.milli) *> {
-          as match {
-          case Nil    => Monad[F].pure(Nil)
-          case h :: t =>
-            val (a, b) = t.partition(_ <= h)
-            (qsort[F, A](a), qsort[F, A](b)).parMapN(_ ++ List(h) ++ _)
-        }
-      }
-    }
-
   def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
-        _  <- qsort[F, Int](as)
+        _  <- Sort.qsort[F, Int](as)
         u  <- Trace[F].traceUri
         _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
         _  <- Sync[F].delay(println("Done."))
