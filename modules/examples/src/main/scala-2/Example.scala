@@ -6,7 +6,7 @@ package example
 
 import cats._
 import cats.data.Kleisli
-import cats.effect.kernel.{Sync, Temporal}
+import cats.effect.kernel.{Async, Temporal}
 import cats.effect._
 import cats.syntax.all._
 import natchez._
@@ -30,10 +30,10 @@ object Main extends IOApp {
       }
     }
 
-  def runF[F[_]: Sync: Trace: Parallel: Temporal: Monad]: F[Unit] =
+  def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
-        as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
+        as <- Async[F].delay(List.fill(10)(Random.nextInt(1000)))
         _  <- qsort[F, Int](as)
         u  <- Trace[F].traceUri
         _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
