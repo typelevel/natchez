@@ -63,7 +63,7 @@ object Trace {
   }
 
   /**
-   * `Kleisli[F, Span[F], *]` is a `Trace` given `Bracket[F, Throwable]`. The instance can be
+   * `Kleisli[F, Span[F], *]` is a `Trace` given `MonadCancel[F, Throwable]`. The instance can be
    * widened to an environment that *contains* a `Span[F]` via the `lens` method.
    */
   implicit def kleisliInstance[F[_]](implicit ev: MonadCancel[F, Throwable]): KleisliTrace[F] =
