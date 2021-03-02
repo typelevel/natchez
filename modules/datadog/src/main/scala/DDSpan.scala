@@ -7,7 +7,8 @@ package datadog
 
 import io.{opentracing => ot}
 import cats.data.Nested
-import cats.effect.{ExitCase, Resource, Sync}
+import cats.effect.kernel.{Resource, Sync}
+import cats.effect.kernel.Resource.ExitCase.Errored
 import cats.syntax.all._
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
@@ -42,7 +43,7 @@ private[datadog] final case class DDSpan[F[_]: Sync](
   def span(name: String): Resource[F,Span[F]] =
     Span.putErrorFields(Resource.makeCase(
       Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
-      case (span, ExitCase.Error(e)) => Sync[F].delay(span.log(e.toString).finish())
+      case (span, Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
       case (span, _) => Sync[F].delay(span.finish())
     }.map(DDSpan(tracer, _, uriPrefix)))
 

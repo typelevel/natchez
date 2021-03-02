@@ -7,8 +7,7 @@ package natchez.newrelic
 import java.net.URI
 import java.util.UUID
 
-import cats.effect.concurrent.Ref
-import cats.effect.{Resource, Sync}
+import cats.effect.kernel.{Ref, Resource, Sync}
 import cats.implicits._
 import com.newrelic.telemetry.Attributes
 import com.newrelic.telemetry.spans.{Span, SpanBatch, SpanBatchSender}

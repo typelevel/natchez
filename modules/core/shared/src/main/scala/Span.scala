@@ -5,7 +5,8 @@
 package natchez
 
 import cats.Applicative, cats.syntax.applicative._
-import cats.effect.{Resource, ExitCase}
+import cats.effect.Resource
+import cats.effect.Resource.ExitCase
 import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */
@@ -49,7 +50,7 @@ object Span {
    */
   def putErrorFields[F[_]: Applicative](span: Resource[F, Span[F]]): Resource[F, Span[F]] = 
     span.flatMap(span => Resource.makeCase(span.pure[F])((_, exit) => exit match {
-      case ExitCase.Error(f: Fields) => span.put(f.fields.toList: _*)
+      case ExitCase.Errored(f: Fields) => span.put(f.fields.toList: _*)
       case _ => Applicative[F].unit
     }))
 }

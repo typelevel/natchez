@@ -5,7 +5,7 @@
 package natchez
 package opencensus
 
-import cats.effect.{Resource, Sync}
+import cats.effect.kernel.{Resource, Sync}
 import cats.syntax.functor._
 import io.opencensus.exporter.trace.ocagent.{OcAgentTraceExporter, OcAgentTraceExporterConfiguration}
 import io.opencensus.trace.{Sampler, Tracing}
@@ -24,7 +24,7 @@ object OpenCensus {
         Sync[F].delay(
           OcAgentTraceExporter.unregister()
       ))
-      .flatMap(_ => Resource.liftF(entryPoint[F](sampler)))
+      .flatMap(_ => Resource.eval(entryPoint[F](sampler)))
 
   def entryPoint[F[_]: Sync](sampler: Sampler): F[EntryPoint[F]] =
     Sync[F]

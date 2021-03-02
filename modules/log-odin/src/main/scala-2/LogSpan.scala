@@ -4,9 +4,10 @@
 
 package natchez.logodin
 
-import cats.effect.concurrent.Ref
+import cats.effect.kernel.Ref
 import cats.effect._
-import cats.effect.ExitCase._
+import cats.effect.kernel.Resource.ExitCase
+import cats.effect.kernel.Resource.ExitCase.{Canceled, Succeeded, Errored}
 import cats.implicits._
 import java.time.Instant
 import java.util.UUID
@@ -61,7 +62,7 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   def span(label: String): Resource[F, Span[F]] =
     Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen
 
-  def json(finish: Instant, exitCase: ExitCase[Throwable]): F[JsonObject] =
+  def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
 
       // Assemble our JSON object such that the Natchez fields always come first, in the same
@@ -86,10 +87,10 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
           "trace.trace_id"  -> tid.asJson,
         ) ++ {
           exitCase match {
-            case Completed                  => List("exit.case" -> "completed".asJson)
+            case Succeeded                  => List("exit.case" -> "completed".asJson)
             case Canceled                   => List("exit.case" -> "canceled".asJson)
-            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
-            case Error(ex)         => exitFields(ex)
+            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
+            case Errored(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
 
@@ -128,7 +129,7 @@ private[logodin] object LogSpan {
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
+  def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
       j  <- span.json(n, exitCase)

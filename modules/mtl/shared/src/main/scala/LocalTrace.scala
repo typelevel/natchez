@@ -7,12 +7,12 @@ package natchez
 package mtl
 
 import cats.mtl.Local
-import cats.effect._
+import cats.effect.kernel.MonadCancel
 import cats.syntax.all._
 import java.net.URI
 
 private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
-  implicit ev: Bracket[F, Throwable]
+  implicit ev: MonadCancel[F, Throwable]
 ) extends Trace[F] {
 
     def kernel: F[Kernel] =

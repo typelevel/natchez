@@ -6,7 +6,7 @@ package natchez
 package noop
 
 import cats._
-import cats.effect.Resource
+import cats.effect.kernel.Resource
 import cats.syntax.all._
 import java.net.URI
 
@@ -19,7 +19,7 @@ final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
     Applicative[F].pure(Kernel(Map.empty))
 
   override def span(name: String): Resource[F, Span[F]] =
-    Resource.liftF(NoopSpan[F]().pure[F])
+    Resource.eval(NoopSpan[F]().pure[F])
 
   // TODO
   def traceId: F[Option[String]] = none.pure[F]

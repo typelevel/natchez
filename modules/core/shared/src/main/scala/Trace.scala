@@ -6,7 +6,7 @@ package natchez
 
 import cats._
 import cats.data._
-import cats.effect._
+import cats.effect.kernel.MonadCancel
 import cats.syntax.all._
 import java.net.URI
 
@@ -66,7 +66,7 @@ object Trace {
    * `Kleisli[F, Span[F], *]` is a `Trace` given `Bracket[F, Throwable]`. The instance can be
    * widened to an environment that *contains* a `Span[F]` via the `lens` method.
    */
-  implicit def kleisliInstance[F[_]](implicit ev: Bracket[F, Throwable]): KleisliTrace[F] =
+  implicit def kleisliInstance[F[_]](implicit ev: MonadCancel[F, Throwable]): KleisliTrace[F] =
     new KleisliTrace[F]
 
   /**
@@ -74,7 +74,7 @@ object Trace {
    * context into our computations. We can also "lensMap" out to `Kleisli[F, E, *]` given a lens
    * from `E` to `Span[F]`.
    */
-  class KleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) extends Trace[Kleisli[F, Span[F], *]] {
+  class KleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) extends Trace[Kleisli[F, Span[F], *]] {
 
     def kernel: Kleisli[F, Span[F], Kernel] =
       Kleisli(_.kernel)

@@ -6,6 +6,7 @@ package example
 
 import cats._
 import cats.data.Kleisli
+import cats.effect.kernel.{Sync, Temporal}
 import cats.effect._
 import cats.syntax.all._
 import natchez._
@@ -17,9 +18,9 @@ object Main extends IOApp {
 
   // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
   // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
-  def qsort[F[_]: Monad: Parallel: Trace: Timer, A: Order](as: List[A]): F[List[A]] =
+  def qsort[F[_]: Monad: Parallel: Trace: Temporal, A: Order](as: List[A]): F[List[A]] =
     Trace[F].span(as.mkString(",")) {
-      Timer[F].sleep(10.milli) *> {
+      Temporal[F].sleep(10.milli) *> {
           as match {
           case Nil    => Monad[F].pure(Nil)
           case h :: t =>
@@ -29,7 +30,7 @@ object Main extends IOApp {
       }
     }
 
-  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
+  def runF[F[_]: Sync: Trace: Parallel: Temporal: Monad]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
