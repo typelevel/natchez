@@ -21,15 +21,6 @@ object GlobalTracer {
     }
 
   def registerTracer[F[_]: Sync](tracer: ot.Tracer): F[Boolean] = Sync[F].delay(GT.registerIfAbsent(tracer))
-
-  /* Creates an entrypoint using the GlobalTracer, if a tracer has been registered.  This is particularly useful if you 
-   * are using an agent to initialize your tracer. 
-   *
-   * N.B. There is currently no way to determine what underlying tracer that the global tracer is using.
-   */
-   
-  def createEntryPoint[F[_]: Sync](makeEntryPoint: ot.Tracer => F[EntryPoint[F]]): F[Option[EntryPoint[F]]] =
-    fetch[F].flatMap(_.traverse(makeEntryPoint))
 }
  
 

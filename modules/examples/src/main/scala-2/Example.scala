@@ -36,8 +36,8 @@ object Main extends IOApp {
   //     }
   //   }
 
-  // The following would be the minimal entrypoint setup for Lighstep. Note that
-  // by default examples project uses lighstep HTTP binding. To change that,
+  // The following would be the minimal entrypoint setup for Lightstep. Note that
+  // by default examples project uses lightstep HTTP binding. To change that,
   // edit the project dependencies.
   // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
   //   Lightstep.entryPoint[F] { ob =>

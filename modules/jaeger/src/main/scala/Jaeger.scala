@@ -29,4 +29,7 @@ object Jaeger {
     Resource.make(createAndRegister)(c => Sync[F].delay(c.close()))
         .map { new JaegerEntryPoint[F](_, uriPrefix) }
   }
+  
+  def globalTracerEntryPoint(uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
+    GlobalTracer.fetch.map(_.map(new JaegerEntryPoint[F](_, uriPrefix)))
 }

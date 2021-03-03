@@ -18,4 +18,7 @@ object Lightstep {
     Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
       .map(new LightstepEntryPoint[F](_))
   }
+  
+  def globalTracerEntryPoint: F[Option[EntryPoint[F]]] = 
+    GlobalTracer.fetch.map(_.map(new JaegerEntryPoint[F](_, uriPrefix)))
 }

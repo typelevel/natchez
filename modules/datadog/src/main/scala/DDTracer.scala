@@ -14,7 +14,6 @@ import _root_.datadog.opentracing.DDTracer.DDTracerBuilder
 import natchez.opentracing.GlobalTracer
 
 object DDTracer {
-
   def entryPoint[F[_]: Sync](
     buildFunc: DDTracerBuilder => F[NativeDDTracer],
     uriPrefix: Option[URI] = None
@@ -25,6 +24,9 @@ object DDTracer {
         .flatTap(GlobalTracer.registerTracer[F])
 
     Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
-        .map(new DDEntryPoint(_, uriPrefix))
+        .map(new DDEntryPoint[F](_, uriPrefix))
   }
+
+  def globalTracerEntryPoint(uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
+    GlobalTracer.fetch.map(_.map(new DDEntryPoint[F](_, uriPrefix)))
 }

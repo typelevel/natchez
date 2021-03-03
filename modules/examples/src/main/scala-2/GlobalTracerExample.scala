@@ -29,46 +29,33 @@ object GlobalTracerMain extends IOApp {
       } yield ()
     }
 
-//DataDog
-  val prefix = Some(new URI("https://app.datadoghq.com")) // https://app.datadoghq.eu for Europe
+  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint]] = {
+    // Datadog
+    // import natchez.datadog.DDTracer
+    // val prefix = Some(new URI("https://app.datadoghq.com")) // https://app.datadoghq.eu for Europe 
+    // DDTracer.globalTracerEntryPoint[F](prefix)
 
-  def datadogEntryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
-    import java.util.Properties
-    import natchez.datadog.DDTracer
-    DDTracer.entryPoint[F](
-      buildFunc =
-        builder =>
-          Sync[F].delay(
-            builder.withProperties(
-              new Properties() {
-                put("writer.type", "LoggingWriter")
-              }
-            ).serviceName("natchez-sample").build()
-          ),
-      uriPrefix = prefix)   
+    // Jaeger
+    import natchez.jaeger.Jaeger
+    val prefix = Some(new URI("http://localhost:16686"))
+    Jaeger.globalTracerEntryPoint[F](prefix)
+
+    // Lightstep
+    // import natchez.lightstep.Lightstep
+    // Lightstep.globalTracerEntryPoint[F]
+
   }
 
-
-  // If a tracer has been registered to the global tracer use that,
-  // otherwise use the provided fallback.
-  def globalTracerEntryPoint[F[_]: Sync](makeEntryPoint: Tracer => F[EntryPoint[F]])(fallbackEntryPoint: Resource[F, EntryPoint[F]]) : Resource[F, EntryPoint[F]] = {
-    import natchez.opentracing.GlobalTracer
-    val maybeGlobalTracerEntryPoint = 
-      GlobalTracer.createEntryPoint[F](makeEntryPoint)
-
-    Resource.liftF(maybeGlobalTracerEntryPoint).flatMap {
-      case None => fallbackEntryPoint
-      case Some(ep) => Resource.pure[F, EntryPoint[F]](ep)
-    }
-  }
-  
   def run(args: List[String]): IO[ExitCode] = {
     import natchez.datadog.DDEntryPoint
-    globalTracerEntryPoint[IO](t => IO(new DDEntryPoint[IO](t, prefix)))(datadogEntryPoint).use { ep =>
-      ep.root("this is the root span").use { span =>
-        runF[Kleisli[IO, Span[IO], *]].run(span)
-      } *> IO.sleep(1.second) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
-    } as ExitCode.Success
+    globalTracerEntryPoint[IO].flatMap {
+      case None => IO.delay { 
+        println("No tracer registered to the global tracer.  Is your agent attached with tracing enabled?"
+      } as ExitCode.Error
+      case Some(ep) =>
+        ep.root("this is the root span").use { span =>
+          runF[Kleisli[IO, Span[IO], *]].run(span)
+        } *> IO.sleep(1.second) as ExitCode.Success // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
   }
 
 
