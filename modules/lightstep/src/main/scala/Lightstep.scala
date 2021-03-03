@@ -19,6 +19,6 @@ object Lightstep {
       .map(new LightstepEntryPoint[F](_))
   }
   
-  def globalTracerEntryPoint: F[Option[EntryPoint[F]]] = 
-    GlobalTracer.fetch.map(_.map(new JaegerEntryPoint[F](_, uriPrefix)))
+  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] = 
+    GlobalTracer.fetch.map(_.map(new LightstepEntryPoint[F](_)))
 }

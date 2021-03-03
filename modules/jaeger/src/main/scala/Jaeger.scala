@@ -30,6 +30,6 @@ object Jaeger {
         .map { new JaegerEntryPoint[F](_, uriPrefix) }
   }
   
-  def globalTracerEntryPoint(uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
+  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
     GlobalTracer.fetch.map(_.map(new JaegerEntryPoint[F](_, uriPrefix)))
 }

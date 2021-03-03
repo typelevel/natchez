@@ -4,8 +4,6 @@
 
 package example
 
-import io.opentracing.Tracer
-
 import cats._
 import cats.data.Kleisli
 import cats.effect._
@@ -29,7 +27,7 @@ object GlobalTracerMain extends IOApp {
       } yield ()
     }
 
-  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint]] = {
+  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] = {
     // Datadog
     // import natchez.datadog.DDTracer
     // val prefix = Some(new URI("https://app.datadoghq.com")) // https://app.datadoghq.eu for Europe 
@@ -47,15 +45,15 @@ object GlobalTracerMain extends IOApp {
   }
 
   def run(args: List[String]): IO[ExitCode] = {
-    import natchez.datadog.DDEntryPoint
     globalTracerEntryPoint[IO].flatMap {
       case None => IO.delay { 
-        println("No tracer registered to the global tracer.  Is your agent attached with tracing enabled?"
+        println("No tracer registered to the global tracer.  Is your agent attached with tracing enabled?")
       } as ExitCode.Error
       case Some(ep) =>
-        ep.root("this is the root span").use { span =>
-          runF[Kleisli[IO, Span[IO], *]].run(span)
-        } *> IO.sleep(1.second) as ExitCode.Success // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
+        ep.root("this is the root span")
+          .use(span => runF[Kleisli[IO, Span[IO], *]].run(span)) *> 
+          IO.sleep(1.second) as ExitCode.Success // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
+    }
   }
 
 

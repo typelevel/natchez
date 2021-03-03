@@ -27,6 +27,6 @@ object DDTracer {
         .map(new DDEntryPoint[F](_, uriPrefix))
   }
 
-  def globalTracerEntryPoint(uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
+  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
     GlobalTracer.fetch.map(_.map(new DDEntryPoint[F](_, uriPrefix)))
 }
