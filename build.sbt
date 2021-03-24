@@ -213,8 +213,8 @@ lazy val datadog = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.2",
-      "com.datadoghq" % "dd-trace-ot"  % "0.72.0",
-      "com.datadoghq" % "dd-trace-api" % "0.72.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.76.0",
+      "com.datadoghq" % "dd-trace-api" % "0.76.0"
     )
   )
 
