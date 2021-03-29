@@ -127,13 +127,13 @@ private[log] object LogSpan {
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
+  def finish[F[_]: Sync: Logger](format: Json => String): (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
       j  <- span.json(n, exitCase)
       _  <- span.parent match {
               case None |
-                   Some(Left(_))  => Logger[F].info(Json.fromJsonObject(j).spaces2)
+                   Some(Left(_))  => Logger[F].info(format(Json.fromJsonObject(j)))
               case Some(Right(s)) => s.children.update(j :: _)
             }
     } yield ()
