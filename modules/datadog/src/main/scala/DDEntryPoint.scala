@@ -13,7 +13,7 @@ import io.{opentracing => ot}
 import java.net.URI
 import scala.jdk.CollectionConverters._
 
-class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI]) extends EntryPoint[F] {
+final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI]) extends EntryPoint[F] {
   override def root(name: String): Resource[F, Span[F]] =
     Resource.make(
       Sync[F].delay(tracer.buildSpan(name).start()))(

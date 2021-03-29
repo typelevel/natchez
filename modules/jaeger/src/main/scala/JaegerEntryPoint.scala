@@ -14,7 +14,7 @@ import io.{opentracing => ot}
 import scala.jdk.CollectionConverters._
 import java.net.URI
 
-class JaegerEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI]) extends EntryPoint[F] {
+final class JaegerEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI]) extends EntryPoint[F] {
   def continue(name: String, kernel: Kernel): Resource[F,Span[F]] =
     Resource.make(
       Sync[F].delay {

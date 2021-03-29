@@ -12,7 +12,7 @@ import io.opentracing.propagation.{ Format, TextMapAdapter }
 
 import scala.jdk.CollectionConverters._
 
-class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F] {
+final class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F] {
   override def root(name: String): Resource[F, Span[F]] =
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).start()))(s => Sync[F].delay(s.finish()))
