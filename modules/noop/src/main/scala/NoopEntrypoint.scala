@@ -11,7 +11,7 @@ import cats.effect.Resource
 final case class NoopEntrypoint[F[_]: Applicative]() extends EntryPoint[F] {
 
   override def root(name: String): Resource[F, Span[F]] = {
-    Resource.liftF[F, Span[F]](Applicative[F].pure(NoopSpan()))
+    Resource.eval[F, Span[F]](Applicative[F].pure(NoopSpan()))
   }
 
   override def continue(
