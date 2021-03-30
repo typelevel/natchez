@@ -46,6 +46,13 @@ lazy val commonSettings = Seq(
     )
   ),
 
+  // Testing
+  libraryDependencies ++= Seq(
+    "org.scalameta" %%% "munit"               % "0.7.23" % Test,
+    "org.typelevel" %%% "munit-cats-effect-2" % "1.0.1"  % Test,
+  ),
+  testFrameworks += new TestFramework("munit.Framework"),
+
   // Compilation
   scalaVersion       := scala213Version,
   crossScalaVersions := Seq(scala212Version, scala213Version, scala30PreviousVersion, scala30Version),

@@ -50,7 +50,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     this.fields.update(_ ++ fields.toMap)
 
   def span(label: String): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen)
+    Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finishChild[F]).widen)
 
   def json(finish: Instant, exitCase: ExitCase[Throwable]): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
@@ -138,6 +138,9 @@ private[log] object LogSpan {
             }
     } yield ()
   }
+
+  def finishChild[F[_]: Sync: Logger]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] =
+    finish(_ => sys.error("implementation error; child JSON should never be logged"))
 
   def child[F[_]: Sync: Logger](
     parent: LogSpan[F],
