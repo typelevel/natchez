@@ -7,6 +7,24 @@ val scala30Version         = "3.0.0-RC1"
 val catsVersion = "2.4.2"
 val catsEffectVersion = "2.3.3"
 
+// We do `evictionCheck` in CI and don't sweat the Java deps for now.
+inThisBuild(Seq(
+  evictionRules ++= Seq(
+    "io.netty"               % "*" % "always",
+    "io.grpc"                % "*" % "always",
+    "com.github.jnr"         % "*" % "always",
+    "com.google.guava"       % "*" % "always",
+    "io.opentracing"         % "*" % "always",
+    "io.opentracing.contrib" % "*" % "always",
+    "com.squareup.okhttp3"   % "*" % "always",
+    "com.squareup.okio"      % "*" % "always",
+    "com.newrelic.telemetry" % "*" % "always",
+    "org.typelevel"          % "*" % "semver-spec",
+    "org.scala-js"           % "*" % "semver-spec",
+    "org.jctools"            % "*" % "always",
+  )
+))
+
 // Global Settings
 lazy val commonSettings = Seq(
 
