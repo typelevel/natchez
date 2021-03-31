@@ -5,18 +5,18 @@
 package example
 
 import cats._
-import cats.effect.Timer
 import cats.syntax.all._
 import natchez.Trace
 import scala.concurrent.duration._
+import cats.effect.Temporal
 
 object Sort {
 
   // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
   // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
-  def qsort[F[_]: Monad: Parallel: Trace: Timer, A: Order](as: List[A]): F[List[A]] =
+  def qsort[F[_]: Monad: Parallel: Trace: Temporal, A: Order](as: List[A]): F[List[A]] =
     Trace[F].span(as.mkString(",")) {
-      Timer[F].sleep(10.milli) *> {
+      Temporal[F].sleep(10.milli) *> {
           as match {
           case Nil    => Monad[F].pure(Nil)
           case h :: t =>

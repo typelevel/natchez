@@ -6,11 +6,12 @@ package natchez
 
 import cats.mtl.Local
 import cats.effect._
+import cats.effect.MonadCancel
 
 package object mtl {
   implicit def natchezMtlTraceForLocal[F[_]](
     implicit ev: Local[F, Span[F]],
-             eb: Bracket[F, Throwable],
+             eb: MonadCancel[F, Throwable],
   ): Trace[F] =
     new LocalTrace(ev)
 }
