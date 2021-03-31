@@ -121,8 +121,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
