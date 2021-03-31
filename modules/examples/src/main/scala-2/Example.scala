@@ -15,6 +15,7 @@ import java.net.URI
 
 object Main extends IOApp {
 
+<<<<<<< HEAD
   // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
   // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
   def qsort[F[_]: Parallel: Trace: Temporal, A: Order](as: List[A]): F[List[A]] =
@@ -30,10 +31,13 @@ object Main extends IOApp {
     }
 
   def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
+=======
+  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
+>>>>>>> master
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
-        _  <- qsort[F, Int](as)
+        _  <- Sort.qsort[F, Int](as)
         u  <- Trace[F].traceUri
         _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
         _  <- Sync[F].delay(println("Done."))
@@ -50,8 +54,8 @@ object Main extends IOApp {
   //     }
   //   }
 
-  // The following would be the minimal entrypoint setup for Lighstep. Note that
-  // by default examples project uses lighstep HTTP binding. To change that,
+  // The following would be the minimal entrypoint setup for Lightstep. Note that
+  // by default examples project uses lightstep HTTP binding. To change that,
   // edit the project dependencies.
   // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
   //   Lightstep.entryPoint[F] { ob =>
