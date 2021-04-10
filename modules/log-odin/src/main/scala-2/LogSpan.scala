@@ -4,7 +4,6 @@
 
 package natchez.logodin
 
-import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.effect.ExitCase._
 import cats.implicits._
@@ -18,6 +17,7 @@ import io.circe.syntax._
 import io.circe.JsonObject
 import io.odin.Logger
 import java.net.URI
+import cats.effect.Ref
 
 private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,

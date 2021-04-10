@@ -4,7 +4,6 @@
 
 package natchez.log
 
-import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.effect.ExitCase._
 import cats.syntax.all._
@@ -18,6 +17,7 @@ import io.circe.syntax._
 import io.circe.JsonObject
 import io.chrisdavenport.log4cats.Logger
 import java.net.URI
+import cats.effect.Ref
 
 private[log] final case class LogSpan[F[_]: Sync: Logger](
   service:   String,

@@ -10,9 +10,10 @@ import cats.mtl.Local
 import cats.effect._
 import cats.syntax.all._
 import java.net.URI
+import cats.effect.MonadCancel
 
 private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
-  implicit ev: Bracket[F, Throwable]
+  implicit ev: MonadCancel[F, Throwable]
 ) extends Trace[F] {
 
     def kernel: F[Kernel] =
