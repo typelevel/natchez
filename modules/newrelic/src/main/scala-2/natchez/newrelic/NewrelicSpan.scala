@@ -7,7 +7,6 @@ package natchez.newrelic
 import java.net.URI
 import java.util.UUID
 
-import cats.effect.concurrent.Ref
 import cats.effect.{Resource, Sync}
 import cats.implicits._
 import com.newrelic.telemetry.Attributes
@@ -17,6 +16,7 @@ import natchez.newrelic.NewrelicSpan.Headers
 import natchez.{Kernel, TraceValue}
 
 import scala.jdk.CollectionConverters._
+import cats.effect.Ref
 
 private[newrelic] final case class NewrelicSpan[F[_]: Sync](
     id: String,

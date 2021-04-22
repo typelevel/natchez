@@ -4,7 +4,6 @@
 
 package natchez.honeycomb
 
-import cats.effect.concurrent.Ref
 import cats.effect._
 import cats.effect.ExitCase.Canceled
 import cats.effect.ExitCase.Completed
@@ -14,6 +13,7 @@ import java.time.Instant
 import java.util.UUID
 import natchez._
 import java.net.URI
+import cats.effect.Ref
 
 private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   client:    HoneyClient,

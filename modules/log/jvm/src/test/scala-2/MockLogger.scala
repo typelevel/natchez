@@ -7,8 +7,8 @@ package log
 
 import io.chrisdavenport.log4cats.Logger
 import cats.effect.Sync
-import cats.effect.concurrent.Ref
 import cats.syntax.all._
+import cats.effect.Ref
 
 trait MockLogger[F[_]] extends Logger[F] {
   def get: F[String]
