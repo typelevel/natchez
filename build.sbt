@@ -1,12 +1,12 @@
 val scala212Version        = "2.12.12"
 val scala213Version        = "2.13.5"
-val scala30PreviousVersion = "3.0.0-RC1"
-val scala30Version         = "3.0.0-RC2"
+val scala30PreviousVersion = "3.0.0-RC2"
+val scala30Version         = "3.0.0-RC3"
 
 val collectionCompatVersion = "2.4.3"
 
-val catsVersion = "2.5.0"
-val catsEffectVersion = "2.4.1"
+val catsVersion = "2.6.0"
+val catsEffectVersion = "2.5.0"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -49,8 +49,8 @@ lazy val commonSettings = Seq(
 
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit"               % "0.7.23" % Test,
-    "org.typelevel" %%% "munit-cats-effect-2" % "1.0.1"  % Test,
+    "org.scalameta" %%% "munit"               % "0.7.25" % Test,
+    "org.typelevel" %%% "munit-cats-effect-2" % "1.0.2"  % Test,
   ),
   testFrameworks += new TestFramework("munit.Framework"),
 
@@ -156,7 +156,7 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.jaegertracing"        % "jaeger-client"           % "1.5.0",
+      "io.jaegertracing"        % "jaeger-client"           % "1.6.0",
     )
   )
 
@@ -197,7 +197,7 @@ lazy val lightstep = project
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.3"
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.5"
     )
   )
 
@@ -210,8 +210,8 @@ lazy val lightstepGrpc = project
     name        := "natchez-lightstep-grpc",
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.1",
-      "io.grpc"              % "grpc-netty"                      % "1.36.1",
+      "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
+      "io.grpc"              % "grpc-netty"                      % "1.37.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.38.Final"
     )
   )
@@ -225,7 +225,7 @@ lazy val lightstepHttp = project
     name        := "natchez-lightstep-http",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-okhttp" % "0.30.1"
+      "com.lightstep.tracer" % "tracer-okhttp" % "0.30.3"
     )
   )
 
@@ -255,8 +255,8 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.77.0",
-      "com.datadoghq" % "dd-trace-api" % "0.77.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.78.3",
+      "com.datadoghq" % "dd-trace-api" % "0.78.3"
     )
   )
 
@@ -308,7 +308,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel"          %%% "cats-mtl"    % "1.1.3",
+      "org.typelevel"          %%% "cats-mtl"    % "1.2.0",
     )
   )
 
