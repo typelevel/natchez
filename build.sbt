@@ -61,16 +61,16 @@ lazy val commonSettings = Seq(
   Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc     / scalacOptions ++= Seq(
     "-groups",
-    "-sourcepath", (baseDirectory in LocalRootProject).value.getAbsolutePath,
+    "-sourcepath", (LocalRootProject / baseDirectory).value.getAbsolutePath,
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
-  ).filterNot(_ => isDotty.value),
+  ).filterNot(_ => scalaVersion.value.startsWith("3.")),
 
   // Add some more source directories
-  unmanagedSourceDirectories in Compile ++= {
-    val sourceDir = (sourceDirectory in Compile).value
+  Compile / unmanagedSourceDirectories ++= {
+    val sourceDir = (Compile / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _))  => Seq(sourceDir / "scala-3")
       case Some((2, _))  => Seq(sourceDir / "scala-2")
@@ -79,8 +79,8 @@ lazy val commonSettings = Seq(
   },
 
   // Also for test
-  unmanagedSourceDirectories in Test ++= {
-    val sourceDir = (sourceDirectory in Test).value
+  Test / unmanagedSourceDirectories ++= {
+    val sourceDir = (Test / sourceDirectory).value
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _))  => Seq(sourceDir / "scala-3")
       case Some((2, _))  => Seq(sourceDir / "scala-2")
@@ -91,7 +91,7 @@ lazy val commonSettings = Seq(
   // dottydoc really doesn't work at all right now
   Compile / doc / sources := {
     val old = (Compile / doc / sources).value
-    if (isDotty.value)
+    if (scalaVersion.value.startsWith("3."))
       Seq()
     else
       old
@@ -101,13 +101,13 @@ lazy val commonSettings = Seq(
 
 lazy val crossProjectSettings = Seq(
   Compile / unmanagedSourceDirectories ++= {
-    val major = if (isDotty.value) "-3" else "-2"
+    val major = if (scalaVersion.value.startsWith("3.")) "-3" else "-2"
     List(CrossType.Pure, CrossType.Full).flatMap(
       _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + major)))
   },
 
   Test / unmanagedSourceDirectories ++= {
-    val major = if (isDotty.value) "-3" else "-2"
+    val major = if (scalaVersion.value.startsWith("3.")) "-3" else "-2"
     List(CrossType.Pure, CrossType.Full).flatMap(
       _.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + major)))
   },
@@ -141,7 +141,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
 lazy val coreJVM = core.jvm
 lazy val coreJS = core.js
   .settings(
-    scalaJSStage in Test := FastOptStage,
+    Test / scalaJSStage := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
@@ -266,18 +266,18 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
   .settings(commonSettings)
   .settings(crossProjectSettings)
   .settings(
-    publish / skip := isDotty.value,
+    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"    % "0.13.0",
       "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
-    ).filterNot(_ => isDotty.value)
+    ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
 lazy val logJVM = log.jvm.dependsOn(coreJVM)
 lazy val logJS = log.js.dependsOn(coreJS)
   .settings(
-    scalaJSStage in Test := FastOptStage,
+    Test / scalaJSStage := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
@@ -288,7 +288,7 @@ lazy val newrelic = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := isDotty.value,
+    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
@@ -297,7 +297,7 @@ lazy val newrelic = project
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
-    ).filterNot(_ => isDotty.value)
+    ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
 
 lazy val mtl = crossProject(JSPlatform, JVMPlatform)
@@ -315,7 +315,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform)
 lazy val mtlJVM = mtl.jvm.dependsOn(coreJVM)
 lazy val mtlJS = mtl.js.dependsOn(coreJS)
   .settings(
-    scalaJSStage in Test := FastOptStage,
+    Test / scalaJSStage := FastOptStage,
     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
@@ -360,7 +360,7 @@ lazy val examples = project
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.24",
       "is.cir"            %% "ciris"          % "1.2.1"
-    ).filterNot(_ => isDotty.value)
+    ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
 
 lazy val logOdin = project
@@ -369,12 +369,12 @@ lazy val logOdin = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := isDotty.value,
+    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
     libraryDependencies ++= Seq(
       "io.circe"              %% "circe-core" % "0.13.0",
       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
-    ).filterNot(_ => isDotty.value)
+    ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
