@@ -5,7 +5,6 @@
 package example
 
 import cats._
-import cats.data.Kleisli
 import cats.effect._
 import cats.syntax.all._
 import natchez._
@@ -15,25 +14,7 @@ import java.net.URI
 
 object Main extends IOApp {
 
-<<<<<<< HEAD
-  // Intentionally slow parallel quicksort, to demonstrate branching. If we run too quickly it seems
-  // to break Jaeger with "skipping clock skew adjustment" so let's pause a bit each time.
-  def qsort[F[_]: Parallel: Trace: Temporal, A: Order](as: List[A]): F[List[A]] =
-    Trace[F].span(as.mkString(",")) {
-      Temporal[F].sleep(10.milli) *> {
-          as match {
-          case Nil    => Monad[F].pure(Nil)
-          case h :: t =>
-            val (a, b) = t.partition(_ <= h)
-            (qsort[F, A](a), qsort[F, A](b)).parMapN(_ ++ List(h) ++ _)
-        }
-      }
-    }
-
   def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
-=======
-  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
->>>>>>> master
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
@@ -132,7 +113,7 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     entryPoint[IO].use { ep =>
       ep.root("this is the root span").use { span =>
-        runF[Kleisli[IO, Span[IO], *]].run(span)
+        Trace.ioTrace(span).flatMap(implicit t => runF[IO])
       } *> IO.sleep(1.second) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
     } as ExitCode.Success
   }

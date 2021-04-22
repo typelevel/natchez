@@ -43,6 +43,33 @@ object Trace {
 
   def apply[F[_]](implicit ev: Trace[F]): ev.type = ev
 
+  /** A `Trace` instance that uses `IOLocal` internally. */
+  def ioTrace(rootSpan: Span[IO]): IO[Trace[IO]] =
+    IOLocal(rootSpan).map { local =>
+      new Trace[IO] {
+
+        def put(fields: (String, TraceValue)*): IO[Unit] =
+          local.get.flatMap(_.put(fields: _*))
+
+        def kernel: IO[Kernel] =
+          local.get.flatMap(_.kernel)
+
+        def span[A](name: String)(k: IO[A]): IO[A] =
+          local.get.flatMap { parent =>
+            parent.span(name).flatMap { child =>
+              Resource.make(local.set(child))(_ => local.set(parent))
+            } .use { _ => k }
+          }
+
+        def traceId: IO[Option[String]] =
+          local.get.flatMap(_.traceId)
+
+        def traceUri: IO[Option[URI]] =
+          local.get.flatMap(_.traceUri)
+
+      }
+    }
+
   object Implicits {
 
     /**
