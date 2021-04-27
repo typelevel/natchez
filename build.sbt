@@ -50,7 +50,7 @@ lazy val commonSettings = Seq(
   // Testing
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit"               % "0.7.25" % Test,
-    "org.typelevel" %%% "munit-cats-effect-2" % "1.0.2"  % Test,
+    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.2"  % Test,
   ),
   testFrameworks += new TestFramework("munit.Framework"),
 
@@ -206,7 +206,7 @@ lazy val lightstepGrpc = project
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
       "io.grpc"              % "grpc-netty"                      % "1.37.0",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.38.Final"
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
     )
   )
 
@@ -254,27 +254,31 @@ lazy val datadog = project
     )
   )
 
-// lazy val log = crossProject(JSPlatform, JVMPlatform)
-//   .in(file("modules/log"))
-//   .enablePlugins(AutomateHeaderPlugin)
-//   .settings(commonSettings)
-//   .settings(crossProjectSettings)
-//   .settings(
-//     publish / skip := isDotty.value,
-//     name        := "natchez-log",
-//     description := "Logging bindings for Natchez, using log4cats.",
-//     libraryDependencies ++= Seq(
-//       "io.circe"          %%% "circe-core"    % "0.13.0",
-//       "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
-//     ).filterNot(_ => isDotty.value)
-//   )
-// lazy val logJVM = log.jvm.dependsOn(coreJVM)
-// lazy val logJS = log.js.dependsOn(coreJS)
-//   .settings(
-//     scalaJSStage in Test := FastOptStage,
-//     jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-//     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-//   )
+lazy val log = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/log"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(crossProjectSettings)
+  .settings(
+    name        := "natchez-log",
+    description := "Logging bindings for Natchez, using log4cats.",
+    libraryDependencies ++= Seq(
+      "io.circe"          %%% "circe-core"    % {
+             if (scalaVersion.value == scala30PreviousVersion) "0.14.0-M5"
+        else if (scalaVersion.value == scala30Version)         "0.14.0-M6"
+        else                                                   "0.13.0"
+      },
+      "org.typelevel"     %%% "log4cats-core"   % "2.1.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.2.2" % Test,
+    )
+  )
+lazy val logJVM = log.jvm.dependsOn(coreJVM)
+lazy val logJS = log.js.dependsOn(coreJS)
+  .settings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
 
 lazy val newrelic = project
   .in(file("modules/newrelic"))
