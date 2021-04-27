@@ -5,9 +5,9 @@
 package natchez
 package log
 
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import cats.effect.Sync
-import cats.effect.concurrent.Ref
+import cats.effect.Ref
 import cats.syntax.all._
 
 trait MockLogger[F[_]] extends Logger[F] {
