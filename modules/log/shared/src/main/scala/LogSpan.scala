@@ -16,7 +16,7 @@ import io.circe.Json
 import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import java.net.URI
 
 private[log] final case class LogSpan[F[_]: Sync: Logger](
@@ -79,7 +79,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           exitCase match {
             case Completed                  => List("exit.case" -> "completed".asJson)
             case Canceled                   => List("exit.case" -> "canceled".asJson)
-            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
+            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map { case (k, v) => (k, v.asJson) }
             case Error(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
@@ -91,8 +91,8 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   def traceId: F[Option[String]] =
     traceUUID.toString.some.pure[F]
 
- def spanId: F[Option[String]] =
-   sid.toString.some.pure[F]
+  def spanId: F[Option[String]] =
+    sid.toString.some.pure[F]
 
   def traceUri: F[Option[URI]]   = none.pure[F]
 }

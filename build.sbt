@@ -212,7 +212,7 @@ lazy val lightstepGrpc = project
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
       "io.grpc"              % "grpc-netty"                      % "1.37.0",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.38.Final"
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
     )
   )
 
@@ -266,13 +266,17 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
   .settings(commonSettings)
   .settings(crossProjectSettings)
   .settings(
-    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"    % "0.13.0",
-      "io.chrisdavenport" %%% "log4cats-core" % "1.1.1",
-    ).filterNot(_ => scalaVersion.value.startsWith("3."))
+      "io.circe"          %%% "circe-core"    % {
+             if (scalaVersion.value == scala30PreviousVersion) "0.14.0-M5"
+        else if (scalaVersion.value == scala30Version)         "0.14.0-M6"
+        else                                                   "0.13.0"
+      },
+      "org.typelevel"     %%% "log4cats-core"   % "1.3.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.2.2" % Test,
+    )
   )
 lazy val logJVM = log.jvm.dependsOn(coreJVM)
 lazy val logJS = log.js.dependsOn(coreJS)
