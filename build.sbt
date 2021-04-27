@@ -274,7 +274,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
         else if (scalaVersion.value == scala30Version)         "0.14.0-M6"
         else                                                   "0.13.0"
       },
-      "org.typelevel"     %%% "log4cats-core"   % "1.3.0",
+      "org.typelevel"     %%% "log4cats-core"   % "2.1.0",
       "io.github.cquiroz" %%% "scala-java-time" % "2.2.2" % Test,
     )
   )
