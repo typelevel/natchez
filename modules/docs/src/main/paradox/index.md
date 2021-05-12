@@ -34,12 +34,13 @@ _Credits: [Wikipedia](https://en.wikipedia.org/wiki/Natchez_Trace) and the [Nati
       version="$version$"
     }
 
+
 2. Read the @ref:[Overview](overview.md) and explore from there.
 
 
     Natchez is written for [cats](http://typelevel.org/cats/) and [cats-effect](https://typelevel.org/cats-effect/). This documentation assumes you are familiar with pure-functional programming with effects, including use of `Resource` and tagless-final coding style. If you run into trouble be sure to check out:
 
-    - The [Gitter Channel](https://gitter.im/tpolecat/natchez).
+    - The Natchez channel on [Typelevel Discord](https://sca.la/typeleveldiscord).
     - The [API Documentation](https://javadoc.io/doc/org.tpolecat/natchez-core_$scala.binary.version$/$version$/index.html).
 
 

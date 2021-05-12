@@ -1,6 +1,6 @@
 # Overview
 
-Natchez provides interfaces that provide an abstraction for many distributed tracing back-ends. `Span`, `EntryPoint`, and `Trace` are the most important of these interfaces.
+Natchez provides interfaces that abstract over many distributed tracing back-ends. `Span`, `EntryPoint`, and `Trace` are the most important of these interfaces.
 
 ## Spans
 
