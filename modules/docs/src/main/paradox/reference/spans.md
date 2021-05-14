@@ -14,13 +14,21 @@ A `Span` can provide a hunk of data called a `Kernel`, which can be sent to a re
 
 ## Passing Spans Around
 
+_The examples in this section use the following imports:_
+```scala mdoc
+import cats.Monad
+import cats.effect.IO
+import cats.syntax.all._
+import natchez.{ Span, Trace }
+```
+
 There are two strategies for keeping track of the current span.
 
 ### Explicit Span
 
-The simple (but verbose) strategy for knowing what the current span is, is to pass it one an argument to any method that needs to do logging. For example:
+The simple (but verbose) strategy for knowing what the current span is, is to pass one as an argument to any method that needs to do tracing. For example:
 
-```scala:mdoc
+```scala mdoc
 def wibble(name: String, age: Int, parent: Span[IO]): IO[Unit] =
   parent.span("wibble").use { span =>
     for {
@@ -30,14 +38,14 @@ def wibble(name: String, age: Int, parent: Span[IO]): IO[Unit] =
   }
 ```
 
-This approach might make sense if you're using a concrete effect type like `IO` with Cats-Effect 2.
+This approach might make sense if you're using a concrete effect type with no "reader" capability (like `IO` with Cats-Effect 2).
 
 ### Ambient Span
 
-A nicer way to pass the current span around is to use the `Trace` constraint, which ensures that there is always a current span. With this strategy you never have a `Span` reference at all, but instead use the `Trace` instance directly.
+A nicer way to pass the current span around is to use the `Trace` constraint, which ensures that there is always a current span. With this strategy you never have see `Span` reference at all, but instead use the `Trace` instance directly.
 
-```scala:mdoc
-def wibble[F[_]: Trace](name: String, age: Int, parent: Span[F]): F[Unit] =
+```scala mdoc
+def wibble[F[_]: Trace: Monad](name: String, age: Int, parent: Span[F]): F[Unit] =
   Trace[F].span("wibble") {
     for {
       _ <- Trace[F].put("name" -> name, "age" -> age)
@@ -46,19 +54,19 @@ def wibble[F[_]: Trace](name: String, age: Int, parent: Span[F]): F[Unit] =
   }
 ```
 
-Use this strategy if you're programming in tagless style (i.e., abstract effect `F`) or if you're using `IO` with Cats-Effect 3.
+Use this strategy if you're programming in tagless style (i.e., abstract effect `F`) or if you're using a concrete data type with "reader" capabilities (like `IO` Cats-Effect 3).
 
 See the @ref:[reference](trace.md) for more information on the `Trace` constraint.
 
 ## Span Properties
 
-All spans have the following intrinisic properties, all of which return _back-end-specific_ values.
+All spans have the following intrinisic properties, all of which return _vendor-specific_ values.
 
-| Property | Meaning |
-|---|---|
-| `spanId` | An opaque string identifier that uniquely identifies a span. |
-| `traceUri` | A URI where a user can view the trace using the back end's GUI. |
-| `kernel` | A map of values that can be sent to a remote computer, allowing it to continue this trace. See the @ref:[reference](kernels.md) for more information. |
+| Property   | Meaning                                                                                                                                               |
+|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `spanId`   | An opaque string identifier that uniquely identifies a span.                                                                                          |
+| `traceUri` | A URI where a user can view the trace using the back end's GUI.                                                                                       |
+| `kernel`   | A map of values that can be sent to a remote computer, allowing it to continue this trace. See the @ref:[reference](kernels.md) for more information. |
 
 These fields are available on `Span` instances if you're passing them explicitly, and directly the `Trace` effect if you're using ambient spans.
 
@@ -69,11 +77,11 @@ All spans have an internal map of string tag +`TraceValue` pairs called **fields
 - You can add a field to a span via the `put` method on `Span` or `Trace`.
 - Fields are write-only. There is no way to inspect a span's fields.
 
-Some field tags are meaningful to tracing back-ends in an implementation-specific way. These include internal trace/span identifiers, timing information, indication of errors, and so on. These fields are added automatically during the span's lifetime
+Some field tags are meaningful to tracing back-ends in a vendor-specific way. These include internal trace/span identifiers, timing information, indication of errors, and so on. These fields are added automatically during the span's lifetime
 
-Some tags are "standard", in the sense that they are recommended by emerging standards (OpenTracing, OpenTelemetry) as tags for common span fields. Back ends recognize these fields sporadically. You can construct fields that use these standard tags via the `Tags` object.
+Some field tags are "standard", in the sense that they are recommended by emerging standards (OpenTracing, OpenTelemetry). Back ends recognize these fields sporadically. You can construct fields that use these standard tags via the `Tags` object.
 
-Other tags are arbitrary strings that you can create as you wish. Most tracing back ends allow you to query for traces/spans base on these tags, and display them in a table when viewing a span.
+Other field tags are arbitrary strings that you can create as you wish. Most tracing back ends allow you to query for traces/spans base on these tags, and display them in a table when viewing a span.
 
 ## Constructing Spans
 
