@@ -211,7 +211,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.37.0",
+      "io.grpc"              % "grpc-netty"                      % "1.37.1",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
     )
   )
@@ -362,7 +362,7 @@ lazy val examples = project
     libraryDependencies ++= Seq(
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
       "org.slf4j"         % "slf4j-simple"    % "1.7.30",
-      "eu.timepit"        %% "refined"        % "0.9.24",
+      "eu.timepit"        %% "refined"        % "0.9.25",
       "is.cir"            %% "ciris"          % "1.2.1"
     ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
