@@ -16,7 +16,7 @@ import java.net.URI
 
 object GlobalTracerMain extends IOApp {
 
-  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
+  def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
@@ -30,7 +30,7 @@ object GlobalTracerMain extends IOApp {
   def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] = {
     // Datadog
     // import natchez.datadog.DDTracer
-    // val prefix = Some(new URI("https://app.datadoghq.com")) // https://app.datadoghq.eu for Europe 
+    // val prefix = Some(new URI("https://app.datadoghq.com")) // https://app.datadoghq.eu for Europe
     // DDTracer.globalTracerEntryPoint[F](prefix)
 
     // Jaeger
@@ -46,12 +46,12 @@ object GlobalTracerMain extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = {
     globalTracerEntryPoint[IO].flatMap {
-      case None => IO.delay { 
+      case None => IO.delay {
         println("No tracer registered to the global tracer.  Is your agent attached with tracing enabled?")
       } as ExitCode.Error
       case Some(ep) =>
         ep.root("this is the root span")
-          .use(span => runF[Kleisli[IO, Span[IO], *]].run(span)) *> 
+          .use(span => runF[Kleisli[IO, Span[IO], *]].run(span)) *>
           IO.sleep(1.second) as ExitCode.Success // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
     }
   }
