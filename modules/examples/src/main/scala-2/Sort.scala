@@ -8,11 +8,10 @@ import cats._
 import cats.effect.concurrent.Deferred
 import cats.effect.{Concurrent, Timer}
 import cats.syntax.all._
-import natchez.{Kernel, Portal, Trace, TraceValue}
+import natchez.{Portal, Trace}
 import fs2._
 import fs2.concurrent.Queue
 
-import java.net.URI
 import scala.concurrent.duration._
 
 object Sort {
