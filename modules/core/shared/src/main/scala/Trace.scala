@@ -26,6 +26,12 @@ trait Trace[F[_]] {
   def span[A](name: String)(k: F[A]): F[A]
 
   /**
+   * A portal into the current span, which can be used elsewhere when executing code that is outside
+   * the monadic scope of this span but logically a part of it.
+   */
+  def portal: F[Portal[F]]
+
+  /**
    * A unique ID for this trace, if available. This can be useful to include in error messages for
    * example, so you can quickly find the associated trace.
    */
@@ -36,8 +42,6 @@ trait Trace[F[_]] {
    * example, so you can quickly find the associated trace.
    */
   def traceUri: F[Option[URI]]
-
-  def portal: F[Portal[F]]
 }
 
 object Trace {
@@ -55,17 +59,12 @@ object Trace {
       new Trace[F] {
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-
         def put(fields: (String, TraceValue)*): F[Unit] = void
-
         def span[A](name: String)(k: F[A]): F[A] = k
-
         def portal: F[Portal[F]] = Applicative[F].pure(new Portal[F] {
           def apply[A](fa: F[A]): F[A] = fa
         })
-
         def traceId: F[Option[String]] = none.pure[F]
-
         def traceUri: F[Option[URI]] = none.pure[F]
       }
 
@@ -119,10 +118,10 @@ object Trace {
         )
       }
 
-    def traceId: Kleisli[F, Span[F], Option[String]] =
+    def traceId: Kleisli[F,Span[F],Option[String]] =
       Kleisli(_.traceId)
 
-    def traceUri: Kleisli[F, Span[F], Option[URI]] =
+    def traceUri: Kleisli[F,Span[F],Option[URI]] =
       Kleisli(_.traceUri)
 
     def portal: Kleisli[F, Span[F], Portal[Kleisli[F, Span[F], *]]] = Kleisli((span: Span[F]) =>
@@ -182,7 +181,7 @@ object Trace {
         }
     }
 
-  implicit def liftEitherT[F[_] : Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
+  implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
     new Trace[EitherT[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
@@ -256,7 +255,6 @@ object Trace {
         }
       }
     }
-
 }
 
 trait Portal[F[_]] extends (F ~> F)
