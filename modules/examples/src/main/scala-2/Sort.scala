@@ -8,10 +8,11 @@ import cats._
 import cats.effect.concurrent.Deferred
 import cats.effect.{Concurrent, Timer}
 import cats.syntax.all._
-import natchez.{Portal, Trace}
+import natchez.{Kernel, Portal, Trace, TraceValue}
 import fs2._
 import fs2.concurrent.Queue
 
+import java.net.URI
 import scala.concurrent.duration._
 
 object Sort {
@@ -42,17 +43,15 @@ object Sort {
         }
       Stream.eval(qsort(as)).concurrently {
         q.dequeue.evalMap { case ConcatRequest(left, mid, right, portal, cb) =>
-          portal {
-            Trace[F].span(s"concat ${left.mkString(",")} + $mid + ${right.mkString(",")}") {
-              cb(left ++ List(mid) ++ right)
+          Trace[F].span(s"Asynchronously process ConcatRequest (partitioned on $mid)") {
+            portal {
+              Trace[F].span(s"concat ${left.mkString(",")} + $mid + ${right.mkString(",")}") {
+                cb(left ++ List(mid) ++ right)
+              }
             }
           }
         }
       }
     }.compile.lastOrError
   }
-}
-
-object Fs2StreamTrace {
-
 }
