@@ -111,7 +111,7 @@ object Trace {
         def traceUri: Kleisli[F,E,Option[URI]] =
           Kleisli(e => f(e).traceUri)
 
-        def portal: ReaderT[F, E, Portal[ReaderT[F, E, *]]] = Kleisli(e =>
+        def portal: Kleisli[F, E, Portal[Kleisli[F, E, *]]] = Kleisli(e =>
           Applicative[F].pure(new Portal[Kleisli[F, E, *]] {
             override def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] = Kleisli.liftF(fa.run(e))
           })
@@ -149,8 +149,8 @@ object Trace {
         Kleisli.liftF(trace.traceUri)
 
       def portal: Kleisli[F, E, Portal[Kleisli[F, E, *]]] = Kleisli.liftF(trace.portal).map { portal =>
-        new Portal[ReaderT[F, E, *]] {
-          def apply[A](fa: ReaderT[F, E, A]): ReaderT[F, E, A] = fa.mapK(portal)
+        new Portal[Kleisli[F, E, *]] {
+          def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] = fa.mapK(portal)
         }
       }
     }
