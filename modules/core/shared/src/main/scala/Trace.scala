@@ -37,6 +37,7 @@ trait Trace[F[_]] {
    */
   def traceUri: F[Option[URI]]
 
+  def portal: F[Portal[F]]
 }
 
 object Trace {
@@ -54,9 +55,17 @@ object Trace {
       new Trace[F] {
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
+
         def put(fields: (String, TraceValue)*): F[Unit] = void
+
         def span[A](name: String)(k: F[A]): F[A] = k
+
+        def portal: F[Portal[F]] = Applicative[F].pure(new Portal[F] {
+          def apply[A](fa: F[A]): F[A] = fa
+        })
+
         def traceId: F[Option[String]] = none.pure[F]
+
         def traceUri: F[Option[URI]] = none.pure[F]
       }
 
@@ -103,17 +112,26 @@ object Trace {
         def traceUri: Kleisli[F,E,Option[URI]] =
           Kleisli(e => f(e).traceUri)
 
+        def portal: ReaderT[F, E, Portal[ReaderT[F, E, *]]] = Kleisli(e =>
+          Applicative[F].pure(new Portal[Kleisli[F, E, *]] {
+            override def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] = Kleisli.liftF(fa.run(e))
+          })
+        )
       }
 
-    def traceId: Kleisli[F,Span[F],Option[String]] =
+    def traceId: Kleisli[F, Span[F], Option[String]] =
       Kleisli(_.traceId)
 
-    def traceUri: Kleisli[F,Span[F],Option[URI]] =
+    def traceUri: Kleisli[F, Span[F], Option[URI]] =
       Kleisli(_.traceUri)
 
+    def portal: Kleisli[F, Span[F], Portal[Kleisli[F, Span[F], *]]] = Kleisli((span: Span[F]) =>
+      Applicative[F].pure(new Portal[Kleisli[F, Span[F], *]] {
+        override def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] = Kleisli.liftF(fa.run(span))
+      }))
   }
 
-  implicit def liftKleisli[F[_], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
+  implicit def liftKleisli[F[_]: Functor, E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
     new Trace[Kleisli[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
@@ -130,6 +148,12 @@ object Trace {
 
       def traceUri: Kleisli[F, E, Option[URI]] =
         Kleisli.liftF(trace.traceUri)
+
+      def portal: Kleisli[F, E, Portal[Kleisli[F, E, *]]] = Kleisli.liftF(trace.portal).map { portal =>
+        new Portal[ReaderT[F, E, *]] {
+          def apply[A](fa: ReaderT[F, E, A]): ReaderT[F, E, A] = fa.mapK(portal)
+        }
+      }
     }
 
   implicit def liftStateT[F[_]: Monad, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
@@ -149,9 +173,16 @@ object Trace {
 
       def traceUri: StateT[F, S, Option[URI]] =
         StateT.liftF(trace.traceUri)
+
+      def portal: StateT[F, S, Portal[StateT[F, S, *]]] =
+        StateT.liftF(trace.portal).map { portal =>
+          new Portal[StateT[F, S, *]] {
+            def apply[A](fa: StateT[F, S, A]): StateT[F, S, A] = fa.mapK(portal)
+          }
+        }
     }
 
-  implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
+  implicit def liftEitherT[F[_] : Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
     new Trace[EitherT[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
@@ -168,6 +199,12 @@ object Trace {
 
       def traceUri: EitherT[F, E, Option[URI]] =
         EitherT.liftF(trace.traceUri)
+
+      def portal: EitherT[F, E, Portal[EitherT[F, E, *]]] = EitherT.liftF(trace.portal).map { portal =>
+        new Portal[EitherT[F, E, *]] {
+          def apply[A](fa: EitherT[F, E, A]): EitherT[F, E, A] = fa.mapK(portal)
+        }
+      }
     }
 
   implicit def liftOptionT[F[_]: Functor](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
@@ -187,7 +224,13 @@ object Trace {
 
       def traceUri: OptionT[F, Option[URI]] =
         OptionT.liftF(trace.traceUri)
-    }
+
+      def portal: OptionT[F, Portal[OptionT[F, *]]] = OptionT.liftF(trace.portal.map { portal =>
+        new Portal[OptionT[F, *]] {
+          def apply[A](fa: OptionT[F, A]): OptionT[F, A] = OptionT(portal(fa.value))
+        }
+      })
+  }
 
   implicit def liftNested[F[_]: Functor, G[_]: Applicative](implicit trace: Trace[F]): Trace[Nested[F, G, *]] =
     new Trace[Nested[F, G, *]] {
@@ -206,5 +249,14 @@ object Trace {
 
       def traceUri: Nested[F, G, Option[URI]] =
         trace.traceUri.map(_.pure[G]).nested
+
+      def portal: Nested[F, G, Portal[Nested[F, G, *]]] = trace.portal.map(_.pure[G]).nested.map { portal =>
+        new Portal[Nested[F, G, *]] {
+          def apply[A](fa: Nested[F, G, A]): Nested[F, G, A] = fa.mapK(portal)
+        }
+      }
     }
+
 }
+
+trait Portal[F[_]] extends (F ~> F)
