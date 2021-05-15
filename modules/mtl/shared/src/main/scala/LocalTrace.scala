@@ -9,6 +9,8 @@ package mtl
 import cats.mtl.Local
 import cats.effect._
 import cats.syntax.all._
+import cats.~>
+
 import java.net.URI
 
 private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
@@ -27,7 +29,7 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
       }
 
     def portal: F[Portal[F]] = local.ask.map { span =>
-      new Portal[F] {
+      new (F ~> F) {
         def apply[A](fa: F[A]): F[A] = local.scope(fa)(span)
       }
     }

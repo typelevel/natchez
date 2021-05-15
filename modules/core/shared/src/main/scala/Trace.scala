@@ -61,7 +61,7 @@ object Trace {
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
-        def portal: F[Portal[F]] = Applicative[F].pure(new Portal[F] {
+        def portal: F[Portal[F]] = Applicative[F].pure(new (F ~> F) {
           def apply[A](fa: F[A]): F[A] = fa
         })
         def traceId: F[Option[String]] = none.pure[F]
@@ -256,5 +256,3 @@ object Trace {
       }
     }
 }
-
-trait Portal[F[_]] extends (F ~> F)

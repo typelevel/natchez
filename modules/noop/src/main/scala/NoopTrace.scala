@@ -5,8 +5,9 @@
 package natchez
 package noop
 
-import cats.Applicative
+import cats.{Applicative, ~>}
 import cats.syntax.all._
+
 import java.net.URI
 
 final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
@@ -21,7 +22,7 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
     k
 
   override def portal: F[Portal[F]] = Applicative[F].pure(
-    new Portal[F] {
+    new (F ~> F) {
       def apply[A](fa: F[A]): F[A] = fa
     }
   )

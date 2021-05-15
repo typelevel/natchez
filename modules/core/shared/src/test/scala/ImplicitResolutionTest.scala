@@ -5,7 +5,9 @@
 package natchez
 
 import cats.data._
+import cats.Functor
 import cats.effect.Bracket
+import natchez.Trace.Implicits.noop
 
 object ImplicitResolutionTest {
 
@@ -13,7 +15,7 @@ object ImplicitResolutionTest {
   def kleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
     Trace[Kleisli[F, Span[F], *]]
 
-  def kleisliLiftedTrace[F[_]: Trace] =
+  def kleisliLiftedTrace[F[_]: Trace: Functor] =
     Trace[Kleisli[F, Int, *]]
 
   def kleisliKleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
