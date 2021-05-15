@@ -180,7 +180,7 @@ lazy val opencensus = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name := "natchez-opencensus",
+    name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
       "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.3"
@@ -222,7 +222,7 @@ lazy val lightstepHttp = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    name := "natchez-lightstep-http",
+    name        := "natchez-lightstep-http",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-okhttp" % "0.30.3"
