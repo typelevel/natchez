@@ -9,7 +9,7 @@ import cats.Applicative
 import cats.syntax.all._
 import java.net.URI
 
-final case class NoopTrace[F[_]: Applicative]() extends UnsafeTrace[F] {
+final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit
@@ -20,9 +20,11 @@ final case class NoopTrace[F[_]: Applicative]() extends UnsafeTrace[F] {
   override def span[A](name: String)(k: F[A]): F[A] =
     k
 
-  def current: F[Span[F]] = Applicative[F].pure(NoopSpan[F]())
-
-  def runAsChildOf[A](span: Span[F])(fa: F[A]): F[A] = fa
+  override def portal: F[Portal[F]] = Applicative[F].pure(
+    new Portal[F] {
+      def apply[A](fa: F[A]): F[A] = fa
+    }
+  )
 
   def traceId: F[Option[String]] =
     none.pure[F]

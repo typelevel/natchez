@@ -9,31 +9,32 @@ package mtl
 import cats.mtl.Local
 import cats.effect._
 import cats.syntax.all._
-
 import java.net.URI
 
 private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
   implicit ev: Bracket[F, Throwable]
-) extends UnsafeTrace[F] {
+) extends Trace[F] {
 
-  def kernel: F[Kernel] =
-    local.ask.flatMap(_.kernel)
+    def kernel: F[Kernel] =
+      local.ask.flatMap(_.kernel)
 
-  def put(fields: (String, TraceValue)*): F[Unit] =
-    local.ask.flatMap(_.put(fields: _*))
+    def put(fields: (String, TraceValue)*): F[Unit] =
+      local.ask.flatMap(_.put(fields: _*))
 
-  def span[A](name: String)(k: F[A]): F[A] =
-    local.ask.flatMap { span =>
-      span.span(name).use(local.scope(k))
+    def span[A](name: String)(k: F[A]): F[A] =
+      local.ask.flatMap { span =>
+        span.span(name).use(local.scope(k))
+      }
+
+    def portal: F[Portal[F]] = local.ask.map { span =>
+      new Portal[F] {
+        def apply[A](fa: F[A]): F[A] = local.scope(fa)(span)
+      }
     }
 
-  def traceId: F[Option[String]] =
-    local.ask.flatMap(_.traceId)
+    def traceId: F[Option[String]] =
+      local.ask.flatMap(_.traceId)
 
-  def traceUri: F[Option[URI]] =
-    local.ask.flatMap(_.traceUri)
-
-  def runAsChildOf[A](span: Span[F])(fa: F[A]): F[A] = local.scope(fa)(span)
-
-  def current: F[Span[F]] = local.ask
+    def traceUri: F[Option[URI]] =
+      local.ask.flatMap(_.traceUri)
 }
