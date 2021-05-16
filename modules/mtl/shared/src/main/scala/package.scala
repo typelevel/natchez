@@ -11,6 +11,6 @@ package object mtl {
   implicit def natchezMtlTraceForLocal[F[_]](
     implicit ev: Local[F, Span[F]],
              eb: Bracket[F, Throwable],
-  ): Trace[F] =
+  ): Trace.Aux[F, F] =
     new LocalTrace(ev)
 }
