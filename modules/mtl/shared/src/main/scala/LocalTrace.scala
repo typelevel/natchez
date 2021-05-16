@@ -14,21 +14,28 @@ import java.net.URI
 private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
   implicit ev: Bracket[F, Throwable]
 ) extends Trace[F] {
+  type Sp[A] = F[A]
 
-    def kernel: F[Kernel] =
-      local.ask.flatMap(_.kernel)
+  def liftSp[A](fa: F[A]): F[A] = fa
 
-    def put(fields: (String, TraceValue)*): F[Unit] =
-      local.ask.flatMap(_.put(fields: _*))
+  def kernel: F[Kernel] =
+    local.ask.flatMap(_.kernel)
 
-    def span[A](name: String)(k: F[A]): F[A] =
-      local.ask.flatMap { span =>
-        span.span(name).use(local.scope(k))
-      }
+  def put(fields: (String, TraceValue)*): F[Unit] =
+    local.ask.flatMap(_.put(fields: _*))
 
-    def traceId: F[Option[String]] =
-      local.ask.flatMap(_.traceId)
+  def span[A](name: String)(k: F[A]): F[A] =
+    local.ask.flatMap { span =>
+      span.span(name).use(local.scope(k))
+    }
 
-    def traceUri: F[Option[URI]] =
-      local.ask.flatMap(_.traceUri)
+  def traceId: F[Option[String]] =
+    local.ask.flatMap(_.traceId)
+
+  def traceUri: F[Option[URI]] =
+    local.ask.flatMap(_.traceUri)
+
+  def current: F[Span[F]] = local.ask
+
+  def runWith[A](span: Span[F])(k: F[A]): F[A] = local.scope(k)(span)
 }

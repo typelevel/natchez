@@ -12,6 +12,14 @@ import java.net.URI
 
 /** A tracing effect, which always has a current span. */
 trait Trace[F[_]] {
+  /** The effect type of the spans used by this [[Trace]] instance */
+  type Sp[_]
+  
+  def liftSp[A](spa: Sp[A]): F[A]
+
+  val liftSpK: Sp ~> F = new (Sp ~> F) {
+    def apply[A](fa: Sp[A]): F[A] = liftSp(fa)
+  }
 
   /** Put a sequence of fields into the current span. */
   def put(fields: (String, TraceValue)*): F[Unit]
@@ -24,6 +32,12 @@ trait Trace[F[_]] {
 
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
+
+  /** Get the current span */
+  def current: F[Span[Sp]]
+
+  /** Run `k` within the provided span */
+  def runWith[A](span: Span[Sp])(k: F[A]): F[A]
 
   /**
    * A unique ID for this trace, if available. This can be useful to include in error messages for
@@ -40,6 +54,9 @@ trait Trace[F[_]] {
 }
 
 object Trace {
+  type Aux[F[_], Sp0[_]] = Trace[F] {
+    type Sp[A] = Sp0[A]
+  }
 
   def apply[F[_]](implicit ev: Trace[F]): ev.type = ev
 
@@ -52,14 +69,37 @@ object Trace {
      */
     implicit def noop[F[_]: Applicative]: Trace[F] =
       new Trace[F] {
+        type Sp[A] = F[A]
+        def liftSp[A](fa: F[A]): F[A] = fa
+
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
+        def current: F[Span[F]] = NoopSpan[F]().pure[F].widen
+        def runWith[A](span: Span[F])(k: F[A]): F[A] = k
         def span[A](name: String)(k: F[A]): F[A] = k
-        def traceId: F[Option[String]] = none.pure[F]
-        def traceUri: F[Option[URI]] = none.pure[F]
+        def traceId: F[Option[String]] = none[String].pure[F]
+        def traceUri: F[Option[URI]] = none[URI].pure[F]
       }
 
+  }
+
+  abstract class Lifted[F[_], G[_], Sp0[_]](protected val trace: Trace.Aux[F, Sp0]) extends Trace[G] {
+    type Sp[A] = Sp0[A]
+
+    protected def lift[A](fa: F[A]): G[A]
+
+    override def liftSp[A](spa: Sp[A]): G[A] = lift(trace.liftSp(spa))
+
+    override def put(fields: (String, TraceValue)*): G[Unit] = lift(trace.put(fields: _*))
+
+    override def kernel: G[Kernel] = lift(trace.kernel)
+
+    override def current: G[Span[Sp]] = lift(trace.current)
+
+    override def traceId: G[Option[String]] = lift(trace.traceId)
+
+    override def traceUri: G[Option[URI]] = lift(trace.traceUri)
   }
 
   /**
@@ -76,6 +116,8 @@ object Trace {
    */
   class KleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) extends Trace[Kleisli[F, Span[F], *]] {
 
+    type Sp[A] = F[A]
+
     def kernel: Kleisli[F, Span[F], Kernel] =
       Kleisli(_.kernel)
 
@@ -85,8 +127,15 @@ object Trace {
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
 
-    def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, *]] =
+    def current: Kleisli[F, Span[F], Span[F]] = Kleisli.ask
+
+    def runWith[A](span: Span[F])(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
+      Kleisli.liftF(k.run(span))
+
+    def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace.Aux[Kleisli[F, E, *], F] =
       new Trace[Kleisli[F, E, *]] {
+
+        type Sp[A] = F[A]
 
         def kernel: Kleisli[F,E,Kernel] =
           Kleisli(e => f(e).kernel)
@@ -97,12 +146,18 @@ object Trace {
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
 
+        def current: Kleisli[F, E, Span[F]] = Kleisli(e => f(e).pure[F])
+
+        def runWith[A](span: Span[Sp])(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
+          Kleisli(e => k.run(g(e, span)))
+
         def traceId: Kleisli[F,E,Option[String]] =
           Kleisli(e => f(e).traceId)
 
         def traceUri: Kleisli[F,E,Option[URI]] =
           Kleisli(e => f(e).traceUri)
 
+        def liftSp[A](spa: F[A]): Kleisli[F, E, A] = Kleisli.liftF(spa)
       }
 
     def traceId: Kleisli[F,Span[F],Option[String]] =
@@ -111,100 +166,64 @@ object Trace {
     def traceUri: Kleisli[F,Span[F],Option[URI]] =
       Kleisli(_.traceUri)
 
+    def liftSp[A](spa: F[A]): Kleisli[F, Span[F], A] = Kleisli.liftF(spa)
   }
 
-  implicit def liftKleisli[F[_], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
-    new Trace[Kleisli[F, E, *]] {
+  implicit def liftKleisli[F[_], E](implicit t: Trace[F]): Trace.Aux[Kleisli[F, E, *], t.Sp] =
+    new Lifted[F, Kleisli[F, E, *], t.Sp](t) {
 
-      def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
-        Kleisli.liftF(trace.put(fields: _*))
-
-      def kernel: Kleisli[F, E, Kernel] =
-        Kleisli.liftF(trace.kernel)
+      protected def lift[A](fa: F[A]): Kleisli[F, E, A] = Kleisli.liftF(fa)
 
       def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
         Kleisli(e => trace.span[A](name)(k.run(e)))
 
-      def traceId: Kleisli[F, E, Option[String]] =
-        Kleisli.liftF(trace.traceId)
-
-      def traceUri: Kleisli[F, E, Option[URI]] =
-        Kleisli.liftF(trace.traceUri)
+      def runWith[A](span: Span[Sp])(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
+        Kleisli(e => trace.runWith(span)(k.run(e)))
     }
 
-  implicit def liftStateT[F[_]: Monad, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
-    new Trace[StateT[F, S, *]] {
+  implicit def liftStateT[F[_]: Monad, S](implicit t: Trace[F]): Trace.Aux[StateT[F, S, *], t.Sp] =
+    new Lifted[F, StateT[F, S, *], t.Sp](t) {
 
-      def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
-        StateT.liftF(trace.put(fields: _*))
-
-      def kernel: StateT[F, S, Kernel] =
-        StateT.liftF(trace.kernel)
+      protected def lift[A](fa: F[A]): StateT[F, S, A] = StateT.liftF(fa)
 
       def span[A](name: String)(k: StateT[F, S, A]): StateT[F, S, A] =
-        StateT(s => trace.span[(S, A)](name)(k.run(s)))
+        StateT(s => t.span[(S, A)](name)(k.run(s)))
 
-      def traceId: StateT[F, S, Option[String]] =
-        StateT.liftF(trace.traceId)
-
-      def traceUri: StateT[F, S, Option[URI]] =
-        StateT.liftF(trace.traceUri)
+      def runWith[A](span: Span[t.Sp])(k: StateT[F, S, A]): StateT[F, S, A] =
+        StateT(s => t.runWith(span)(k.run(s)))
     }
 
-  implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
-    new Trace[EitherT[F, E, *]] {
-
-      def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
-        EitherT.liftF(trace.put(fields: _*))
-
-      def kernel: EitherT[F, E, Kernel] =
-        EitherT.liftF(trace.kernel)
+  implicit def liftEitherT[F[_]: Functor, E](implicit t: Trace[F]): Trace.Aux[EitherT[F, E, *], t.Sp] =
+    new Lifted[F, EitherT[F, E, *], t.Sp](t) {
+      protected def lift[A](fa: F[A]): EitherT[F, E, A] = EitherT.liftF(fa)
 
       def span[A](name: String)(k: EitherT[F, E, A]): EitherT[F, E, A] =
         EitherT(trace.span(name)(k.value))
 
-      def traceId: EitherT[F, E, Option[String]] =
-        EitherT.liftF(trace.traceId)
-
-      def traceUri: EitherT[F, E, Option[URI]] =
-        EitherT.liftF(trace.traceUri)
+      def runWith[A](span: Span[trace.Sp])(k: EitherT[F, E, A]): EitherT[F, E, A] =
+        EitherT(trace.runWith(span)(k.value))
     }
 
-  implicit def liftOptionT[F[_]: Functor](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
-    new Trace[OptionT[F, *]] {
-
-      def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
-        OptionT.liftF(trace.put(fields: _*))
-
-      def kernel: OptionT[F, Kernel] =
-        OptionT.liftF(trace.kernel)
+  implicit def liftOptionT[F[_]: Functor](implicit t: Trace[F]): Trace.Aux[OptionT[F, *], t.Sp] =
+    new Lifted[F, OptionT[F, *], t.Sp](t) {
+      protected def lift[A](fa: F[A]): OptionT[F, A] = OptionT.liftF(fa)
 
       def span[A](name: String)(k: OptionT[F, A]): OptionT[F, A] =
-        OptionT(trace.span(name)(k.value))
+        OptionT(t.span(name)(k.value))
 
-      def traceId: OptionT[F, Option[String]] =
-        OptionT.liftF(trace.traceId)
-
-      def traceUri: OptionT[F, Option[URI]] =
-        OptionT.liftF(trace.traceUri)
+      def runWith[A](span: Span[t.Sp])(k: OptionT[F, A]): OptionT[F, A] =
+        OptionT(t.runWith(span)(k.value))
     }
 
-  implicit def liftNested[F[_]: Functor, G[_]: Applicative](implicit trace: Trace[F]): Trace[Nested[F, G, *]] =
-    new Trace[Nested[F, G, *]] {
+  implicit def liftNested[F[_]: Functor, G[_]: Applicative](implicit t: Trace[F]): Trace.Aux[Nested[F, G, *], t.Sp] =
+    new Lifted[F, Nested[F, G, *], t.Sp](t) {
 
-      def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
-        trace.put(fields: _*).map(_.pure[G]).nested
-
-      def kernel: Nested[F, G, Kernel] =
-        trace.kernel.map(_.pure[G]).nested
+      protected def lift[A](fa: F[A]): Nested[F, G, A] = fa.map(_.pure[G]).nested
 
       def span[A](name: String)(k: Nested[F, G, A]): Nested[F, G, A] =
-        trace.span(name)(k.value).nested
+        t.span(name)(k.value).nested
 
-      def traceId: Nested[F, G, Option[String]] =
-        trace.traceId.map(_.pure[G]).nested
-
-      def traceUri: Nested[F, G, Option[URI]] =
-        trace.traceUri.map(_.pure[G]).nested
+      def runWith[A](span: Span[t.Sp])(k: Nested[F, G, A]): Nested[F, G, A] =
+        t.runWith(span)(k.value).nested
     }
 }

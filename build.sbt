@@ -121,8 +121,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, fs2JS, fs2JVM, noop, mock, newrelic, logOdin, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, fs2JS, fs2JVM, noop, mock, newrelic, logOdin, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -351,7 +351,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
+  .dependsOn(coreJVM, fs2JVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -366,6 +366,27 @@ lazy val examples = project
       "is.cir"            %% "ciris"          % "1.2.1"
     ).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
+
+lazy val fs2 = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/fs2"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-fs2",
+    description := "fs2 bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "co.fs2"            %%% "fs2-core"       % "2.5.5"
+    )
+  )
+
+lazy val fs2JVM = fs2.jvm.dependsOn(coreJVM)
+lazy val fs2JS = fs2.js.dependsOn(coreJS)
+  .settings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+
 
 lazy val logOdin = project
   .in(file("modules/log-odin"))

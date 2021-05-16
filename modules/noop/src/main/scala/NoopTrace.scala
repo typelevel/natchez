@@ -11,6 +11,10 @@ import java.net.URI
 
 final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
+  type Sp[A] = F[A]
+
+  override def liftSp[A](spa: F[A]): F[A] = spa
+
   override def put(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit
 
@@ -19,6 +23,10 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
   override def span[A](name: String)(k: F[A]): F[A] =
     k
+
+  override def current: F[Span[F]] = NoopSpan[F]().pure[F].widen
+
+  override def runWith[A](span: Span[F])(k: F[A]): F[A] = k
 
   def traceId: F[Option[String]] =
     none.pure[F]
