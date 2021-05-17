@@ -251,7 +251,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
       "io.circe"          %%% "circe-core"      % {
         if (scalaVersion.value.startsWith("3.")) "0.14.0-M7" else "0.13.0"
       },
-      "org.typelevel"     %%% "log4cats-core"   % "1.3.1",
+      "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
   )
