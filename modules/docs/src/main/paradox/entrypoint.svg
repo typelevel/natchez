@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="596 272.5 443.5 157" width="443.5" height="157">
+  <defs>
+    <font-face font-family="Courier New" font-size="16" panose-1="2 7 3 9 2 2 5 2 4 4" units-per-em="1000" underline-position="-232.91016" underline-thickness="41.015625" slope="0" x-height="422.85156" cap-height="571.28906" ascent="832.5195" descent="-300.29297" font-weight="400">
+      <font-face-src>
+        <font-face-name name="CourierNewPSMT"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <font-face font-family="Times New Roman" font-size="16" panose-1="2 2 5 3 5 4 5 9 3 4" units-per-em="1000" underline-position="-108.88672" underline-thickness="48.828125" slope="-1020.812" x-height="430.1758" cap-height="662.1094" ascent="891.1133" descent="-216.3086" font-style="italic" font-weight="400">
+      <font-face-src>
+        <font-face-name name="TimesNewRomanPS-ItalicMT"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.8.1 
+    <dc:date>2021-02-04 22:04:47 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_1" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canvas 1</title>
+    <g id="Canvas_1: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_2">
+        <rect x="616.5" y="366" width="113.5" height="43" fill="white"/>
+        <rect x="616.5" y="366" width="113.5" height="43" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(621.5 378.5)" fill="#0432ff">
+          <tspan font-family="Courier New" font-size="16" font-weight="400" fill="#0432ff" x="3.7421875" y="13">EntryPoint</tspan>
+        </text>
+      </g>
+      <g id="Graphic_3">
+        <rect x="857" y="362" width="113.5" height="43" fill="white"/>
+        <rect x="857" y="362" width="113.5" height="43" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(862 374.5)" fill="#0432ff">
+          <tspan font-family="Courier New" font-size="16" font-weight="400" fill="#0432ff" x="32.546875" y="13">Span</tspan>
+        </text>
+      </g>
+      <g id="Line_4">
+        <line x1="730" y1="386.55613" x2="847.1014" y2="384.6085" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_5">
+        <rect x="761.81985" y="361.12804" width="56" height="46" fill="white"/>
+        <text transform="translate(766.81985 366.44836)" fill="black">
+          <tspan font-family="Times New Roman" font-size="16" font-style="italic" font-weight="400" fill="black" x=".1953125" y="14">creates</tspan>
+          <tspan font-family="Times New Roman" font-size="16" font-style="italic" font-weight="400" fill="black" x="3.8867188" y="31.679688">initial</tspan>
+        </text>
+      </g>
+      <g id="Line_6">
+        <path d="M 970.5 383.5 L 1007.7976 383.5 C 1013.8728 383.5 1018.7976 378.57513 1018.7976 372.5 L 1018.7976 326.384 C 1018.7976 320.30885 1013.8728 315.384 1007.7976 315.384 C 1007.7549 315.384 1007.7122 315.38424 1007.6695 315.38473 L 923.4739 316.36552 C 917.3992 316.4363 912.532 321.4182 912.6028 327.4929 C 912.6031 327.52532 912.6037 327.55773 912.6043 327.59014 L 913.1066 352.10208" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_7">
+        <rect x="939.5" y="292.5" width="56" height="46" fill="white"/>
+        <text transform="translate(944.5 297.8203)" fill="black">
+          <tspan font-family="Times New Roman" font-size="16" font-style="italic" font-weight="400" fill="black" x=".1953125" y="14">creates</tspan>
+          <tspan font-family="Times New Roman" font-size="16" font-style="italic" font-weight="400" fill="black" x="7.003906" y="31.679688">child</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>
