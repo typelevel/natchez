@@ -249,10 +249,10 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % {
-        if (scalaVersion.value.startsWith("3.")) "0.14.0-M6" else "0.13.0"
+        if (scalaVersion.value.startsWith("3.")) "0.14.0-M7" else "0.13.0"
       },
-      "org.typelevel"     %%% "log4cats-core"   % "1.3.0",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.2.2" % Test,
+      "org.typelevel"     %%% "log4cats-core"   % "1.3.1",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
   )
 lazy val logJVM = log.jvm.dependsOn(coreJVM)
