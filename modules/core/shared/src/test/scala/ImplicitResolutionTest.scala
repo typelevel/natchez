@@ -5,20 +5,20 @@
 package natchez
 
 import cats.data._
-import cats.effect.Bracket
+import cats.effect.MonadCancel
 
 object ImplicitResolutionTest {
 
   // these should compile
-  def kleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
+  def kleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) =
     Trace[Kleisli[F, Span[F], *]]
 
   def kleisliLiftedTrace[F[_]: Trace] =
     Trace[Kleisli[F, Int, *]]
 
-  def kleisliKleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) =
+  def kleisliKleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) =
     Trace[Kleisli[Kleisli[F, Span[F], *], Int, *]]
 
-  def kleisliKleisliTrace2[F[_]](implicit ev: Bracket[F, Throwable]) =
+  def kleisliKleisliTrace2[F[_]](implicit ev: MonadCancel[F, Throwable]) =
     Trace[Kleisli[Kleisli[F, Int, *], Span[Kleisli[F, Int, *]], *]]
 }
