@@ -22,6 +22,12 @@ inThisBuild(Seq(
     "org.typelevel"          % "*" % "semver-spec",
     "org.scala-js"           % "*" % "semver-spec",
     "org.jctools"            % "*" % "always",
+    "org.jetbrains"          % "*" % "always",
+    "org.jboss.logging"      % "*" % "always",
+    "org.jboss.threads"      % "*" % "always",
+    "org.wildfly.common"     % "*" % "always",
+    "org.jboss.xnio"         % "*" % "always",
+    "com.lihaoyi"            % "*" % "always",
   )
 ))
 
