@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="566.5 -71.5 355.5 254.6" width="355.5" height="254.6">
+  <defs>
+    <font-face font-family="Courier New" font-size="16" panose-1="2 7 3 9 2 2 5 2 4 4" units-per-em="1000" underline-position="-232.91016" underline-thickness="41.015625" slope="0" x-height="422.85156" cap-height="571.28906" ascent="832.5195" descent="-300.29297" font-weight="400">
+      <font-face-src>
+        <font-face-name name="CourierNewPSMT"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.8.1 
+    <dc:date>2021-02-04 22:04:47 +0000</dc:date>
+  </metadata>
+  <g id="Canvas_1" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canvas 1</title>
+    <g id="Canvas_1: Layer 1">
+      <title>Layer 1</title>
+      <g id="Graphic_23">
+        <rect x="587" y="-51" width="113.5" height="43" fill="white"/>
+        <rect x="587" y="-51" width="113.5" height="43" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(592 -38.5)" fill="#0432ff">
+          <tspan font-family="Courier New" font-size="16" font-weight="400" fill="#0432ff" x="32.546875" y="13">Span</tspan>
+        </text>
+      </g>
+      <g id="Graphic_24">
+        <rect x="704.31985" y="6" width="113.5" height="43" fill="white"/>
+        <rect x="704.31985" y="6" width="113.5" height="43" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(709.31985 18.5)" fill="#0432ff">
+          <tspan font-family="Courier New" font-size="16" font-weight="400" fill="#0432ff" x="32.546875" y="13">Span</tspan>
+        </text>
+      </g>
+      <g id="Graphic_25">
+        <rect x="704.31985" y="62.8" width="113.5" height="43" fill="white"/>
+        <rect x="704.31985" y="62.8" width="113.5" height="43" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(709.31985 75.3)" fill="#0432ff">
+          <tspan font-family="Courier New" font-size="16" font-weight="400" fill="#0432ff" x="32.546875" y="13">Span</tspan>
+        </text>
+      </g>
+      <g id="Graphic_26">
+        <rect x="788" y="119.6" width="113.5" height="43" fill="white"/>
+        <rect x="788" y="119.6" width="113.5" height="43" stroke="gray" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(793 132.1)" fill="#0432ff">
+          <tspan font-family="Courier New" font-size="16" font-weight="400" fill="#0432ff" x="32.546875" y="13">Span</tspan>
+        </text>
+      </g>
+      <g id="Line_27">
+        <path d="M 643.75 -8 L 643.75 16.5 C 643.75 22.575132 648.6749 27.5 654.75 27.5 L 694.41985 27.5" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_28">
+        <path d="M 643.75 -8 L 643.75 73.3 C 643.75 79.37513 648.6749 84.3 654.75 84.3 L 694.41985 84.3" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_29">
+        <path d="M 761.06985 105.8 L 761.06985 130.1 C 761.06985 136.17513 765.9947 141.1 772.06985 141.1 L 778.1 141.1" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+    </g>
+  </g>
+</svg>
