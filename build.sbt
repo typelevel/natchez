@@ -1,12 +1,11 @@
 val scala212Version        = "2.12.12"
 val scala213Version        = "2.13.5"
-val scala30PreviousVersion = "3.0.0-RC2"
-val scala30Version         = "3.0.0-RC3"
+val scala30Version         = "3.0.0"
 
-val collectionCompatVersion = "2.4.3"
+val collectionCompatVersion = "2.4.4"
 
-val catsVersion = "2.6.0"
-val catsEffectVersion = "2.5.0"
+val catsVersion = "2.6.1"
+val catsEffectVersion = "2.5.1"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -49,14 +48,14 @@ lazy val commonSettings = Seq(
 
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit"               % "0.7.25" % Test,
-    "org.typelevel" %%% "munit-cats-effect-2" % "1.0.2"  % Test,
+    "org.scalameta" %%% "munit"               % "0.7.26" % Test,
+    "org.typelevel" %%% "munit-cats-effect-2" % "1.0.3"  % Test,
   ),
   testFrameworks += new TestFramework("munit.Framework"),
 
   // Compilation
   scalaVersion       := scala213Version,
-  crossScalaVersions := Seq(scala212Version, scala213Version, scala30PreviousVersion, scala30Version),
+  crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
   Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
   Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
   Compile / doc     / scalacOptions ++= Seq(
@@ -67,26 +66,6 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
   ).filterNot(_ => scalaVersion.value.startsWith("3.")),
-
-  // Add some more source directories
-  Compile / unmanagedSourceDirectories ++= {
-    val sourceDir = (Compile / sourceDirectory).value
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _))  => Seq(sourceDir / "scala-3")
-      case Some((2, _))  => Seq(sourceDir / "scala-2")
-      case _             => Seq()
-    }
-  },
-
-  // Also for test
-  Test / unmanagedSourceDirectories ++= {
-    val sourceDir = (Test / sourceDirectory).value
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _))  => Seq(sourceDir / "scala-3")
-      case Some((2, _))  => Seq(sourceDir / "scala-2")
-      case _             => Seq()
-    }
-  },
 
   // dottydoc really doesn't work at all right now
   Compile / doc / sources := {
@@ -255,8 +234,8 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.78.3",
-      "com.datadoghq" % "dd-trace-api" % "0.78.3"
+      "com.datadoghq" % "dd-trace-ot"  % "0.80.0",
+      "com.datadoghq" % "dd-trace-api" % "0.80.0"
     )
   )
 
@@ -269,13 +248,11 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"    % {
-             if (scalaVersion.value == scala30PreviousVersion) "0.14.0-M5"
-        else if (scalaVersion.value == scala30Version)         "0.14.0-M6"
-        else                                                   "0.13.0"
+      "io.circe"          %%% "circe-core"      % {
+        if (scalaVersion.value.startsWith("3.")) "0.14.0-M7" else "0.13.0"
       },
-      "org.typelevel"     %%% "log4cats-core"   % "1.3.0",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.2.2" % Test,
+      "org.typelevel"     %%% "log4cats-core"   % "1.3.1",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
   )
 lazy val logJVM = log.jvm.dependsOn(coreJVM)
@@ -312,7 +289,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel"          %%% "cats-mtl"    % "1.2.0",
+      "org.typelevel"          %%% "cats-mtl"    % "1.2.1",
     )
   )
 
