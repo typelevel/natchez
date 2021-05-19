@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+<title>Spans · Natchez</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/natchezreference/spans.html"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>Natchez
+</a>
+<div class="version-number">
+0.0.25
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../overview.html" class="page">Overview</a></li>
+  <li><a href="../reference/index.html" class="page">Reference</a>
+  <ul>
+    <li><a href="../reference/entrypoints.html" class="page">Entry Points</a></li>
+    <li><a href="../reference/kernels.html" class="page">Kernels</a></li>
+    <li><a href="../reference/spans.html" class="active page">Spans</a></li>
+    <li><a href="../reference/trace.html" class="page">Trace Constraint</a></li>
+    <li><a href="../reference/tracevalues.html" class="page">Trace Values</a></li>
+  </ul></li>
+  <li><a href="../backends/index.html" class="page">Back Ends</a>
+  <ul>
+    <li><a href="../backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="../backends/honeycomb.html" class="page">Honeycomb</a></li>
+    <li><a href="../backends/jaeger.html" class="page">Jaeger</a></li>
+    <li><a href="../backends/lightstep.html" class="page">Lightstep</a></li>
+    <li><a href="../backends/log4cats.html" class="page">Log4Cats</a></li>
+    <li><a href="../backends/mock.html" class="page">Mock</a></li>
+    <li><a href="../backends/newrelic.html" class="page">New Relic</a></li>
+    <li><a href="../backends/noop.html" class="page">No-Op</a></li>
+    <li><a href="../backends/odin.html" class="page">Odin</a></li>
+    <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+  </ul></li>
+  <li><a href="../examples/index.html" class="page">Examples</a>
+  <ul>
+    <li><a href="../examples/http4s.html" class="page">Http4s</a></li>
+    <li><a href="../examples/skunk.html" class="page">Skunk</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="../index.html">Natchez</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>Natchez
+</a>
+<div class="version-number">
+0.0.25
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../overview.html" class="page">Overview</a></li>
+  <li><a href="../reference/index.html" class="page">Reference</a>
+  <ul>
+    <li><a href="../reference/entrypoints.html" class="page">Entry Points</a></li>
+    <li><a href="../reference/kernels.html" class="page">Kernels</a></li>
+    <li><a href="../reference/spans.html" class="active page">Spans</a></li>
+    <li><a href="../reference/trace.html" class="page">Trace Constraint</a></li>
+    <li><a href="../reference/tracevalues.html" class="page">Trace Values</a></li>
+  </ul></li>
+  <li><a href="../backends/index.html" class="page">Back Ends</a>
+  <ul>
+    <li><a href="../backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="../backends/honeycomb.html" class="page">Honeycomb</a></li>
+    <li><a href="../backends/jaeger.html" class="page">Jaeger</a></li>
+    <li><a href="../backends/lightstep.html" class="page">Lightstep</a></li>
+    <li><a href="../backends/log4cats.html" class="page">Log4Cats</a></li>
+    <li><a href="../backends/mock.html" class="page">Mock</a></li>
+    <li><a href="../backends/newrelic.html" class="page">New Relic</a></li>
+    <li><a href="../backends/noop.html" class="page">No-Op</a></li>
+    <li><a href="../backends/odin.html" class="page">Odin</a></li>
+    <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+  </ul></li>
+  <li><a href="../examples/index.html" class="page">Examples</a>
+  <ul>
+    <li><a href="../examples/http4s.html" class="page">Http4s</a></li>
+    <li><a href="../examples/skunk.html" class="page">Skunk</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">Natchez</a></li>
+  <li><a href="../reference/index.html">Reference</a></li>
+  <li>Spans</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#spans" name="spans" class="anchor"><span class="anchor-link"></span></a>Spans</h1>
+<p>The central interface in Natchez is the <code>Span</code>, which is a managed resource that records timing information and other details about its own lifetime. We perform computations within the lifetime of a span and thus gather timing information about these computations.</p>
+<p>A <code>Span</code> can create child spans, whose lifetimes are bounded (usually!) by the lifetime of the parent. We can thus gather timing information for various phases of computation within a larger computation. Concurrent computations may have many active child spans.</p>
+<p>Spans thus form a <strong>tree</strong>.</p>
+<p><img src="../tree.svg" /></p>
+<p>Each <code>Span</code> (in addition to a parent, name, intrinisic timing information, and other back-end-specific data) contains a string-keyed map of <code>TraceValue</code>s (strings, booleans, and numbers) for arbitrary user-defined information.</p>
+<p>A <code>Span</code> can provide a hunk of data called a <code>Kernel</code>, which can be sent to a remote computer, typically via HTTP headers. The remote computer can then create child spans that will be linked with the originating span by the tracing back-end. Tracing is thus <strong>distributed</strong>.</p>
+<h2><a href="#passing-spans-around" name="passing-spans-around" class="anchor"><span class="anchor-link"></span></a>Passing Spans Around</h2>
+<p><em>The examples in this section use the following imports:</em></p>
+<pre class="prettyprint"><code class="language-scala">import cats.Monad
+import cats.effect.IO
+import cats.syntax.all._
+import natchez.{ Span, Trace }
+</code></pre>
+<p>There are two strategies for keeping track of the current span.</p>
+<h3><a href="#explicit-span" name="explicit-span" class="anchor"><span class="anchor-link"></span></a>Explicit Span</h3>
+<p>The simple (but verbose) strategy for knowing what the current span is, is to pass one as an argument to any method that needs to do tracing. For example:</p>
+<pre class="prettyprint"><code class="language-scala">def wibble(name: String, age: Int, parent: Span[IO]): IO[Unit] =
+  parent.span(&quot;wibble&quot;).use { span =&gt;
+    for {
+      _ &lt;- span.put(&quot;name&quot; -&gt; name, &quot;age&quot; -&gt; age)
+      // ... actual method logic in IO
+    } yield ()
+  }
+</code></pre>
+<p>This approach might make sense if you&rsquo;re using a concrete effect type with no &ldquo;reader&rdquo; capability (like <code>IO</code> with Cats-Effect 2).</p>
+<h3><a href="#ambient-span" name="ambient-span" class="anchor"><span class="anchor-link"></span></a>Ambient Span</h3>
+<p>A nicer way to pass the current span around is to use the <code>Trace</code> constraint, which ensures that there is always a current span. With this strategy you never have see <code>Span</code> reference at all, but instead use the <code>Trace</code> instance directly.</p>
+<pre class="prettyprint"><code class="language-scala">def wibble[F[_]: Trace: Monad](name: String, age: Int, parent: Span[F]): F[Unit] =
+  Trace[F].span(&quot;wibble&quot;) {
+    for {
+      _ &lt;- Trace[F].put(&quot;name&quot; -&gt; name, &quot;age&quot; -&gt; age)
+      // ... actual method logic in F
+    } yield ()
+  }
+</code></pre>
+<p>Use this strategy if you&rsquo;re programming in tagless style (i.e., abstract effect <code>F</code>) or if you&rsquo;re using a concrete data type with &ldquo;reader&rdquo; capabilities (like <code>IO</code> Cats-Effect 3).</p>
+<p>See the <a href="trace.html">reference</a> for more information on the <code>Trace</code> constraint.</p>
+<h2><a href="#span-properties" name="span-properties" class="anchor"><span class="anchor-link"></span></a>Span Properties</h2>
+<p>All spans have the following intrinisic properties, all of which return <em>vendor-specific</em> values.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Property </th>
+      <th>Meaning </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>spanId</code> </td>
+      <td>An opaque string identifier that uniquely identifies a span. </td>
+    </tr>
+    <tr>
+      <td><code>traceUri</code> </td>
+      <td>A URI where a user can view the trace using the back end&rsquo;s GUI. </td>
+    </tr>
+    <tr>
+      <td><code>kernel</code> </td>
+      <td>A map of values that can be sent to a remote computer, allowing it to continue this trace. See the <a href="kernels.html">reference</a> for more information. </td>
+    </tr>
+  </tbody>
+</table>
+<p>These fields are available on <code>Span</code> instances if you&rsquo;re passing them explicitly, and directly the <code>Trace</code> effect if you&rsquo;re using ambient spans.</p>
+<h2><a href="#span-fields" name="span-fields" class="anchor"><span class="anchor-link"></span></a>Span Fields</h2>
+<p>All spans have an internal map of string tag +<code>TraceValue</code> pairs called <strong>fields</strong>.</p>
+<ul>
+  <li>You can add a field to a span via the <code>put</code> method on <code>Span</code> or <code>Trace</code>.</li>
+  <li>Fields are write-only. There is no way to inspect a span&rsquo;s fields.</li>
+</ul>
+<p>Some field tags are meaningful to tracing back-ends in a vendor-specific way. These include internal trace/span identifiers, timing information, indication of errors, and so on. These fields are added automatically during the span&rsquo;s lifetime</p>
+<p>Some field tags are &ldquo;standard&rdquo;, in the sense that they are recommended by emerging standards (OpenTracing, OpenTelemetry). Back ends recognize these fields sporadically. You can construct fields that use these standard tags via the <code>Tags</code> object.</p>
+<p>Other field tags are arbitrary strings that you can create as you wish. Most tracing back ends allow you to query for traces/spans base on these tags, and display them in a table when viewing a span.</p>
+<h2><a href="#constructing-spans" name="constructing-spans" class="anchor"><span class="anchor-link"></span></a>Constructing Spans</h2>
+<p>Most spans are <strong>child spans</strong> created via the <code>span</code> method on an existing <code>Span</code> or <code>Trace</code> instance.</p>
+<ul>
+  <li>When using explicit spans, the child is presented as a <code>Resource</code> that you <code>use</code>.</li>
+  <li>When using ambient spans, the child span constructor takes a continuation to execute in the context of the child span.</li>
+</ul>
+<p><strong>Root spans</strong> and <strong>continued spans</strong> are constructed via an <code>EntryPoint</code>.</p>
+<ul>
+  <li>A <strong>root span</strong> has no parent, and is typically constructed when a new externel web request is received.</li>
+  <li>A <strong>continued span</strong> has a parent on another computer, and is typically constructed when a new internal request is received.</li>
+</ul>
+<p>See the <a href="entrypoints.html">reference</a> for more information on <code>EntryPoint</code>.</p>
+<script type="text/javascript" src="../js/link_fix.js"></script>
+
+<div class="source-github">
+The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/reference/spans.md">here</a>.
+</div>
+
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/reference/spans.md')});</script>
+
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../reference/trace.html">Trace Constraint</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../reference/spans.html#spans" class="header">Spans</a>
+  <ul>
+    <li><a href="../reference/spans.html#passing-spans-around" class="header">Passing Spans Around</a></li>
+    <li><a href="../reference/spans.html#span-properties" class="header">Span Properties</a></li>
+    <li><a href="../reference/spans.html#span-fields" class="header">Span Fields</a></li>
+    <li><a href="../reference/spans.html#constructing-spans" class="header">Constructing Spans</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2021</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.0.25', 'https://github.com/tpolecat/natchez')});</script>
+
+
+</html>

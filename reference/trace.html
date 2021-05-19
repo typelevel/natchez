@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+<title>Trace Constraint · Natchez</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/natchezreference/trace.html"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>Natchez
+</a>
+<div class="version-number">
+0.0.25
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../overview.html" class="page">Overview</a></li>
+  <li><a href="../reference/index.html" class="page">Reference</a>
+  <ul>
+    <li><a href="../reference/entrypoints.html" class="page">Entry Points</a></li>
+    <li><a href="../reference/kernels.html" class="page">Kernels</a></li>
+    <li><a href="../reference/spans.html" class="page">Spans</a></li>
+    <li><a href="../reference/trace.html" class="active page">Trace Constraint</a></li>
+    <li><a href="../reference/tracevalues.html" class="page">Trace Values</a></li>
+  </ul></li>
+  <li><a href="../backends/index.html" class="page">Back Ends</a>
+  <ul>
+    <li><a href="../backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="../backends/honeycomb.html" class="page">Honeycomb</a></li>
+    <li><a href="../backends/jaeger.html" class="page">Jaeger</a></li>
+    <li><a href="../backends/lightstep.html" class="page">Lightstep</a></li>
+    <li><a href="../backends/log4cats.html" class="page">Log4Cats</a></li>
+    <li><a href="../backends/mock.html" class="page">Mock</a></li>
+    <li><a href="../backends/newrelic.html" class="page">New Relic</a></li>
+    <li><a href="../backends/noop.html" class="page">No-Op</a></li>
+    <li><a href="../backends/odin.html" class="page">Odin</a></li>
+    <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+  </ul></li>
+  <li><a href="../examples/index.html" class="page">Examples</a>
+  <ul>
+    <li><a href="../examples/http4s.html" class="page">Http4s</a></li>
+    <li><a href="../examples/skunk.html" class="page">Skunk</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="../index.html">Natchez</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>Natchez
+</a>
+<div class="version-number">
+0.0.25
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../overview.html" class="page">Overview</a></li>
+  <li><a href="../reference/index.html" class="page">Reference</a>
+  <ul>
+    <li><a href="../reference/entrypoints.html" class="page">Entry Points</a></li>
+    <li><a href="../reference/kernels.html" class="page">Kernels</a></li>
+    <li><a href="../reference/spans.html" class="page">Spans</a></li>
+    <li><a href="../reference/trace.html" class="active page">Trace Constraint</a></li>
+    <li><a href="../reference/tracevalues.html" class="page">Trace Values</a></li>
+  </ul></li>
+  <li><a href="../backends/index.html" class="page">Back Ends</a>
+  <ul>
+    <li><a href="../backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="../backends/honeycomb.html" class="page">Honeycomb</a></li>
+    <li><a href="../backends/jaeger.html" class="page">Jaeger</a></li>
+    <li><a href="../backends/lightstep.html" class="page">Lightstep</a></li>
+    <li><a href="../backends/log4cats.html" class="page">Log4Cats</a></li>
+    <li><a href="../backends/mock.html" class="page">Mock</a></li>
+    <li><a href="../backends/newrelic.html" class="page">New Relic</a></li>
+    <li><a href="../backends/noop.html" class="page">No-Op</a></li>
+    <li><a href="../backends/odin.html" class="page">Odin</a></li>
+    <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+  </ul></li>
+  <li><a href="../examples/index.html" class="page">Examples</a>
+  <ul>
+    <li><a href="../examples/http4s.html" class="page">Http4s</a></li>
+    <li><a href="../examples/skunk.html" class="page">Skunk</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">Natchez</a></li>
+  <li><a href="../reference/index.html">Reference</a></li>
+  <li>Trace Constraint</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#trace-constraint" name="trace-constraint" class="anchor"><span class="anchor-link"></span></a>Trace Constraint</h1>
+<p>We must be aware of the current <code>Span</code> if we wish to add fields or create child spans, which means we must pass the current span around.</p>
+<p>It is perfectly fine to pass the current span around explicitly, and if you are working in a concrete effect type like <code>IO</code> in Cats-Effect 2 this is likely the best choice. However for the increasingly common case of applications constructed in tagless style (where computations are peformed in some abstract effect) we have a <code>Trace</code> constraint that ensures an ambient span is always available.</p>
+<p><em>The examples on this page use the following imports:</em></p>
+<pre class="prettyprint"><code class="language-scala">import cats.{ Applicative, Monad }
+import cats.data.Kleisli
+import cats.effect.Bracket
+import cats.mtl.Local
+import cats.syntax.all._
+import natchez.{ Span, Trace }
+import natchez.mtl._
+</code></pre>
+<p>Given an effect <code>F[_]: Trace</code> we can add fields to the ambient span, gets its kernel, or run a computation in a child of the ambient span.</p>
+<pre class="prettyprint"><code class="language-scala">def wibble[F[_]: Monad: Trace](name: String, age: Int): F[Unit] =
+  Trace[F].span(&quot;wibble&quot;) {
+    for {
+      _ &lt;- Trace[F].put(&quot;name&quot; -&gt; name, &quot;age&quot; -&gt; age)
+      // ... actual method logic in F
+    } yield ()
+  }
+</code></pre>
+<p>By adding a <code>Trace</code> constraint to our abstract we gain this capability.</p>
+<p>Now that we have written a program in <code>F[_]: Trace</code> we need a way to satisfy this constraint. There are several ways to do this.</p>
+<h2><a href="#no-op-instance" name="no-op-instance" class="anchor"><span class="anchor-link"></span></a>No-Op Instance</h2>
+<p>There is a no-op <code>Trace[F]</code> instance available for all <code>F[_]: Applicative</code>. This instance does as you might expect: nothing. This can be useful for development and for testing (where trace data is typically not necessary).</p>
+<pre class="prettyprint"><code class="language-scala">object NoTraceForYou {
+
+  // In this scope we will ignore tracing
+  import natchez.Trace.Implicits.noop
+
+  // So this compiles fine
+  def go[F[_]: Monad]: F[Unit] =
+    wibble(&quot;bob&quot;, 42)
+
+}
+</code></pre>
+<h2><a href="#kleisli-instance" name="kleisli-instance" class="anchor"><span class="anchor-link"></span></a>Kleisli Instance</h2>
+<p>Given <code>Bracket[F, Throwable]</code> there is a <code>Trace[F]</code> instance for <code>Kleisli[F, Span[F], *]</code>. This allows us to discharge a <code>Trace</code> constraint, given an initial <code>Span</code>.</p>
+<pre class="prettyprint"><code class="language-scala">// Given Bracket[F, Throwable] and a Span[F] we can call `wibble`
+def go[F[_]](span: Span[F])(
+  implicit ev: Bracket[F, Throwable]
+): F[Unit] =
+  wibble[Kleisli[F, Span[F], *]](&quot;bob&quot;, 42).run(span)
+</code></pre>
+<p>This strategy works if we write in tagless style. Our outer effect is instantiated as some effect <code>F</code> and the effect for the traced part of our program is instantiated as <code>Kleisli[F, Span[F], *]</code>.</p><div class="callout warning "><div class="callout-title">Warning</div>
+<p>It is not always possible instantiate arbitrary <code>F</code> as <code>Kleisli</code>, depending on the additional constraints on <code>F</code>. In particular it would be impossbile to call <code>wibble[F[_]: ConcurrentEffect: Trace]</code> in this way.</p></div>
+<h2><a href="#cats-mtl-local-instance" name="cats-mtl-local-instance" class="anchor"><span class="anchor-link"></span></a>Cats-MTL Local Instance</h2>
+<p>By first adding the <code>natchez-mtl</code> module (which pulls in Cats-MTL), given <code>Bracket[F, Throwable]</code> and <code>Local[F, Span[F]]</code> there is an instance <code>Trace[F]</code>.</p>
+<pre class="prettyprint"><code class="language-scala">def goLocal[F[_]](
+  implicit ev0: Bracket[F, Throwable],
+           ev1: Local[F, Span[F]]
+): F[Unit] =
+  wibble(&quot;bob&quot;, 42)
+</code></pre>
+<p>This is more general than the <code>Kleisli</code> instance above and allows you to instantiate <code>F</code> as <code>RWST</code> for example, at the cost of an additional dependency.</p>
+<h2><a href="#cats-effect-3-io-instance" name="cats-effect-3-io-instance" class="anchor"><span class="anchor-link"></span></a>Cats-Effect 3 IO Instance</h2>
+<p>Given a <code>Span[F]</code> you can construct a <code>Trace[IO]</code> for <strong>Cats-Effect 3</strong> (for Cats-Effect 2 you will need to use <code>Kleisli</code> or <code>Local</code> above). This uses <code>FiberLocal</code> to pass the span around.</p>
+<p>TODO: Example</p>
+<script type="text/javascript" src="../js/link_fix.js"></script>
+
+<div class="source-github">
+The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/reference/trace.md">here</a>.
+</div>
+
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/reference/trace.md')});</script>
+
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../reference/tracevalues.html">Trace Values</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../reference/trace.html#trace-constraint" class="header">Trace Constraint</a>
+  <ul>
+    <li><a href="../reference/trace.html#no-op-instance" class="header">No-Op Instance</a></li>
+    <li><a href="../reference/trace.html#kleisli-instance" class="header">Kleisli Instance</a></li>
+    <li><a href="../reference/trace.html#cats-mtl-local-instance" class="header">Cats-MTL Local Instance</a></li>
+    <li><a href="../reference/trace.html#cats-effect-3-io-instance" class="header">Cats-Effect 3 IO Instance</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2021</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.0.25', 'https://github.com/tpolecat/natchez')});</script>
+
+
+</html>

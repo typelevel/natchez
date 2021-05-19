@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+<title>Natchez</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/tpolecat/natchezindex.html"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="js/page.js"></script>
+<script type="text/javascript" src="js/warnOldVersion.js"></script>
+<script type="text/javascript" src="js/groups.js"></script>
+<script type="text/javascript" src="js/snippets.js"></script>
+<link rel="stylesheet" type="text/css" href="lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="index.html" class="active">
+<span class="home-icon">⌂</span>Natchez
+</a>
+<div class="version-number">
+0.0.25
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="overview.html" class="page">Overview</a></li>
+  <li><a href="reference/index.html" class="page">Reference</a>
+  <ul>
+    <li><a href="reference/entrypoints.html" class="page">Entry Points</a></li>
+    <li><a href="reference/kernels.html" class="page">Kernels</a></li>
+    <li><a href="reference/spans.html" class="page">Spans</a></li>
+    <li><a href="reference/trace.html" class="page">Trace Constraint</a></li>
+    <li><a href="reference/tracevalues.html" class="page">Trace Values</a></li>
+  </ul></li>
+  <li><a href="backends/index.html" class="page">Back Ends</a>
+  <ul>
+    <li><a href="backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="backends/honeycomb.html" class="page">Honeycomb</a></li>
+    <li><a href="backends/jaeger.html" class="page">Jaeger</a></li>
+    <li><a href="backends/lightstep.html" class="page">Lightstep</a></li>
+    <li><a href="backends/log4cats.html" class="page">Log4Cats</a></li>
+    <li><a href="backends/mock.html" class="page">Mock</a></li>
+    <li><a href="backends/newrelic.html" class="page">New Relic</a></li>
+    <li><a href="backends/noop.html" class="page">No-Op</a></li>
+    <li><a href="backends/odin.html" class="page">Odin</a></li>
+    <li><a href="backends/opencensus.html" class="page">OpenCensus</a></li>
+  </ul></li>
+  <li><a href="examples/index.html" class="page">Examples</a>
+  <ul>
+    <li><a href="examples/http4s.html" class="page">Http4s</a></li>
+    <li><a href="examples/skunk.html" class="page">Skunk</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="index.html" class="active">Natchez</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="index.html" class="active">
+<span class="home-icon">⌂</span>Natchez
+</a>
+<div class="version-number">
+0.0.25
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="overview.html" class="page">Overview</a></li>
+  <li><a href="reference/index.html" class="page">Reference</a>
+  <ul>
+    <li><a href="reference/entrypoints.html" class="page">Entry Points</a></li>
+    <li><a href="reference/kernels.html" class="page">Kernels</a></li>
+    <li><a href="reference/spans.html" class="page">Spans</a></li>
+    <li><a href="reference/trace.html" class="page">Trace Constraint</a></li>
+    <li><a href="reference/tracevalues.html" class="page">Trace Values</a></li>
+  </ul></li>
+  <li><a href="backends/index.html" class="page">Back Ends</a>
+  <ul>
+    <li><a href="backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="backends/honeycomb.html" class="page">Honeycomb</a></li>
+    <li><a href="backends/jaeger.html" class="page">Jaeger</a></li>
+    <li><a href="backends/lightstep.html" class="page">Lightstep</a></li>
+    <li><a href="backends/log4cats.html" class="page">Log4Cats</a></li>
+    <li><a href="backends/mock.html" class="page">Mock</a></li>
+    <li><a href="backends/newrelic.html" class="page">New Relic</a></li>
+    <li><a href="backends/noop.html" class="page">No-Op</a></li>
+    <li><a href="backends/odin.html" class="page">Odin</a></li>
+    <li><a href="backends/opencensus.html" class="page">OpenCensus</a></li>
+  </ul></li>
+  <li><a href="examples/index.html" class="page">Examples</a>
+  <ul>
+    <li><a href="examples/http4s.html" class="page">Http4s</a></li>
+    <li><a href="examples/skunk.html" class="page">Skunk</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#natchez" name="natchez" class="anchor"><span class="anchor-link"></span></a>Natchez</h1>
+<p><img src="natchez.jpg" /></p>
+<p><em>The Natchez Trace, also known as the &ldquo;Old Natchez Trace&rdquo;, is a historic forest trail within the United States which extends roughly 440 miles (710 km) from Nashville, Tennessee, to Natchez, Mississippi, linking the Cumberland, Tennessee, and Mississippi rivers.</em></p>
+<p><em>Credits: <a href="https://en.wikipedia.org/wiki/Natchez_Trace">Wikipedia</a> and the <a href="https://www.nps.gov/natr/index.htm">National Park Service</a>.</em></p>
+<h2><a href="#welcome-" name="welcome-" class="anchor"><span class="anchor-link"></span></a>Welcome!</h2>
+<p><strong>Natchez</strong> is a minimal distributed tracing library for Cats, inspired by earlier work done on <a href="https://github.com/tabdulradi/puretracing">puretracing</a>. Natchez is published for <strong>Scala 2.12/2.13/3.0</strong>, with limited support for Scala-JS.</p>
+<h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
+<ol>
+  <li>
+    <p>Choose your dependency:</p>
+    <ul>
+      <li>
+      <p>If you wish to write <strong>application code</strong> then you should use the dependency specific to your tracing <a href="backends/index.html">back end</a>.</p></li>
+      <li>
+      <p>If you wish to write <strong>library code</strong> that supports any tracing back-end, then you should use the core dependency below (also available for Scala-JS).</p></li>
+    </ul><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-core" % "0.0.25"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.tpolecat&lt;/groupId&gt;
+    &lt;artifactId&gt;natchez-core_2.13&lt;/artifactId&gt;
+    &lt;version&gt;0.0.25&lt;/version&gt;
+  &lt;/dependency&gt
+&lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
+  implementation "org.tpolecat:natchez-core_2.13:0.0.25"
+}</code></pre></dd></dl>
+  </li>
+  <li>
+    <p>Read the <a href="overview.html">Overview</a> and explore from there.</p>
+    <p>Natchez is written for <a href="http://typelevel.org/cats/">cats</a> and <a href="https://typelevel.org/cats-effect/">cats-effect</a>. This documentation assumes you are familiar with pure-functional programming with effects, including use of <code>Resource</code> and tagless-final coding style. If you run into trouble be sure to check out:</p>
+    <ul>
+      <li>The Natchez channel on <a href="https://sca.la/typeleveldiscord">Typelevel Discord</a>.</li>
+      <li>The <a href="https://javadoc.io/doc/org.tpolecat/natchez-core_2.13/0.0.25/index.html">API Documentation</a>.</li>
+    </ul>
+  </li>
+  <li>
+  <p>Let us know how it goes!</p></li>
+</ol>
+<h2><a href="#how-to-contribute" name="how-to-contribute" class="anchor"><span class="anchor-link"></span></a>How to Contribute</h2>
+<ul>
+  <li>If you see a typo in the doc, click the link at the bottom and fix it!</li>
+  <li>If you find a bug please open an issue (or fix it and open a PR) at our <a href="https://github.com/tpolecat/natchez">GitHub Repository</a>.</li>
+  <li>If you want to make a larger contribution, please open an issue first so we can discuss.</li>
+</ul>
+<p>Note that there are two active version series right now:</p>
+<ul>
+  <li>Versions <strong>0.0.x</strong> are built with Cats-Effect 2 from branch <code>master</code>. This is a terminal series and will end sometime in 2021.</li>
+  <li>Versions <strong>0.1.x</strong> are built with Cats-Effect 3 from branch <code>series/0.1</code>. This will be the continuing series moving forward.</li>
+  <li>Contibutions should target the <code>master</code> branch. Maintainers will merge these into <code>series/0.1</code> as needed.</li>
+</ul>
+<script type="text/javascript" src="js/link_fix.js"></script>
+
+<div class="source-github">
+The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/index.md">here</a>.
+</div>
+
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/index.md')});</script>
+
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="overview.html">Overview</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="index.html#natchez" class="header">Natchez</a>
+  <ul>
+    <li><a href="index.html#welcome-" class="header">Welcome!</a></li>
+    <li><a href="index.html#quick-start" class="header">Quick Start</a></li>
+    <li><a href="index.html#how-to-contribute" class="header">How to Contribute</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2021</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="js/magellan.js"></script>
+
+<style type="text/css">@import "lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.0.25', 'https://github.com/tpolecat/natchez')});</script>
+
+
+</html>
