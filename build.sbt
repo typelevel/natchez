@@ -362,7 +362,7 @@ lazy val logOdin = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(jaeger)
+  .dependsOn(jaeger, mtlJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -389,7 +389,8 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-dsl" % "0.21.15",
+      "org.http4s" %% "http4s-dsl"    % "0.21.15",
+      "org.http4s" %% "http4s-client" % "0.21.15",
     )
   )
 
