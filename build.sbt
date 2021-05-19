@@ -362,7 +362,7 @@ lazy val logOdin = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(jaeger, mtlJVM)
+  .dependsOn(mtlJVM, honeycomb, jaeger)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)

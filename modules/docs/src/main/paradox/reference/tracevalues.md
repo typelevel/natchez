@@ -7,3 +7,5 @@ The fields in a `Span` consist of tagged values of type `TraceValue`. Natchez su
 - `TraceValue.NumberValue(1.23)` or just `1.23`.
 
 Note that `NumberValue` accepts any `java.lang.Number`.
+
+See the spans @ref:[reference](spans.md) for examples of adding trace values.
