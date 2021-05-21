@@ -4,11 +4,11 @@ Natchez supports the following tracing back ends. If you're not sure which one y
 
 @@@ index
 
-* [DataDog](datadog.md)
+* [Datadog](datadog.md)
 * [Honeycomb](honeycomb.md)
 * [Jaeger](jaeger.md)
 * [Lightstep](lightstep.md)
-* [Log4Cats](log4cats.md)
+* [Log](log.md)
 * [Mock](mock.md)
 * [New Relic](newrelic.md)
 * [No-Op](noop.md)

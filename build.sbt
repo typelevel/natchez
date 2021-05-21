@@ -337,8 +337,8 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "io.chrisdavenport" %% "log4cats-slf4j" % "1.1.1",
-      "org.slf4j"         % "slf4j-simple"    % "1.7.30",
+      "org.typelevel"     %% "log4cats-slf4j" % "1.3.1",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.25",
       "is.cir"            %% "ciris"          % "1.2.1"
     ).filterNot(_ => scalaVersion.value.startsWith("3."))
@@ -362,7 +362,7 @@ lazy val logOdin = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, jaeger)
+  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -389,8 +389,10 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-dsl"    % "0.21.15",
-      "org.http4s" %% "http4s-client" % "0.21.15",
+      "org.http4s"    %% "http4s-dsl"     % "0.21.15",
+      "org.http4s"    %% "http4s-client"  % "0.21.15",
+      "org.typelevel" %% "log4cats-slf4j" % "1.3.1",
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.30",
     )
   )
 
