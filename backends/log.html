@@ -2,11 +2,11 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Log4Cats · Natchez</title>
+<title>Log · Natchez</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/natchezbackends/log4cats.html"/>
+<link rel="canonical" href="https://github.com/tpolecat/natchezbackends/log.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -48,11 +48,11 @@
   </ul></li>
   <li><a href="../backends/index.html" class="page">Back Ends</a>
   <ul>
-    <li><a href="../backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="../backends/datadog.html" class="page">Datadog</a></li>
     <li><a href="../backends/honeycomb.html" class="page">Honeycomb</a></li>
     <li><a href="../backends/jaeger.html" class="page">Jaeger</a></li>
     <li><a href="../backends/lightstep.html" class="page">Lightstep</a></li>
-    <li><a href="../backends/log4cats.html" class="active page">Log4Cats</a></li>
+    <li><a href="../backends/log.html" class="active page">Log</a></li>
     <li><a href="../backends/mock.html" class="page">Mock</a></li>
     <li><a href="../backends/newrelic.html" class="page">New Relic</a></li>
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
@@ -111,11 +111,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   </ul></li>
   <li><a href="../backends/index.html" class="page">Back Ends</a>
   <ul>
-    <li><a href="../backends/datadog.html" class="page">Data Dog</a></li>
+    <li><a href="../backends/datadog.html" class="page">Datadog</a></li>
     <li><a href="../backends/honeycomb.html" class="page">Honeycomb</a></li>
     <li><a href="../backends/jaeger.html" class="page">Jaeger</a></li>
     <li><a href="../backends/lightstep.html" class="page">Lightstep</a></li>
-    <li><a href="../backends/log4cats.html" class="active page">Log4Cats</a></li>
+    <li><a href="../backends/log.html" class="active page">Log</a></li>
     <li><a href="../backends/mock.html" class="page">Mock</a></li>
     <li><a href="../backends/newrelic.html" class="page">New Relic</a></li>
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
@@ -144,7 +144,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <ul>
   <li><a href="../index.html">Natchez</a></li>
   <li><a href="../backends/index.html">Back Ends</a></li>
-  <li>Log4Cats</li>
+  <li>Log</li>
 </ul>
 </div>
 </div>
@@ -152,20 +152,169 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#log4cats" name="log4cats" class="anchor"><span class="anchor-link"></span></a>Log4Cats</h1>
+<h1><a href="#log" name="log" class="anchor"><span class="anchor-link"></span></a>Log</h1>
+<p>The <code>natchez-log</code> module provides a back end that logs traces locally (as JSON) to a <a href="https://github.com/typelevel/log4cats">log4cats</a> <code>Logger</code>, with no distributed functionality. To use it, add the following dependency.</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-log" % "0.0.25"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.tpolecat&lt;/groupId&gt;
+    &lt;artifactId&gt;natchez-log_2.13&lt;/artifactId&gt;
+    &lt;version&gt;0.0.25&lt;/version&gt;
+  &lt;/dependency&gt
+&lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
+  implementation "org.tpolecat:natchez-log_2.13:0.0.25"
+}</code></pre></dd></dl>
+<h2><a href="#example-trace" name="example-trace" class="anchor"><span class="anchor-link"></span></a>Example Trace</h2>
+<p>The log handler constructs a JSON object for each root span, with a <code>children</code> collection of child spans. On completion of the root span the entire JSON blob is logged as a single message. Here is an example with a root span containing two custom fields and two child spans.</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;name&quot; : &quot;root span&quot;,
+  &quot;service&quot; : &quot;example-service&quot;,
+  &quot;timestamp&quot; : &quot;2021-05-21T16:05:22.047253Z&quot;,
+  &quot;duration_ms&quot; : 147,
+  &quot;trace.span_id&quot; : &quot;e4cee0fa-9390-48d7-86d2-b1ee3a6e0109&quot;,
+  &quot;trace.parent_id&quot; : null,
+  &quot;trace.trace_id&quot; : &quot;1159db72-9a93-447c-904f-eb33afed2bea&quot;,
+  &quot;exit.case&quot; : &quot;completed&quot;,
+  &quot;person.name&quot; : &quot;bob&quot;,
+  &quot;person.age&quot; : 42,
+  &quot;children&quot; : [
+    {
+      &quot;name&quot; : &quot;thing one&quot;,
+      &quot;service&quot; : &quot;example-service&quot;,
+      &quot;timestamp&quot; : &quot;2021-05-21T16:05:22.149060Z&quot;,
+      &quot;duration_ms&quot; : 3,
+      &quot;trace.span_id&quot; : &quot;2f0981a2-5a36-463a-9aed-47729ead1b08&quot;,
+      &quot;trace.parent_id&quot; : &quot;1159db72-9a93-447c-904f-eb33afed2bea&quot;,
+      &quot;trace.trace_id&quot; : &quot;1159db72-9a93-447c-904f-eb33afed2bea&quot;,
+      &quot;exit.case&quot; : &quot;completed&quot;,
+      &quot;children&quot; : [
+      ]
+    },
+    {
+      &quot;name&quot; : &quot;thing two&quot;,
+      &quot;service&quot; : &quot;example-service&quot;,
+      &quot;timestamp&quot; : &quot;2021-05-21T16:05:22.192058Z&quot;,
+      &quot;duration_ms&quot; : 2,
+      &quot;trace.span_id&quot; : &quot;fcf2ab09-f465-47a7-8e30-4031ba8751a7&quot;,
+      &quot;trace.parent_id&quot; : &quot;1159db72-9a93-447c-904f-eb33afed2bea&quot;,
+      &quot;trace.trace_id&quot; : &quot;1159db72-9a93-447c-904f-eb33afed2bea&quot;,
+      &quot;exit.case&quot; : &quot;completed&quot;,
+      &quot;children&quot; : [
+      ]
+    }
+  ]
+}
+</code></pre>
+<h2><a href="#constructing-an-entrypoint" name="constructing-an-entrypoint" class="anchor"><span class="anchor-link"></span></a>Constructing an EntryPoint</h2>
+<p>You can construct a log <code>EntryPoint</code> given an implicit <code>Logger[F]</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import cats.effect.IO
+import natchez.EntryPoint
+import natchez.log.Log
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+implicit val log: Logger[IO] =
+  Slf4jLogger.getLoggerFromName(&quot;example-logger&quot;)
+
+val ep: EntryPoint[IO] =
+  Log.entryPoint[IO](&quot;example-service&quot;)
+</code></pre>
+<p><code>Log.entryPoint</code> takes an optional second parameter <code>format: io.circe.Json =&gt; String</code> that can be used to manipulate the structure and content of the trace and customize the way it is formatted. The default value is <code>_.spaces2</code>.</p>
+<h2><a href="#log-fields" name="log-fields" class="anchor"><span class="anchor-link"></span></a>Log Fields</h2>
+<p>Log spans include the following fields, in addition to any user-specified fields:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Field </th>
+      <th>Json Type </th>
+      <th>Meaning </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>service</code> </td>
+      <td>String </td>
+      <td>User-supplied service name. </td>
+    </tr>
+    <tr>
+      <td><code>timestamp</code> </td>
+      <td>String </td>
+      <td>ISO-8601 date and time of span start. </td>
+    </tr>
+    <tr>
+      <td><code>name</code> </td>
+      <td>String </td>
+      <td>User-supplied span name. </td>
+    </tr>
+    <tr>
+      <td><code>trace.trace_id</code> </td>
+      <td>String (UUID) </td>
+      <td>Id shared by all spans in a trace. </td>
+    </tr>
+    <tr>
+      <td><code>trace.span_id</code> </td>
+      <td>String (UUID) </td>
+      <td>Id of the parent span, if any. </td>
+    </tr>
+    <tr>
+      <td><code>trace.parent_id</code> </td>
+      <td>String (UUID, Optional) </td>
+      <td>Id of the parent span, if any. </td>
+    </tr>
+    <tr>
+      <td><code>duration_ms</code> </td>
+      <td>Number </td>
+      <td>Span duration, in milliseconds. </td>
+    </tr>
+    <tr>
+      <td><code>exit.case</code> </td>
+      <td>String </td>
+      <td><code>completed</code>, <code>canceled</code>, or <code>error</code> </td>
+    </tr>
+    <tr>
+      <td><code>exit.error.class</code> </td>
+      <td>String (Optional) </td>
+      <td>Exception classname, if any. </td>
+    </tr>
+    <tr>
+      <td><code>exit.error.message</code> </td>
+      <td>String (Optional) </td>
+      <td>Exception message, if any. </td>
+    </tr>
+    <tr>
+      <td><code>exit.error.stackTrace</code> </td>
+      <td>List of String (Optional) </td>
+      <td>Exception stack trace, if any. </td>
+    </tr>
+  </tbody>
+</table><div class="callout note "><div class="callout-title">Tip</div>
+<p>If you don&rsquo;t want to see the trace/span IDs or other fields, you can filter them out by supplying a <code>format</code> argument to <code>entryPoint</code> that manipulates the JSON however you like.</p></div>
 <script type="text/javascript" src="../js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/backends/log4cats.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/backends/log.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/backends/log4cats.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/backends/log.md')});</script>
 
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../backends/mock.html">Mock</a></p>
 </div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../backends/log.html#log" class="header">Log</a>
+  <ul>
+    <li><a href="../backends/log.html#example-trace" class="header">Example Trace</a></li>
+    <li><a href="../backends/log.html#constructing-an-entrypoint" class="header">Constructing an EntryPoint</a></li>
+    <li><a href="../backends/log.html#log-fields" class="header">Log Fields</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
 </div>
 </div>
 
