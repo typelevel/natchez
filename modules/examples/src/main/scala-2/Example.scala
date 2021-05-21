@@ -11,15 +11,14 @@ import cats.syntax.all._
 import natchez._
 import scala.util.Random
 import scala.concurrent.duration._
-import java.net.URI
-import cats.effect.Temporal
+// import java.net.URI
 
 object Main extends IOApp {
 
   def runF[F[_]: Sync: Trace: Parallel: Temporal]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
-        as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
+        as <- Sync[F].delay(List.fill(10)(Random.nextInt(5)))
         _  <- Sort.qsort[F, Int](as)
         u  <- Trace[F].traceUri
         _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
@@ -74,30 +73,30 @@ object Main extends IOApp {
 //   }
 
   // Jaeger
-  def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
-    import natchez.jaeger.Jaeger
-    import io.jaegertracing.Configuration.SamplerConfiguration
-    import io.jaegertracing.Configuration.ReporterConfiguration
-    Jaeger.entryPoint[F](
-      system    = "natchez-example",
-      uriPrefix = Some(new URI("http://localhost:16686")),
-    ) { c =>
-      Sync[F].delay {
-        c.withSampler(SamplerConfiguration.fromEnv)
-         .withReporter(ReporterConfiguration.fromEnv)
-         .getTracer
-      }
-    }
-  }
+  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+  //   import natchez.jaeger.Jaeger
+  //   import io.jaegertracing.Configuration.SamplerConfiguration
+  //   import io.jaegertracing.Configuration.ReporterConfiguration
+  //   Jaeger.entryPoint[F](
+  //     system    = "natchez-example",
+  //     uriPrefix = Some(new URI("http://localhost:16686")),
+  //   ) { c =>
+  //     Sync[F].delay {
+  //       c.withSampler(SamplerConfiguration.fromEnv)
+  //        .withReporter(ReporterConfiguration.fromEnv)
+  //        .getTracer
+  //     }
+  //   }
+  // }å
 
   // Log
-  // def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
-  //   import natchez.log.Log
-  //   import io.chrisdavenport.log4cats.Logger
-  //   import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-  //   implicit val log: Logger[F] = Slf4jLogger.getLogger[F]
-  //   Log.entryPoint[F]("foo").pure[Resource[F, *]]
-  // }
+  def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] = {
+    import natchez.log.Log
+    import org.typelevel.log4cats.Logger
+    import org.typelevel.log4cats.slf4j.Slf4jLogger
+    implicit val log: Logger[F] = Slf4jLogger.getLogger[F]
+    Log.entryPoint[F]("foo").pure[Resource[F, *]]
+  }
 
   // Log with Odin
   // def entryPoint[F[_]: Sync: Timer]: Resource[F, EntryPoint[F]] = {
