@@ -32,8 +32,8 @@ See the @ref:[reference](reference/entrypoints.md) for more information on entry
 
 We must be aware of the current `Span` if we wish to add fields or create child spans, which means we must pass the current span around.
 
-It is perfectly fine to pass the current span around explicitly, and if you are working in a concrete effect type like `IO` this is likely the best choice. However for the increasingly common case of applications constructed in tagless style (where computations are peformed in some abstract effect) we have a `Trace` constraint that ensures an ambient span is always available.
+It is perfectly fine to pass the current span around explicitly, and if you are working in a concrete effect type like `IO` from Cats-Effect 2 this may be the best choice. However for `IO` in Cats-Effect 3, as well as the increasingly common case of applications constructed in tagless style (where computations are peformed in some abstract effect) we have a `Trace` constraint that ensures an ambient span is always available.
 
-Given an effect `F[_]: Trace` we can add fields to the ambient span, gets its kernel, or run a computation in a child of the ambient span. The `Span` instance itself is inaccessible.
+Given an effect `F[_]: Trace` we can add fields to the ambient span, gets its kernel, or run a computation in a child of the ambient span, without referencing the underlying `Span` directly.
 
 See the @ref:[reference](reference/trace.md) for more information on the `Trace` constraint.
