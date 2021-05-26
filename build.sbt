@@ -248,7 +248,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.14.0",
+      "io.circe"          %%% "circe-core"      % "0.14.1",
       "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
@@ -270,7 +270,7 @@ lazy val newrelic = project
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.14.0",
+      "io.circe"               %% "circe-core"              % "0.14.1",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
