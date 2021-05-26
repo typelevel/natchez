@@ -17,4 +17,4 @@ jobs:
             ~/.sbt
           key: sbt-${{ hashFiles('**/build.sbt') }}
       - name: Run tests
-        run: sbt headerCheck +clean +test
+        run: sbt headerCheck +clean +test docs/makeSite
