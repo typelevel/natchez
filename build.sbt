@@ -190,7 +190,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.37.1",
+      "io.grpc"              % "grpc-netty"                      % "1.38.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
     )
   )
@@ -248,9 +248,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % {
-        if (scalaVersion.value.startsWith("3.")) "0.14.0-M7" else "0.13.0"
-      },
+      "io.circe"          %%% "circe-core"      % "0.14.0",
       "org.typelevel"     %%% "log4cats-core"   % "1.3.1",
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
@@ -269,16 +267,15 @@ lazy val newrelic = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.13.0",
+      "io.circe"               %% "circe-core"              % "0.14.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
-    ).filterNot(_ => scalaVersion.value.startsWith("3."))
+    )
   )
 
 lazy val mtl = crossProject(JSPlatform, JVMPlatform)
@@ -354,7 +351,7 @@ lazy val logOdin = project
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
     libraryDependencies ++= Seq(
-      "io.circe"              %% "circe-core" % "0.13.0",
+      "io.circe"              %% "circe-core" % "0.14.0",
       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
     ).filterNot(_ => scalaVersion.value.startsWith("3."))
