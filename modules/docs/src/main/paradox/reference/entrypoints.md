@@ -12,10 +12,10 @@ You can obtain an `EntryPoint` through a vendor-specific factory. See the list o
 `EntryPoint[F]` provides three methods for constructing an initial span resource.
 
 - `root` creates a new top-level span resource with no parent. This kind of initial span is typically used for endpoints on the public surface of a system.
-- `continue` creates a span resource with a parent specified by a provided `Kernel` (typically received in http headers). If the kernel is invalid (this is determined in a vendor-specific manner) an error is raised in `F`. This kind of initial span is typically used for endpoints of internal services that are always invoked by higher-level services.
-- `continueOrElseRoot` attempts to `continue` and on failure (if the kernel is invalid) it creates a new `root`. This is often a safe bet when it's not clear whether you will always (or never) receive an incoming kernel.
+- `continue` creates a span resource with a parent specified by a provided `Kernel` (typically received in http headers). If the kernel is invalid (this is determined in a vendor-specific manner) an error is raised in `F`. This kind of initial span is typically used for endpoints of internal services that are always invoked by higher-level services, in which failure to find an incoming kernel is an error.
+- `continueOrElseRoot` attempts to `continue` and on failure (if the kernel is invalid) it creates a new `root`. This is a good default.
 
-## Http4s Example
+## Http4s Server Example
 
 _The examples in this section use the following imports:_
 ```scala mdoc:reset
@@ -32,8 +32,7 @@ def routes(ep: EntryPoint[IO]): HttpRoutes[IO] =
   HttpRoutes.of[IO] {
     case GET -> Root / "hello" / name =>
       ep.root("hello").use { span =>
-        span.put("the-name" -> name) *>
-        Ok(s"Hello, $name.")
+        span.put("the-name" -> name) *> Ok(s"Hello, $name.")
       }
   }
 ```
@@ -46,7 +45,7 @@ def continuedRoutes(ep: EntryPoint[IO]): HttpRoutes[IO] =
     case req@(GET -> Root / "hello" / name) =>
 
       val k: Kernel =
-        Kernel(req.headers.toList.map { h => h.name.value -> h.value }.toMap)
+        Kernel(req.headers.headers.map { h => h.name.toString -> h.value }.toMap)
 
       ep.continueOrElseRoot("hello", k).use { span =>
         span.put("the-name" -> name) *>

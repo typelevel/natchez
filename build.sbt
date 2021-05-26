@@ -190,7 +190,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.37.1",
+      "io.grpc"              % "grpc-netty"                      % "1.38.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
     )
   )
@@ -248,9 +248,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % {
-        if (scalaVersion.value.startsWith("3.")) "0.14.0-M7" else "0.13.0"
-      },
+      "io.circe"          %%% "circe-core"      % "0.14.0",
       "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
@@ -269,16 +267,15 @@ lazy val newrelic = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.13.0",
+      "io.circe"               %% "circe-core"              % "0.14.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
-    ).filterNot(_ => scalaVersion.value.startsWith("3."))
+    )
   )
 
 lazy val mtl = crossProject(JSPlatform, JVMPlatform)
@@ -328,7 +325,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, newrelic)
+  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, newrelic, logJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -336,6 +333,12 @@ lazy val examples = project
     name                 := "natchez-examples",
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
+    libraryDependencies ++= Seq(
+      "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
+      "eu.timepit"        %% "refined"        % "0.9.25",
+      "is.cir"            %% "ciris"          % "2.0.0"
+    )
   )
 
 // lazy val logOdin = project
@@ -344,19 +347,19 @@ lazy val examples = project
 //   .enablePlugins(AutomateHeaderPlugin)
 //   .settings(commonSettings)
 //   .settings(
-//     publish / skip := isDotty.value,
+//     publish / skip := scalaVersion.value.startsWith("3."),
 //     name        := "natchez-log-odin",
 //     description := "Logging bindings for Natchez, using Odin.",
 //     libraryDependencies ++= Seq(
-//       "io.circe"              %% "circe-core" % "0.13.0",
+//       "io.circe"              %% "circe-core" % "0.14.0",
 //       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
 //       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
-//     ).filterNot(_ => isDotty.value)
+//     ).filterNot(_ => scalaVersion.value.startsWith("3."))
 //   )
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(jaeger)
+  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -383,7 +386,10 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
     libraryDependencies ++= Seq(
-      // "org.http4s" %% "http4s-dsl" % "1.0.0-M21", // not available yet, ok
+      "org.http4s"    %% "http4s-dsl"     % "0.23.0-M1",
+      "org.http4s"    %% "http4s-client"  % "0.23.0-M1",
+      "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.30",
     )
   )
 
