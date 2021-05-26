@@ -190,7 +190,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.37.1",
+      "io.grpc"              % "grpc-netty"                      % "1.38.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
     )
   )
@@ -267,7 +267,6 @@ lazy val newrelic = project
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip := scalaVersion.value.startsWith("3."),
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
@@ -276,7 +275,7 @@ lazy val newrelic = project
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
-    ).filterNot(_ => scalaVersion.value.startsWith("3."))
+    )
   )
 
 lazy val mtl = crossProject(JSPlatform, JVMPlatform)
