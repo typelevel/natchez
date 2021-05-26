@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.0.25
+0.1.5
 </div>
 </div>
 <div class="nav-toc">
@@ -95,7 +95,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.0.25
+0.1.5
 </div>
 </div>
 <div class="nav-toc">
@@ -158,7 +158,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p><em>The examples on this page use the following imports:</em></p>
 <pre class="prettyprint"><code class="language-scala">import cats.{ Applicative, Monad }
 import cats.data.Kleisli
-import cats.effect.Bracket
+import cats.effect.MonadCancel
 import cats.mtl.Local
 import cats.syntax.all._
 import natchez.{ Span, Trace }
@@ -189,19 +189,19 @@ import natchez.mtl._
 }
 </code></pre>
 <h2><a href="#kleisli-instance" name="kleisli-instance" class="anchor"><span class="anchor-link"></span></a>Kleisli Instance</h2>
-<p>Given <code>Bracket[F, Throwable]</code> there is a <code>Trace[F]</code> instance for <code>Kleisli[F, Span[F], *]</code>. This allows us to discharge a <code>Trace</code> constraint, given an initial <code>Span</code>.</p>
-<pre class="prettyprint"><code class="language-scala">// Given Bracket[F, Throwable] and a Span[F] we can call `wibble`
+<p>Given <code>MonadCancel[F, Throwable]</code> there is a <code>Trace[F]</code> instance for <code>Kleisli[F, Span[F], *]</code>. This allows us to discharge a <code>Trace</code> constraint, given an initial <code>Span</code>.</p>
+<pre class="prettyprint"><code class="language-scala">// Given MonadCancel[F, Throwable] and a Span[F] we can call `wibble`
 def go[F[_]](span: Span[F])(
-  implicit ev: Bracket[F, Throwable]
+  implicit ev: MonadCancel[F, Throwable]
 ): F[Unit] =
   wibble[Kleisli[F, Span[F], *]](&quot;bob&quot;, 42).run(span)
 </code></pre>
 <p>This strategy works if we write in tagless style. Our outer effect is instantiated as some effect <code>F</code> and the effect for the traced part of our program is instantiated as <code>Kleisli[F, Span[F], *]</code>.</p><div class="callout warning "><div class="callout-title">Warning</div>
 <p>It is not always possible instantiate arbitrary <code>F</code> as <code>Kleisli</code>, depending on the additional constraints on <code>F</code>. In particular it would be impossbile to call <code>wibble[F[_]: ConcurrentEffect: Trace]</code> in this way.</p></div>
 <h2><a href="#cats-mtl-local-instance" name="cats-mtl-local-instance" class="anchor"><span class="anchor-link"></span></a>Cats-MTL Local Instance</h2>
-<p>By first adding the <code>natchez-mtl</code> module (which pulls in Cats-MTL), given <code>Bracket[F, Throwable]</code> and <code>Local[F, Span[F]]</code> there is an instance <code>Trace[F]</code>.</p>
+<p>By first adding the <code>natchez-mtl</code> module (which pulls in Cats-MTL), given <code>MonadCancel[F, Throwable]</code> and <code>Local[F, Span[F]]</code> there is an instance <code>Trace[F]</code>.</p>
 <pre class="prettyprint"><code class="language-scala">def goLocal[F[_]](
-  implicit ev0: Bracket[F, Throwable],
+  implicit ev0: MonadCancel[F, Throwable],
            ev1: Local[F, Span[F]]
 ): F[Unit] =
   wibble(&quot;bob&quot;, 42)
@@ -213,10 +213,10 @@ def go[F[_]](span: Span[F])(
 <script type="text/javascript" src="../js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/reference/trace.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/reference/trace.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/reference/trace.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/reference/trace.md')});</script>
 
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../reference/tracevalues.html">Trace Values</a></p>
@@ -301,7 +301,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.0.25', 'https://github.com/tpolecat/natchez')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.1.5', 'https://github.com/tpolecat/natchez')});</script>
 
 
 </html>

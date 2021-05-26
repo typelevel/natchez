@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.0.25
+0.1.5
 </div>
 </div>
 <div class="nav-toc">
@@ -95,7 +95,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.0.25
+0.1.5
 </div>
 </div>
 <div class="nav-toc">
@@ -146,11 +146,43 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#natchez" name="natchez" class="anchor"><span class="anchor-link"></span></a>Natchez</h1>
+<p><a href="https://discord.gg/CSh8u9yPMe"><img src="https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2" alt="Discord" /></a> <a href="https://gitter.im/tpolecat/natchez?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/skunk-pg/Lobby.svg" alt="Join the chat at https://gitter.im/skunk-pg/Lobby" /></a> <a href="https://maven-badges.herokuapp.com/maven-central/org.tpolecat/natchez-core_2.13"><img src="https://img.shields.io/maven-central/v/org.tpolecat/natchez-core_2.13.svg" alt="Maven Central" /></a> <a href="https://javadoc.io/doc/org.tpolecat/skunk-core_2.12"><img src="https://javadoc.io/badge/org.tpolecat/natchez-core_2.13.svg" alt="Javadocs" /></a></p>
 <p><img src="natchez.jpg" /></p>
 <p><em>The Natchez Trace, also known as the &ldquo;Old Natchez Trace&rdquo;, is a historic forest trail within the United States which extends roughly 440 miles (710 km) from Nashville, Tennessee, to Natchez, Mississippi, linking the Cumberland, Tennessee, and Mississippi rivers.</em></p>
 <p><em>Credits: <a href="https://en.wikipedia.org/wiki/Natchez_Trace">Wikipedia</a> and the <a href="https://www.nps.gov/natr/index.htm">National Park Service</a>.</em></p>
 <h2><a href="#welcome-" name="welcome-" class="anchor"><span class="anchor-link"></span></a>Welcome!</h2>
 <p><strong>Natchez</strong> is a minimal distributed tracing library for Cats, inspired by earlier work done on <a href="https://github.com/tabdulradi/puretracing">puretracing</a>. Natchez is published for <strong>Scala 2.12/2.13/3.0</strong>, with limited support for Scala-JS.</p>
+<p>Below are the available version series (see <a href="https://github.com/tpolecat/natchez/releases">releases</a> for exact version numbers). You are strongly encouraged to use the <strong>Active</strong> series. Older series will receive bug fixes when necessary but are not actively maintained.</p>
+<table>
+  <thead>
+    <tr>
+      <th align="center">Series </th>
+      <th>Status </th>
+      <th align="center">2.12 </th>
+      <th align="center">2.13 </th>
+      <th align="center">3.0 </th>
+      <th align="center">Cats-Effect </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><strong>0.1.x</strong> </td>
+      <td><strong>Active</strong> </td>
+      <td align="center">✅ </td>
+      <td align="center">✅ </td>
+      <td align="center">✅ </td>
+      <td align="center"><strong>3.x</strong> </td>
+    </tr>
+    <tr>
+      <td align="center">0.0.x </td>
+      <td>EOL </td>
+      <td align="center">✅ </td>
+      <td align="center">✅ </td>
+      <td align="center">✅ </td>
+      <td align="center">2.x </td>
+    </tr>
+  </tbody>
+</table>
 <h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
 <ol>
   <li>
@@ -160,14 +192,14 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
       <p>If you wish to write <strong>application code</strong> then you should use the dependency specific to your tracing <a href="backends/index.html">back end</a>.</p></li>
       <li>
       <p>If you wish to write <strong>library code</strong> that supports any tracing back-end, then you should use the core dependency below (also available for Scala-JS).</p></li>
-    </ul><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-core" % "0.0.25"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+    </ul><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-core" % "0.1.5"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
   &lt;dependency&gt;
     &lt;groupId&gt;org.tpolecat&lt;/groupId&gt;
     &lt;artifactId&gt;natchez-core_2.13&lt;/artifactId&gt;
-    &lt;version&gt;0.0.25&lt;/version&gt;
+    &lt;version&gt;0.1.5&lt;/version&gt;
   &lt;/dependency&gt
 &lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
-  implementation "org.tpolecat:natchez-core_2.13:0.0.25"
+  implementation "org.tpolecat:natchez-core_2.13:0.1.5"
 }</code></pre></dd></dl>
   </li>
   <li>
@@ -175,31 +207,27 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <p>Natchez is written for <a href="http://typelevel.org/cats/">cats</a> and <a href="https://typelevel.org/cats-effect/">cats-effect</a>. This documentation assumes you are familiar with pure-functional programming with effects, including use of <code>Resource</code> and tagless-final coding style. If you run into trouble be sure to check out:</p>
     <ul>
       <li>The Natchez channel on <a href="https://sca.la/typeleveldiscord">Typelevel Discord</a>.</li>
-      <li>The <a href="https://javadoc.io/doc/org.tpolecat/natchez-core_2.13/0.0.25/index.html">API Documentation</a>.</li>
+      <li>The <a href="https://javadoc.io/doc/org.tpolecat/natchez-core_2.13/0.1.5/index.html">API Documentation</a>.</li>
     </ul>
   </li>
   <li>
   <p>Let us know how it goes!</p></li>
 </ol>
 <h2><a href="#how-to-contribute" name="how-to-contribute" class="anchor"><span class="anchor-link"></span></a>How to Contribute</h2>
+<p>This is a community-supported project and contributions are welcome!</p>
 <ul>
   <li>If you see a typo in the doc, click the link at the bottom and fix it!</li>
   <li>If you find a bug please open an issue (or fix it and open a PR) at our <a href="https://github.com/tpolecat/natchez">GitHub Repository</a>.</li>
   <li>If you want to make a larger contribution, please open an issue first so we can discuss.</li>
 </ul>
-<p>Note that there are two active version series right now:</p>
-<ul>
-  <li>Versions <strong>0.0.x</strong> are built with Cats-Effect 2 from branch <code>master</code>. This is a terminal series and will end sometime in 2021.</li>
-  <li>Versions <strong>0.1.x</strong> are built with Cats-Effect 3 from branch <code>series/0.1</code>. This will be the continuing series moving forward.</li>
-  <li>Contibutions should target the <code>master</code> branch. Maintainers will merge these into <code>series/0.1</code> as needed.</li>
-</ul>
+<p>Contibutions should target the <strong>newest active branch</strong> (see above). Maintainers will back-port to older branches when appropriate.</p>
 <script type="text/javascript" src="js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/index.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/index.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/master/modules/docs/target/mdoc/index.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/index.md')});</script>
 
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="overview.html">Overview</a></p>
@@ -283,7 +311,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 <script type="text/javascript" src="lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.0.25', 'https://github.com/tpolecat/natchez')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.1.5', 'https://github.com/tpolecat/natchez')});</script>
 
 
 </html>
