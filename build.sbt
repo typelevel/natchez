@@ -273,7 +273,7 @@ lazy val newrelic = project
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.13.0",
+      "io.circe"               %% "circe-core"              % "0.14.0",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
@@ -354,7 +354,7 @@ lazy val logOdin = project
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
     libraryDependencies ++= Seq(
-      "io.circe"              %% "circe-core" % "0.13.0",
+      "io.circe"              %% "circe-core" % "0.14.0",
       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
     ).filterNot(_ => scalaVersion.value.startsWith("3."))
