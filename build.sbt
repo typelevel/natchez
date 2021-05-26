@@ -338,7 +338,7 @@ lazy val examples = project
       "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
       "eu.timepit"        %% "refined"        % "0.9.25",
       "is.cir"            %% "ciris"          % "2.0.0"
-    ).filterNot(_ => scalaVersion.value.startsWith("3."))
+    )
   )
 
 // lazy val logOdin = project
