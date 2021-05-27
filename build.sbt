@@ -336,7 +336,7 @@ lazy val examples = project
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
       "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
-      "eu.timepit"        %% "refined"        % "0.9.25",
+      "eu.timepit"        %% "refined"        % "0.9.26",
       "is.cir"            %% "ciris"          % "2.0.0"
     )
   )
