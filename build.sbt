@@ -67,6 +67,8 @@ lazy val commonSettings = Seq(
     compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
   ).filterNot(_ => scalaVersion.value.startsWith("3.")),
 
+  resolvers += Resolver.sonatypeRepo("snapshots"), // until opentelemetry release 1.4.0 or 1.3.1
+
   // dottydoc really doesn't work at all right now
   Compile / doc / sources := {
     val old = (Compile / doc / sources).value
@@ -100,8 +102,8 @@ lazy val natchez = project
     crossScalaVersions := Nil,
     publish / skip     := true
   )
-  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
-  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, logOdin, examples)
+  .dependsOn(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, opentelemetry, logOdin, examples)
+  .aggregate(coreJS, coreJVM, jaeger, honeycomb, opencensus, opentracing, datadog, lightstep, lightstepGrpc, lightstepHttp, logJS, logJVM, mtlJS, mtlJVM, noop, mock, newrelic, opentelemetry, logOdin, examples)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
@@ -278,6 +280,21 @@ lazy val newrelic = project
     )
   )
 
+lazy val opentelemetry = project
+  .in(file("modules/opentelemetry"))
+  .dependsOn(coreJVM)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "opentelemetry",
+    description := "OpenTelemetry bindings for Natchez.",
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
+      "io.opentelemetry" % "opentelemetry-api" % "1.4.0-SNAPSHOT",
+      "io.opentelemetry" % "opentelemetry-sdk" % "1.4.0-SNAPSHOT",
+    )
+  )
+
 lazy val mtl = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/mtl"))
   .enablePlugins(AutomateHeaderPlugin)
@@ -325,7 +342,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin)
+  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, logJVM, newrelic, logOdin, opentelemetry)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -334,11 +351,13 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "log4cats-slf4j" % "1.3.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.30",
-      "eu.timepit"        %% "refined"        % "0.9.25",
-      "is.cir"            %% "ciris"          % "1.2.1"
-    ).filterNot(_ => scalaVersion.value.startsWith("3."))
+      "org.typelevel"     %% "log4cats-slf4j"             % "1.3.1",
+      "org.slf4j"         %  "slf4j-simple"               % "1.7.30",
+      "eu.timepit"        %% "refined"                    % "0.9.25",
+      "is.cir"            %% "ciris"                      % "1.2.1",
+      "io.opentelemetry"  % "opentelemetry-exporter-otlp" % "1.4.0-SNAPSHOT",
+      "io.grpc"           % "grpc-okhttp"                 % "1.38.0", // required for the OpenTelemetry exporter
+).filterNot(_ => scalaVersion.value.startsWith("3."))
   )
 
 lazy val logOdin = project
@@ -359,7 +378,7 @@ lazy val logOdin = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
+  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM, opentelemetry)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -390,6 +409,7 @@ lazy val docs = project
       "org.http4s"    %% "http4s-client"  % "0.21.15",
       "org.typelevel" %% "log4cats-slf4j" % "1.3.1",
       "org.slf4j"     %  "slf4j-simple"   % "1.7.30",
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.4.0-SNAPSHOT", // for the opentelemetry example
     )
   )
 
