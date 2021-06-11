@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.DurationInt
 
 // change this into an object if you'd like to run it
-object OpenTelemetryExample extends IOApp {
+class OpenTelemetryExample extends IOApp {
   def entryPoint[F[_]: Async]: Resource[F, EntryPoint[F]] =
     for {
       exporter <- OpenTelemetry.lift(
