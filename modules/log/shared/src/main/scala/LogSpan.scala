@@ -50,6 +50,13 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   def putAny(fields: (String, Json)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    putAny(fields.map { case (k, v) => (k -> v.asJson) }: _*)
+  }
+
+  override def log(event: String): F[Unit] =
+   log("event" -> TraceValue.StringValue(event))
+
   def span(label: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finishChild[F]).widen)
 

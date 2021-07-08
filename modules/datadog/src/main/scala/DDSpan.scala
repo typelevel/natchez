@@ -40,6 +40,15 @@ private[datadog] final case class DDSpan[F[_]: Sync](
       case (str, BooleanValue(value)) => Sync[F].delay(span.setTag(str, value))
     }
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    val map = fields.toMap.view.mapValues(_.value).toMap.asJava
+    Sync[F].delay(span.log(map)).void
+  }
+
+  override def log(event: String): F[Unit] = {
+    Sync[F].delay(span.log(event)).void
+  }
+
   def span(name: String): Resource[F,Span[F]] =
     Span.putErrorFields(Resource.makeCase(
       Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {

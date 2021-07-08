@@ -48,6 +48,10 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v))
     }
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = Sync[F].unit
+
+  override def log(event: String): F[Unit] = Sync[F].unit
+
   def span(name: String): Resource[F, natchez.Span[F]] =
     Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
 

@@ -17,6 +17,16 @@ trait Trace[F[_]] {
   def put(fields: (String, TraceValue)*): F[Unit]
 
   /**
+   * log a sequence of key-value pairs at the current timestamp
+   */
+  def log(fields: (String, TraceValue)*): F[Unit]
+
+  /**
+   * log a single value at the current timestamp
+   */
+  def log(event: String): F[Unit]
+
+  /**
    * The kernel for the current span, which can be sent as headers to remote systems, which can
    * then continue this trace by constructing spans that are children of the current one.
    */
@@ -51,6 +61,12 @@ object Trace {
         def put(fields: (String, TraceValue)*): IO[Unit] =
           local.get.flatMap(_.put(fields: _*))
 
+        def log(fields: (String, TraceValue)*): IO[Unit] =
+          local.get.flatMap(_.log(fields: _*))
+
+        def log(event: String): IO[Unit] =
+          local.get.flatMap(_.log(event))
+
         def kernel: IO[Kernel] =
           local.get.flatMap(_.kernel)
 
@@ -79,9 +95,11 @@ object Trace {
      */
     implicit def noop[F[_]: Applicative]: Trace[F] =
       new Trace[F] {
-        final val void = ().pure[F]
+        final val void = Applicative[F].unit
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
+        def log(fields: (String, TraceValue)*): F[Unit] = void
+        def log(event: String): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
         def traceId: F[Option[String]] = none.pure[F]
         def traceUri: F[Option[URI]] = none.pure[F]
@@ -112,6 +130,18 @@ object Trace {
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
 
+    def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit]  =
+      Kleisli(_.log(fields: _*))
+
+    def log(event: String): Kleisli[F, Span[F], Unit]  =
+      Kleisli(_.log(event))
+
+    def traceId: Kleisli[F,Span[F],Option[String]] =
+      Kleisli(_.traceId)
+
+    def traceUri: Kleisli[F,Span[F],Option[URI]] =
+      Kleisli(_.traceUri)
+
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, *]] =
       new Trace[Kleisli[F, E, *]] {
 
@@ -120,6 +150,12 @@ object Trace {
 
         def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).put(fields: _*))
+
+        def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit]  =
+          Kleisli(e => f(e).log(fields: _*))
+
+        def log(event: String): Kleisli[F, E, Unit]  =
+          Kleisli(e => f(e).log(event))
 
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
@@ -131,13 +167,6 @@ object Trace {
           Kleisli(e => f(e).traceUri)
 
       }
-
-    def traceId: Kleisli[F,Span[F],Option[String]] =
-      Kleisli(_.traceId)
-
-    def traceUri: Kleisli[F,Span[F],Option[URI]] =
-      Kleisli(_.traceUri)
-
   }
 
   implicit def liftKleisli[F[_], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
@@ -145,6 +174,12 @@ object Trace {
 
       def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.put(fields: _*))
+
+      def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
+        Kleisli.liftF(trace.log(fields: _*))
+
+      def log(event: String): Kleisli[F, E, Unit] =
+        Kleisli.liftF(trace.log(event))
 
       def kernel: Kleisli[F, E, Kernel] =
         Kleisli.liftF(trace.kernel)
@@ -165,6 +200,12 @@ object Trace {
       def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
         StateT.liftF(trace.put(fields: _*))
 
+      def log(fields: (String, TraceValue)*): StateT[F, S, Unit]  =
+        StateT.liftF(trace.log(fields: _*))
+
+      def log(event: String): StateT[F, S, Unit] =
+        StateT.liftF(trace.log(event))
+
       def kernel: StateT[F, S, Kernel] =
         StateT.liftF(trace.kernel)
 
@@ -183,6 +224,12 @@ object Trace {
 
       def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.put(fields: _*))
+
+      def log(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
+        EitherT.liftF(trace.log(fields: _*))
+
+      def log(event: String): EitherT[F, E, Unit] =
+        EitherT.liftF(trace.log(event))
 
       def kernel: EitherT[F, E, Kernel] =
         EitherT.liftF(trace.kernel)
@@ -203,6 +250,12 @@ object Trace {
       def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.put(fields: _*))
 
+      def log(fields: (String, TraceValue)*): OptionT[F, Unit] =
+        OptionT.liftF(trace.log(fields: _*))
+
+      def log(event: String): OptionT[F, Unit] =
+        OptionT.liftF(trace.log(event))
+
       def kernel: OptionT[F, Kernel] =
         OptionT.liftF(trace.kernel)
 
@@ -221,6 +274,12 @@ object Trace {
 
       def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.put(fields: _*).map(_.pure[G]).nested
+
+      def log(fields: (String, TraceValue)*): Nested[F, G, Unit] =
+        trace.log(fields: _*).map(_.pure[G]).nested
+
+      def log(event: String): Nested[F, G, Unit] =
+        trace.log(event).map(_.pure[G]).nested
 
       def kernel: Nested[F, G, Kernel] =
         trace.kernel.map(_.pure[G]).nested

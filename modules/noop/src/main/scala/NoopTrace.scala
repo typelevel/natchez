@@ -17,6 +17,10 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
   override def kernel: F[Kernel] =
     Applicative[F].pure(Kernel(Map.empty))
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
+
+  override def log(event: String): F[Unit] = Applicative[F].unit
+
   override def span[A](name: String)(k: F[A]): F[A] =
     k
 

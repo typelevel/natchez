@@ -37,6 +37,15 @@ final case class MockSpan[F[_] : Sync](
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    val map = fields.toMap.view.mapValues(_.value).toMap.asJava
+    Sync[F].delay(span.log(map)).void
+  }
+
+  override def log(event: String): F[Unit] = {
+    Sync[F].delay(span.log(event)).void
+  }
+
   def span(name: String): Resource[F, Span[F]] =
     Resource
       .make {

@@ -16,6 +16,16 @@ trait Span[F[_]] {
   def put(fields: (String, TraceValue)*): F[Unit]
 
   /**
+   *  log a sequence of key-value pairs at the current timestamp
+   */
+  def log(fields: (String, TraceValue)*): F[Unit]
+
+  /**
+   * log a single value at the current timestamp
+   */
+  def log(event: String): F[Unit]
+
+  /**
    * The kernel for this span, which can be sent as headers to remote systems, which can then
    * continue this trace by constructing spans that are children of this one.
    */

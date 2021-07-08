@@ -38,6 +38,14 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def put(fields: (String, TraceValue)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    this.fields.update(_ ++ fields.toMap)
+  }
+
+  override def log(event: String): F[Unit] = {
+    log("event" -> TraceValue.StringValue(event))
+  }
+
   def span(label: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen)
 
