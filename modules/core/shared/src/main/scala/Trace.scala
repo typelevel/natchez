@@ -74,7 +74,7 @@ object Trace {
           local.get.flatMap { parent =>
             parent.span(name).flatMap { child =>
               Resource.make(local.set(child))(_ => local.set(parent))
-            } .use { _ => k }
+            }.use { _ => k.onError(err => parent.attachError(err)) }
           }
 
         def traceId: IO[Option[String]] =
@@ -128,7 +128,7 @@ object Trace {
       Kleisli(_.put(fields: _*))
 
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
-      Kleisli(_.span(name).use(k.run))
+      Kleisli(_.span(name).use(s => ev.onError(k.run(s)) { case err => s.attachError(err) }))
 
     def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit]  =
       Kleisli(_.log(fields: _*))
@@ -158,7 +158,7 @@ object Trace {
           Kleisli(e => f(e).log(event))
 
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
+          Kleisli(e => f(e).span(name).use(s => ev.onError(k.run(g(e, s))){ case err => s.attachError(err) }))
 
         def traceId: Kleisli[F,E,Option[String]] =
           Kleisli(e => f(e).traceId)

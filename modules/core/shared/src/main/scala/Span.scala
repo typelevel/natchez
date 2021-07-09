@@ -25,6 +25,9 @@ trait Span[F[_]] {
    */
   def log(event: String): F[Unit]
 
+
+  def attachError(err: Throwable): F[Unit]
+
   /**
    * The kernel for this span, which can be sent as headers to remote systems, which can then
    * continue this trace by constructing spans that are children of this one.

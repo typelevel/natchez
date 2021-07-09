@@ -29,7 +29,9 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
 
     def span[A](name: String)(k: F[A]): F[A] =
       local.ask.flatMap { span =>
-        span.span(name).use(local.scope(k))
+        span.span(name).use { s =>
+         ev.onError(local.scope(k)(s)){ case err => s.attachError(err) }
+        }
       }
 
     def traceId: F[Option[String]] =
