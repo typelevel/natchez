@@ -60,6 +60,10 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
   def spanId: F[Option[String]] = id.some.pure[F]
 
   def traceUri: F[Option[URI]] = none[URI].pure[F]
+
+  override def attachError(err: Throwable): F[Unit] = {
+     put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+  }
 }
 
 object NewrelicSpan {

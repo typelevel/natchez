@@ -6,12 +6,14 @@ package natchez
 package mock
 
 import scala.jdk.CollectionConverters._
-
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.implicits._
-import io.{ opentracing => ot }
-import io.opentracing.propagation.{ Format, TextMapAdapter }
-import natchez.TraceValue.{ BooleanValue, NumberValue, StringValue }
+import io.opentracing.log.Fields
+import io.{opentracing => ot}
+import io.opentracing.propagation.{Format, TextMapAdapter}
+import io.opentracing.tag.Tags
+import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+
 import java.net.URI
 
 final case class MockSpan[F[_] : Sync](
@@ -36,6 +38,23 @@ final case class MockSpan[F[_] : Sync](
       case (k, NumberValue(v)) => Sync[F].delay(span.setTag(k, v))
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
+
+  def attachError(err: Throwable): F[Unit] = {
+    put(
+      Tags.ERROR.getKey -> true
+    ) >>
+      Sync[F].delay {
+        span.log(
+          Map(
+            Fields.EVENT -> "error",
+            Fields.ERROR_OBJECT -> err,
+            Fields.ERROR_KIND -> err.getClass.getSimpleName,
+            Fields.MESSAGE -> err.getMessage,
+            Fields.STACK -> err.getStackTrace.mkString
+          ).asJava
+        )
+      }.void
+  }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
     val map = fields.map {case (k, v) => k -> v.value }.toMap.asJava

@@ -5,10 +5,12 @@
 package natchez
 package lightstep
 
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.syntax.all._
-import io.{ opentracing => ot }
-import io.opentracing.propagation.{ Format, TextMapAdapter }
+import io.opentracing.log.Fields
+import io.{opentracing => ot}
+import io.opentracing.propagation.{Format, TextMapAdapter}
+import io.opentracing.tag.Tags
 
 import scala.jdk.CollectionConverters._
 import java.net.URI
@@ -64,5 +66,22 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
 
   // TODO
   def traceUri: F[Option[URI]] = none.pure[F]
+
+  def attachError(err: Throwable): F[Unit] = {
+    put(
+      Tags.ERROR.getKey -> true
+    ) >>
+      Sync[F].delay {
+        span.log(
+          Map(
+            Fields.EVENT -> "error",
+            Fields.ERROR_OBJECT -> err,
+            Fields.ERROR_KIND -> err.getClass.getSimpleName,
+            Fields.MESSAGE -> err.getMessage,
+            Fields.STACK -> err.getStackTrace.mkString
+          ).asJava
+        )
+      }.void
+  }
 
 }

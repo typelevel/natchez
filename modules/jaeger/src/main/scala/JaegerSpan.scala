@@ -5,13 +5,15 @@
 package natchez
 package jaeger
 
-import io.{ opentracing => ot }
+import io.{opentracing => ot}
 import cats.data.Nested
 import cats.effect.Sync
 import cats.effect.Resource
 import cats.syntax.all._
+import io.opentracing.log.Fields
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
+import io.opentracing.tag.Tags
 
 import scala.jdk.CollectionConverters._
 import java.net.URI
@@ -76,4 +78,20 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       uri.resolve(s"/trace/$id")
     } .value
 
+  def attachError(err: Throwable): F[Unit] = {
+    put(
+      Tags.ERROR.getKey -> true
+    ) >>
+    Sync[F].delay {
+      span.log(
+        Map(
+          Fields.EVENT -> "error",
+          Fields.ERROR_OBJECT -> err,
+          Fields.ERROR_KIND -> err.getClass.getSimpleName,
+          Fields.MESSAGE -> err.getMessage,
+          Fields.STACK -> err.getStackTrace.mkString
+        ).asJava
+      )
+    }.void
+  }
 }

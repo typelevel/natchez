@@ -58,6 +58,10 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def traceUri: F[Option[URI]] =
     none.pure[F] // TODO
 
+  override def attachError(err: Throwable): F[Unit] = {
+    put("exit.case" -> "error", "exit.error.class" -> err.getClass.getName,"exit.error.message" -> err.getMessage)
+  }
+
 }
 
 private[honeycomb] object HoneycombSpan {
@@ -89,10 +93,7 @@ private[honeycomb] object HoneycombSpan {
               exitCase match {
                 case Succeeded   => e.addField("exit.case", "completed")
                 case Canceled    => e.addField("exit.case", "canceled")
-                case Errored(ex) =>
-                  e.addField("exit.case",          "error")
-                  e.addField("exit.error.class",    ex.getClass.getName)
-                  e.addField("exit.error.message",  ex.getMessage)
+                case Errored(ex) => span.attachError(ex)
               }
               e
             }

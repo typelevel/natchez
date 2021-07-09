@@ -74,6 +74,14 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
   def traceUri: F[Option[URI]] = none.pure[F]
 
+  override def attachError(err: Throwable): F[Unit] = {
+    put(
+      ("error.msg", err.getMessage),
+      ("error.stack", err.getStackTrace.mkString("\n"))
+    ) >>
+    Sync[F].delay(span.setStatus(io.opencensus.trace.Status.INTERNAL.withDescription(err.getMessage)))
+  }
+
 }
 
 private[opencensus] object OpenCensusSpan {
@@ -96,12 +104,7 @@ private[opencensus] object OpenCensusSpan {
               exitCase match {
                 case Succeeded   => outer.span.setStatus(io.opencensus.trace.Status.OK)
                 case Canceled    => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
-                case Errored(ex) =>
-                  outer.put(
-                    ("error.msg", ex.getMessage),
-                    ("error.stack", ex.getStackTrace.mkString("\n"))
-                  )
-                  outer.span.setStatus(io.opencensus.trace.Status.INTERNAL.withDescription(ex.getMessage))
+                case Errored(ex) => outer.attachError(ex)
               }
             }
       _  <- Sync[F].delay(outer.span.end())
