@@ -25,7 +25,9 @@ trait Span[F[_]] {
    */
   def log(event: String): F[Unit]
 
-
+  /**
+   *  Add error information to the span from `err`
+   */
   def attachError(err: Throwable): F[Unit]
 
   /**

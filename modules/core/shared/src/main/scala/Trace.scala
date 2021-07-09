@@ -27,6 +27,11 @@ trait Trace[F[_]] {
   def log(event: String): F[Unit]
 
   /**
+   *  Add error information to the span from `err`
+   */
+  def attachError(err: Throwable): F[Unit]
+
+  /**
    * The kernel for the current span, which can be sent as headers to remote systems, which can
    * then continue this trace by constructing spans that are children of the current one.
    */
@@ -64,6 +69,9 @@ object Trace {
         def log(fields: (String, TraceValue)*): IO[Unit] =
           local.get.flatMap(_.log(fields: _*))
 
+        def attachError(err: Throwable): IO[Unit] =
+          local.get.flatMap(_.attachError(err))
+
         def log(event: String): IO[Unit] =
           local.get.flatMap(_.log(event))
 
@@ -98,6 +106,7 @@ object Trace {
         final val void = Applicative[F].unit
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
+        def attachError(err: Throwable): F[Unit] = void
         def log(fields: (String, TraceValue)*): F[Unit] = void
         def log(event: String): F[Unit] = void
         def span[A](name: String)(k: F[A]): F[A] = k
@@ -127,6 +136,9 @@ object Trace {
     def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.put(fields: _*))
 
+    def attachError(err: Throwable): Kleisli[F, Span[F], Unit] =
+      Kleisli(_.attachError(err))
+
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(s => ev.onError(k.run(s)) { case err => s.attachError(err) }))
 
@@ -151,6 +163,9 @@ object Trace {
         def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).put(fields: _*))
 
+        def attachError(err: Throwable): Kleisli[F,E,Unit] =
+          Kleisli(e => f(e).attachError(err))
+
         def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit]  =
           Kleisli(e => f(e).log(fields: _*))
 
@@ -174,6 +189,10 @@ object Trace {
 
       def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.put(fields: _*))
+
+      override def attachError(err: Throwable): Kleisli[F, E, Unit]= {
+        Kleisli.liftF(trace.attachError(err))
+      }
 
       def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.log(fields: _*))
@@ -200,6 +219,9 @@ object Trace {
       def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
         StateT.liftF(trace.put(fields: _*))
 
+      override def attachError(err: Throwable): StateT[F, S, Unit] =
+        StateT.liftF(trace.attachError(err))
+
       def log(fields: (String, TraceValue)*): StateT[F, S, Unit]  =
         StateT.liftF(trace.log(fields: _*))
 
@@ -224,6 +246,9 @@ object Trace {
 
       def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.put(fields: _*))
+
+      override def attachError(err: Throwable): EitherT[F, E, Unit] =
+        EitherT.liftF(trace.attachError(err))
 
       def log(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.log(fields: _*))
@@ -250,6 +275,9 @@ object Trace {
       def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.put(fields: _*))
 
+      override def attachError(err: Throwable): OptionT[F, Unit] =
+        OptionT.liftF(trace.attachError(err))
+
       def log(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.log(fields: _*))
 
@@ -274,6 +302,9 @@ object Trace {
 
       def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.put(fields: _*).map(_.pure[G]).nested
+
+      override def attachError(err: Throwable): Nested[F, G, Unit] =
+        trace.attachError(err).map(_.pure[G]).nested
 
       def log(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.log(fields: _*).map(_.pure[G]).nested
