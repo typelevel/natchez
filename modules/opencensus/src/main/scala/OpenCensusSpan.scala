@@ -42,7 +42,7 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
-    val map = fields.toMap.view.mapValues(traceToAttribute).toMap.asJava
+    val map = fields.map { case (k, v) => k -> traceToAttribute(v) }.toMap.asJava
     Sync[F].delay(span.addAnnotation("event", map)).void
   }
 

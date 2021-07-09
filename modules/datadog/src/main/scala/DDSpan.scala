@@ -41,7 +41,7 @@ private[datadog] final case class DDSpan[F[_]: Sync](
     }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
-    val map = fields.toMap.view.mapValues(_.value).toMap.asJava
+    val map = fields.map {case (k, v) => k -> v.value }.toMap.asJava
     Sync[F].delay(span.log(map)).void
   }
 
