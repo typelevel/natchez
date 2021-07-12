@@ -53,7 +53,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     this.fields.update(_ ++ fields.toMap)
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
-    putAny(fields.map { case (k, v) => (k -> v.asJson) }: _*)
+    put(fields: _*)
   }
 
   override def log(event: String): F[Unit] =
@@ -134,13 +134,13 @@ private[log] object LogSpan {
   def finish[F[_]: Sync: Logger](format: Json => String): (LogSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
-      j  <- span.json(n)
       _ <- exitCase match {
-        case Succeeded           => span.putAny("exit.case" -> "succeeded".asJson)
-        case Canceled            => span.putAny("exit.case" -> "canceled".asJson)
+        case Succeeded           => span.put("exit.case" -> "succeeded")
+        case Canceled            => span.put("exit.case" -> "canceled")
         case Errored(ex: Fields) => span.attachError(ex) >> span.putAny(ex.fields.toList.map { case (k, v) => (k, v.asJson) }: _*)
         case Errored(ex)         => span.attachError(ex)
       }
+      j  <- span.json(n)
       _  <- span.parent match {
               case None |
                    Some(Left(_))  => Logger[F].info(format(Json.fromJsonObject(j)))
