@@ -335,7 +335,7 @@ lazy val examples = project
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.31",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.32",
       "eu.timepit"        %% "refined"        % "0.9.27",
       "is.cir"            %% "ciris"          % "2.0.1"
     )
@@ -389,7 +389,7 @@ lazy val docs = project
       "org.http4s"    %% "http4s-dsl"     % "0.23.0-M1",
       "org.http4s"    %% "http4s-client"  % "0.23.0-M1",
       "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.31",
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
     )
   )
 
