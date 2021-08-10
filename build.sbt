@@ -337,7 +337,7 @@ lazy val examples = project
       "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
       "org.slf4j"         %  "slf4j-simple"   % "1.7.32",
       "eu.timepit"        %% "refined"        % "0.9.27",
-      "is.cir"            %% "ciris"          % "2.0.1"
+      "is.cir"            %% "ciris"          % "2.1.0"
     )
   )
 
