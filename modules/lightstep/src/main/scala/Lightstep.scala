@@ -14,11 +14,11 @@ import natchez.opentracing.GlobalTracer
 object Lightstep {
   def entryPoint[F[_]: Sync](configure: OptionsBuilder => F[Tracer]): Resource[F, EntryPoint[F]] = {
     val createAndRegister = configure(new OptionsBuilder).flatTap(GlobalTracer.registerTracer[F])
-    
-    Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
+
+    Resource.fromAutoCloseable(createAndRegister)
       .map(new LightstepEntryPoint[F](_))
   }
-  
-  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] = 
+
+  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] =
     GlobalTracer.fetch.map(_.map(new LightstepEntryPoint[F](_)))
 }

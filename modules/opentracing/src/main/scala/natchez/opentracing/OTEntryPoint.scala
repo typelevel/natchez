@@ -16,10 +16,6 @@ import natchez.Span
 import java.net.URI
 import scala.jdk.CollectionConverters._
 
-trait MakeSpanUri {
-  def makeUri(traceId: String, spanId: String): URI
-}
-
 final class OTEntryPoint[F[_]: Sync](tracer: opentracing.Tracer, mkUri: Option[MakeSpanUri])
   extends EntryPoint[F] {
 
@@ -41,4 +37,8 @@ final class OTEntryPoint[F[_]: Sync](tracer: opentracing.Tracer, mkUri: Option[M
         span.pure[Resource[F, *]]
     }
 
+}
+
+trait MakeSpanUri {
+  def makeUri(traceId: String, spanId: String): URI
 }
