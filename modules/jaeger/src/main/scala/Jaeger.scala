@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 by Rob Norris and Contributors
+// Copyright (c) 2019-2021 by Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
@@ -21,15 +21,15 @@ object Jaeger {
   )(
     configure: Configuration => F[NativeJaegerTracer]
   ): Resource[F, EntryPoint[F]] = {
-    val createAndRegister = 
+    val createAndRegister =
       Sync[F].delay(new Configuration(system))
         .flatMap(configure)
         .flatTap(GlobalTracer.registerTracer[F])
-    
+
     Resource.make(createAndRegister)(c => Sync[F].delay(c.close()))
         .map { new JaegerEntryPoint[F](_, uriPrefix) }
   }
-  
-  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
+
+  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] =
     GlobalTracer.fetch.map(_.map(new JaegerEntryPoint[F](_, uriPrefix)))
 }
