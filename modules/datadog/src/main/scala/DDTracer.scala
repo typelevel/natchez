@@ -12,21 +12,30 @@ import cats.syntax.all._
 import _root_.datadog.opentracing.{DDTracer => NativeDDTracer}
 import _root_.datadog.opentracing.DDTracer.DDTracerBuilder
 import natchez.opentracing.GlobalTracer
+import natchez.opentracing.OTEntryPoint
+import natchez.opentracing.MakeSpanUri
 
 object DDTracer {
+
   def entryPoint[F[_]: Sync](
     buildFunc: DDTracerBuilder => F[NativeDDTracer],
-    uriPrefix: Option[URI] = None
   ): Resource[F, EntryPoint[F]] = {
-    val createAndRegister = 
-      Sync[F].delay(NativeDDTracer.builder())
-        .flatMap(buildFunc)
-        .flatTap(GlobalTracer.registerTracer[F])
+    val createAndRegister = Sync[F]
+      .delay(NativeDDTracer.builder()).flatMap(buildFunc)
+      .flatTap(GlobalTracer.registerTracer[F])
 
-    Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
-        .map(new DDEntryPoint[F](_, uriPrefix))
+    Resource
+      .fromAutoCloseable(createAndRegister)
+      .map(
+        new OTEntryPoint[F](
+          _,
+          Some(makeSpanUri),
+        )
+      )
   }
 
-  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
-    GlobalTracer.fetch.map(_.map(new DDEntryPoint[F](_, uriPrefix)))
+  def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] =
+    GlobalTracer.fetch.map(_.map(new OTEntryPoint[F](_, Some(makeSpanUri))))
+
+  private val makeSpanUri: MakeSpanUri = (trace, span) => new URI(s"https://app.datadoghq.com/apm/trace/$trace?spanId=$span")
 }
