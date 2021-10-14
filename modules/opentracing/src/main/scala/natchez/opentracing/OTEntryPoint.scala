@@ -22,21 +22,33 @@ final class OTEntryPoint[F[_]: Sync](tracer: opentracing.Tracer, mkUri: Option[M
   override def root(name: String): Resource[F, Span[F]] = OTSpan.make[F](name, None, tracer, mkUri)
 
   override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Sync[F].delay {
-      tracer.extract(
-        opentracing.propagation.Format.Builtin.HTTP_HEADERS,
-        new opentracing.propagation.TextMapAdapter(kernel.toHeaders.asJava),
-      )
-    }.toResource.flatMap(ctx => OTSpan.make(name, Some(ctx), tracer, mkUri))
-
-  override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    continue(name, kernel).flatMap {
-      case null =>
-        root(name) // hurr, means headers are incomplete or invalid
-      case span =>
-        span.pure[Resource[F, *]]
+    continueSafe(name, kernel).flatMap {
+      _.fold(Resource.eval(new OTEntryPoint.ContinueException().raiseError[F, Span[F]]))(_.pure[Resource[F, *]])
     }
 
+  private def continueSafe(name: String, kernel: Kernel): Resource[F, Option[OTSpan[F]]] =
+    Sync[F].delay {
+      Option {
+        tracer.extract(
+          opentracing.propagation.Format.Builtin.HTTP_HEADERS,
+          new opentracing.propagation.TextMapAdapter(kernel.toHeaders.asJava),
+        )
+      }
+    }.toResource.flatMap {
+      _.traverse {
+        ctx => OTSpan.make(name, Some(ctx), tracer, mkUri)
+      }
+    }
+
+  override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    continueSafe(name, kernel).flatMap {
+      _.fold(root(name))(_.pure[Resource[F, *]])
+    }
+
+}
+
+object OTEntryPoint {
+  final case class ContinueException() extends Exception("Cannot continue from provided kernel")
 }
 
 trait MakeSpanUri {

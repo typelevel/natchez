@@ -48,9 +48,9 @@ object Span {
   /**
    * Ensure that Fields mixin data is added to a span when an error is raised.
    */
-  def putErrorFields[F[_]: Applicative](span: Resource[F, Span[F]]): Resource[F, Span[F]] =
-    span.flatMap(span => Resource.makeCase(span.pure[F])((_, exit) => exit match {
-      case ExitCase.Errored(f: Fields) => span.put(f.fields.toList: _*)
+  def putErrorFields[F[_]: Applicative, S <: Span[F]](span: Resource[F, S]): Resource[F, S] =
+    span.flatMap(span => Resource.makeCase(span.pure[F]){
+      case (_, ExitCase.Errored(f: Fields)) => span.put(f.fields.toList: _*)
       case _ => Applicative[F].unit
-    }))
+    })
 }

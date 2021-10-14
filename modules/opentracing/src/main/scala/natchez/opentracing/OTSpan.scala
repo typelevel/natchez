@@ -79,7 +79,7 @@ object OTSpan {
   private def asChildOf(child: ot.Tracer.SpanBuilder, parent: Option[ot.SpanContext]): ot.Tracer.SpanBuilder =
     parent.foldLeft(child)(_.asChildOf(_))
 
-  def make[F[_]: Sync](name: String, parentOpt: Option[ot.SpanContext], tracer: ot.Tracer, mkUri: Option[MakeSpanUri]): Resource[F, Span[F]] = Span.putErrorFields(
+  private[opentracing] def make[F[_]: Sync](name: String, parentOpt: Option[ot.SpanContext], tracer: ot.Tracer, mkUri: Option[MakeSpanUri]): Resource[F, OTSpan[F]] = Span.putErrorFields(
     Resource
       .makeCase(Sync[F].delay(asChildOf(tracer.buildSpan(name), parentOpt).start())) {
         case (span, ExitCase.Errored(e)) =>
