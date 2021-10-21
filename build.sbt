@@ -359,7 +359,7 @@ lazy val examples = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
+  .dependsOn(mtlJVM, honeycomb, datadog, jaeger, logJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
