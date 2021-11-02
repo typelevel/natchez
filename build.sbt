@@ -298,9 +298,9 @@ lazy val mtlJS = mtl.js.dependsOn(coreJS)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
-lazy val noop = project
+lazy val noop = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/noop"))
-  .dependsOn(coreJVM)
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -308,6 +308,11 @@ lazy val noop = project
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
     )
+  .jsSettings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
 
 lazy val mock = project
   .in(file("modules/mock"))
