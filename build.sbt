@@ -325,6 +325,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
       "co.fs2"            %%% "fs2-io"          % "3.2.0",
+      "com.comcast"       %%% "ip4s-core"       % "3.1.1",
     )
   )
   .jsSettings(

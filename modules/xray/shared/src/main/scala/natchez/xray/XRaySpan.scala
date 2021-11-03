@@ -7,10 +7,10 @@ package natchez.xray
 import cats.effect._
 import cats.syntax.all._
 import cats.effect.Resource.ExitCase
-
 import natchez._
 import natchez.TraceValue._
 import cats.effect.Resource
+
 import java.net.URI
 import java.time.Instant
 import io.circe.JsonObject
@@ -20,6 +20,8 @@ import io.circe.syntax._
 import cats.effect.kernel.Resource.ExitCase.Canceled
 import cats.effect.kernel.Resource.ExitCase.Errored
 import cats.effect.kernel.Resource.ExitCase.Succeeded
+
+import scala.util.matching.Regex
 
 private[xray] final case class XRaySpan[F[_]: Sync](
     entry: XRayEntryPoint[F],
@@ -81,6 +83,15 @@ private[xray] final case class XRaySpan[F[_]: Sync](
         )
       )
 
+      val (badKeys: Map[String, Json], goodKeys: Map[String, Json]) = fs.partition { case (k, _) =>
+        keyRegex.findFirstMatchIn(k).isDefined
+      }
+
+      val fixedAnnotations = badKeys.map { case (k, v) =>
+        keyRegex.replaceAllIn(k, "_") -> v
+      }
+      val allAnnotations: Map[String, Json] = (goodKeys + ("malformed_keys" -> badKeys.keys.mkString(",").asJson)) ++ fixedAnnotations
+
       val fields: List[(String, Json)] =
         List(
           "name" -> name.asJson,
@@ -89,7 +100,7 @@ private[xray] final case class XRaySpan[F[_]: Sync](
           "end_time" -> toEpoch(end).asJson,
           "trace_id" -> xrayTraceId.asJson,
           "subsegments" -> cs.reverse.map(Json.fromJsonObject).asJson,
-          "annotations" -> fs.asJson
+          "annotations" -> allAnnotations.asJson
         ) ++ {
           exitCase match {
             case Canceled   => List("fault" -> true.asJson)
@@ -107,6 +118,8 @@ private[xray] final case class XRaySpan[F[_]: Sync](
 }
 
 private[xray] object XRaySpan {
+
+  private[XRaySpan] val keyRegex: Regex = """[^A-Za-z0-9_]""".r
 
   implicit val EncodeTraceValue: Encoder[TraceValue] =
     Encoder.instance {
@@ -131,7 +144,10 @@ private[xray] object XRaySpan {
       traceId: String,
       parentId: Option[String],
       sampled: Boolean
-  )
+  ) {
+    def toKernel: Kernel =
+      Kernel(Map("X-Amzn-Trace-Id" -> s"Root=$traceId;Parent=$parentId;Sampled=${if (sampled) "1" else "0"}"))
+  }
 
   private def parseHeader(header: String): Option[XRayHeader] = {
     val foo = header
@@ -141,7 +157,6 @@ private[xray] object XRaySpan {
         case Array(k, v) => List((k, v))
         case _           => List.empty
       })
-      .toList
       .toMap
 
     foo
