@@ -1,6 +1,6 @@
 val scala212Version        = "2.12.12"
 val scala213Version        = "2.13.5"
-val scala30Version         = "3.0.2"
+val scala30Version         = "3.1.0"
 
 val collectionCompatVersion = "2.4.4"
 
@@ -324,7 +324,7 @@ lazy val xray = project
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "co.fs2"            %%% "fs2-io"          % "3.2.0"
+      "co.fs2"            %%% "fs2-io"          % "3.2.0",
     )
   )
 
@@ -411,4 +411,3 @@ lazy val docs = project
       "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
     )
   )
-
