@@ -15,17 +15,17 @@ trait XRayEnvironment[F[_]] {
   def kernelFromEnvironment: F[Kernel]
 }
 
-object XRayEnvironment {
+object XRayEnvironment extends PlatformEnvironment {
   def apply[F[_] : XRayEnvironment]: XRayEnvironment[F] = implicitly
 
   implicit def instance[F[_] : Sync]: XRayEnvironment[F] = new XRayEnvironment[F] {
     override def daemonAddress: F[Option[SocketAddress[IpAddress]]] =
-      OptionT(Sync[F].delay(sys.env.get("AWS_XRAY_DAEMON_ADDRESS")))
+      OptionT(Sync[F].delay(env.get("AWS_XRAY_DAEMON_ADDRESS")))
         .subflatMap(SocketAddress.fromStringIp)
         .value
 
     override def traceId: F[Option[String]] =
-      Sync[F].delay(sys.env.get("_X_AMZN_TRACE_ID"))
+      Sync[F].delay(env.get("_X_AMZN_TRACE_ID"))
 
     override def kernelFromEnvironment: F[Kernel] =
       OptionT(traceId)
