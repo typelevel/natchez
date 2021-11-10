@@ -20,7 +20,7 @@ final class XRayEntryPoint[F[_] : Concurrent : Clock : Random : Parallel](
 ) extends EntryPoint[F] {
 
   def sendSegment(foo: JsonObject): F[Unit] = {
-    val payload = (XRayEntryPoint.header + foo.asJson.noSpaces).getBytes()
+    val payload = XRayEntryPoint.header ++ foo.asJson.noSpaces.getBytes()
     val datagram = Datagram(daemonAddress, fs2.Chunk.array(payload))
     socket.write(datagram)
   }
@@ -39,5 +39,5 @@ final class XRayEntryPoint[F[_] : Concurrent : Clock : Random : Parallel](
 }
 
 object XRayEntryPoint {
-  val header = "{\"format\": \"json\", \"version\": 1}\n"
+  val header = "{\"format\": \"json\", \"version\": 1}\n".getBytes()
 }

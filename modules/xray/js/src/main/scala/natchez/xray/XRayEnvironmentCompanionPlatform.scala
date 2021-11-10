@@ -7,7 +7,7 @@ package natchez.xray
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 
-private[xray] trait PlatformEnvironment {
+private[xray] trait XRayEnvironmentCompanionPlatform {
   def env = process.env
 }
 

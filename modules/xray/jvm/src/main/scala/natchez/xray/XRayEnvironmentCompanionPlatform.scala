@@ -4,6 +4,6 @@
 
 package natchez.xray
 
-private[xray] trait PlatformEnvironment {
+private[xray] trait XRayEnvironmentCompanionPlatform {
   def env = sys.env
 }

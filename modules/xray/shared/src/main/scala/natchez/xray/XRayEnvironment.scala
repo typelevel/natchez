@@ -15,7 +15,7 @@ trait XRayEnvironment[F[_]] {
   def kernelFromEnvironment: F[Kernel]
 }
 
-object XRayEnvironment extends PlatformEnvironment {
+object XRayEnvironment extends XRayEnvironmentCompanionPlatform {
   def apply[F[_] : XRayEnvironment]: XRayEnvironment[F] = implicitly
 
   implicit def instance[F[_] : Sync]: XRayEnvironment[F] = new XRayEnvironment[F] {

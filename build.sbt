@@ -324,7 +324,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "co.fs2"            %%% "fs2-io"          % "3.2.0",
+      "co.fs2"            %%% "fs2-io"          % "3.2.2",
       "com.comcast"       %%% "ip4s-core"       % "3.1.1",
     )
   )

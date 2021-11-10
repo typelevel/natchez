@@ -117,7 +117,7 @@ private[xray] final case class XRaySpan[F[_] : Concurrent : Clock : Random : Par
     }
 
   private def header: String =
-    s"Root=$xrayTraceId;Parent=$segmentId;Sampled=${if (sampled) "1" else "0"}"
+    encodeHeader(xrayTraceId, Some(segmentId), sampled)
 
 }
 
@@ -144,13 +144,19 @@ private[xray] object XRaySpan {
 
   val Header = "X-Amzn-Trace-Id"
 
+  private[XRaySpan] def encodeHeader(rootId: String, parentId: Option[String], sampled: Boolean): String = {
+    val parent = parentId.map(p => s"Parent=$p;").getOrElse("")
+    s"Root=$rootId;${parent}Sampled=${if (sampled) "1" else "0"}"
+  }
+    
+
   final case class XRayHeader(
       traceId: String,
       parentId: Option[String],
       sampled: Boolean
   ) {
     def toKernel: Kernel =
-      Kernel(Map("X-Amzn-Trace-Id" -> s"Root=$traceId;Parent=$parentId;Sampled=${if (sampled) "1" else "0"}"))
+      Kernel(Map(Header -> encodeHeader(traceId, parentId, sampled)))
   }
 
   private def parseHeader(header: String): Option[XRayHeader] = {
