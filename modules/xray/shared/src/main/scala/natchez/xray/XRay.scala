@@ -5,7 +5,6 @@
 package natchez
 package xray
 
-import cats.Parallel
 import cats.effect.std.Random
 import cats.effect.{Clock, Concurrent, Resource}
 import com.comcast.ip4s._
@@ -13,7 +12,7 @@ import fs2.io.net.Network
 
 object XRay {
 
-  def entryPoint[F[_] : Concurrent : Clock : Random : Parallel : Network](
+  def entryPoint[F[_]: Concurrent: Clock: Random: Network](
       daemonAddress: SocketAddress[IpAddress] =
         SocketAddress(ip"127.0.0.1", port"2000")
   ): Resource[F, EntryPoint[F]] =

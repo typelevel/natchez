@@ -24,7 +24,7 @@ import cats.effect.kernel.Resource.ExitCase.Succeeded
 import scala.concurrent.duration._
 import scala.util.matching.Regex
 
-private[xray] final case class XRaySpan[F[_] : Concurrent : Clock : Random : Parallel](
+private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
     entry: XRayEntryPoint[F],
     name: String,
     segmentId: String,
@@ -63,7 +63,7 @@ private[xray] final case class XRaySpan[F[_] : Concurrent : Clock : Random : Par
     t.toMicros.toDouble / 1000000
 
   def serialize(end: FiniteDuration, exitCase: ExitCase): F[JsonObject] =
-    (fields.get, children.get, XRaySpan.segmentId[F]).parMapN { (fs, cs, id) =>
+    (fields.get, children.get, XRaySpan.segmentId[F]).mapN { (fs, cs, id) =>
       def exitFields(ex: Throwable): List[(String, Json)] = List(
         "fault" -> true.asJson,
         "cause" -> Json.obj(
@@ -72,8 +72,7 @@ private[xray] final case class XRaySpan[F[_] : Concurrent : Clock : Random : Par
               "id" -> id.asJson,
               "message" -> ex.getMessage.asJson,
               "type" -> ex.getClass.getName.asJson,
-              "stack" -> ex
-                .getStackTrace
+              "stack" -> ex.getStackTrace
                 .map(x =>
                   Json.obj(
                     "line" -> x.getLineNumber.asJson,
@@ -87,14 +86,18 @@ private[xray] final case class XRaySpan[F[_] : Concurrent : Clock : Random : Par
         )
       )
 
-      val (badKeys: Map[String, Json], goodKeys: Map[String, Json]) = fs.partition { case (k, _) =>
-        keyRegex.findFirstMatchIn(k).isDefined
-      }
+      val (badKeys: Map[String, Json], goodKeys: Map[String, Json]) =
+        fs.partition { case (k, _) =>
+          keyRegex.findFirstMatchIn(k).isDefined
+        }
 
       val fixedAnnotations = badKeys.map { case (k, v) =>
         keyRegex.replaceAllIn(k, "_") -> v
       }
-      val allAnnotations: Map[String, Json] = (goodKeys + ("malformed_keys" -> badKeys.keys.mkString(",").asJson)) ++ fixedAnnotations
+      val allAnnotations: Map[String, Json] =
+        (goodKeys + ("malformed_keys" -> badKeys.keys
+          .mkString(",")
+          .asJson)) ++ fixedAnnotations
 
       val fields: List[(String, Json)] =
         List(
@@ -144,11 +147,14 @@ private[xray] object XRaySpan {
 
   val Header = "X-Amzn-Trace-Id"
 
-  private[XRaySpan] def encodeHeader(rootId: String, parentId: Option[String], sampled: Boolean): String = {
+  private[XRaySpan] def encodeHeader(
+      rootId: String,
+      parentId: Option[String],
+      sampled: Boolean
+  ): String = {
     val parent = parentId.map(p => s"Parent=$p;").getOrElse("")
     s"Root=$rootId;${parent}Sampled=${if (sampled) "1" else "0"}"
   }
-    
 
   final case class XRayHeader(
       traceId: String,
@@ -176,24 +182,31 @@ private[xray] object XRaySpan {
       )
   }
 
-  private def randomHexString[F[_] : Functor : Random](bytes: Int): F[String] =
-    Random[F].nextBytes(bytes)
+  private def randomHexString[F[_]: Functor: Random](bytes: Int): F[String] =
+    Random[F]
+      .nextBytes(bytes)
       .map(x => BigInt(1, x).toString(16).reverse.padTo(bytes * 2, '0').reverse)
 
-  private def segmentId[F[_] : Functor : Random]: F[String] =
+  private def segmentId[F[_]: Functor: Random]: F[String] =
     randomHexString[F](8)
 
-  private def traceId[F[_] : Applicative : Clock : Random : Parallel]: F[String] =
-    (Clock[F].realTime, randomHexString[F](12)).parMapN { (t, r) =>
+  private def traceId[F[_]: Applicative: Clock: Random]: F[String] =
+    (Clock[F].realTime, randomHexString[F](12)).mapN { (t, r) =>
       s"1-${t.toSeconds.toHexString}-$r"
     }
 
-  def fromHeader[F[_] : Concurrent : Clock : Random : Parallel](name: String,
-                                                                header: XRayHeader,
-                                                                entry: XRayEntryPoint[F]
-                                                               ): F[XRaySpan[F]] =
-    (segmentId[F], Clock[F].realTime, Ref[F].of(Map.empty[String, Json]), Ref[F].of(List.empty[JsonObject]))
-      .parMapN { (sId, t, fields, children) =>
+  def fromHeader[F[_]: Concurrent: Clock: Random](
+      name: String,
+      header: XRayHeader,
+      entry: XRayEntryPoint[F]
+  ): F[XRaySpan[F]] =
+    (
+      segmentId[F],
+      Clock[F].realTime,
+      Ref[F].of(Map.empty[String, Json]),
+      Ref[F].of(List.empty[JsonObject])
+    )
+      .mapN { (sId, t, fields, children) =>
         XRaySpan(
           entry = entry,
           name = name,
@@ -207,30 +220,40 @@ private[xray] object XRaySpan {
         )
       }
 
-  def fromKernel[F[_] : Concurrent : Clock : Random : Parallel](name: String,
-                                                                kernel: Kernel,
-                                                                entry: XRayEntryPoint[F]
-                                                               ): F[XRaySpan[F]] =
+  def fromKernel[F[_]: Concurrent: Clock: Random](
+      name: String,
+      kernel: Kernel,
+      entry: XRayEntryPoint[F]
+  ): F[XRaySpan[F]] =
     kernel.toHeaders
       .get(Header)
       .flatMap(parseHeader)
       .map(x => fromHeader(name, x, entry))
       .get
 
-  def fromKernelOrElseRoot[F[_] : Concurrent : Clock : Random : Parallel](name: String,
-                                                                          kernel: Kernel,
-                                                                          entry: XRayEntryPoint[F]
-                                                                         ): F[XRaySpan[F]] =
+  def fromKernelOrElseRoot[F[_]: Concurrent: Clock: Random](
+      name: String,
+      kernel: Kernel,
+      entry: XRayEntryPoint[F]
+  ): F[XRaySpan[F]] =
     kernel.toHeaders
       .get(Header)
       .flatMap(parseHeader)
       .map(x => fromHeader(name, x, entry))
       .getOrElse(root(name, entry))
 
-  def root[F[_] : Concurrent : Clock : Random : Parallel](name: String,
-                                                          entry: XRayEntryPoint[F]): F[XRaySpan[F]] =
-    (segmentId[F], traceId[F], Clock[F].realTime, Ref[F].of(Map.empty[String, Json]), Ref[F].of(List.empty[JsonObject]))
-      .parMapN { (sId, tId, t, fields, children) =>
+  def root[F[_]: Concurrent: Clock: Random](
+      name: String,
+      entry: XRayEntryPoint[F]
+  ): F[XRaySpan[F]] =
+    (
+      segmentId[F],
+      traceId[F],
+      Clock[F].realTime,
+      Ref[F].of(Map.empty[String, Json]),
+      Ref[F].of(List.empty[JsonObject])
+    )
+      .mapN { (sId, tId, t, fields, children) =>
         XRaySpan(
           entry = entry,
           name = name,
@@ -244,9 +267,16 @@ private[xray] object XRaySpan {
         )
       }
 
-  def child[F[_] : Concurrent : Clock : Random : Parallel](parent: XRaySpan[F],
-                                                           name: String): F[XRaySpan[F]] =
-    (segmentId[F], Clock[F].realTime, Ref[F].of(Map.empty[String, Json]), Ref[F].of(List.empty[JsonObject])).parMapN { (sId, t, fields, children) =>
+  def child[F[_]: Concurrent: Clock: Random](
+      parent: XRaySpan[F],
+      name: String
+  ): F[XRaySpan[F]] =
+    (
+      segmentId[F],
+      Clock[F].realTime,
+      Ref[F].of(Map.empty[String, Json]),
+      Ref[F].of(List.empty[JsonObject])
+    ).mapN { (sId, t, fields, children) =>
       XRaySpan(
         entry = parent.entry,
         name = name,
@@ -260,7 +290,7 @@ private[xray] object XRaySpan {
       )
     }
 
-  def finish[F[_] : Clock : Monad](
+  def finish[F[_]: Clock: Monad](
       span: XRaySpan[F],
       entryPoint: XRayEntryPoint[F],
       exitCase: ExitCase

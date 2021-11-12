@@ -5,7 +5,6 @@
 package natchez
 package xray
 
-import cats.Parallel
 import cats.effect._
 import cats.effect.std.Random
 import cats.syntax.all._
@@ -14,7 +13,7 @@ import io.circe.syntax._
 import com.comcast.ip4s._
 import fs2.io.net.{Datagram, DatagramSocket}
 
-final class XRayEntryPoint[F[_] : Concurrent : Clock : Random : Parallel](
+final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
     socket: DatagramSocket[F],
     daemonAddress: SocketAddress[IpAddress]
 ) extends EntryPoint[F] {
