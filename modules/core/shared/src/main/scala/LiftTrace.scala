@@ -5,26 +5,14 @@
 package natchez
 
 import cats.data.Kleisli
-import cats.effect.kernel.MonadCancelThrow
-import cats.effect.IO
 
-trait Traceable[A] {
-  def run[F[_]](implicit trace: Trace[F]): F[A]
+trait LiftTrace[F[_], G[_]] {
+  def lift[A](span: Span[F], ga: G[A]): F[A]
 }
 
-trait LiftTrace[F[_]] {
-  def lift[A](span: Span[F], traceable: Traceable[A]): F[A]
-}
-
-object LiftTrace extends LiftTraceLowPriority {
-  implicit def ioInstance: LiftTrace[IO] = new LiftTrace[IO] {
-    def lift[A](span: Span[IO], traceable: Traceable[A]): IO[A] =
-      Trace.ioTrace(span).flatMap(traceable.run(_))
-  }
-}
-
-trait LiftTraceLowPriority {
-  implicit def kleisliInstance[F[_]: MonadCancelThrow]: LiftTrace[F] = new LiftTrace[F] {
-    def lift[A](span: Span[F], traceable: Traceable[A]): F[A] = traceable.run[Kleisli[F, Span[F], *]].apply(span)
-  }
+object LiftTrace {
+  implicit def kleisliInstance[F[_]]: LiftTrace[F, Kleisli[F, Span[F], *]] =
+    new LiftTrace[F, Kleisli[F, Span[F], *]] {
+      def lift[A](span: Span[F], ga: Kleisli[F, Span[F], A]): F[A] = ga(span)
+    }
 }
