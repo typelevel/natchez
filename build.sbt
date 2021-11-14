@@ -319,6 +319,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
   .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
+  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-xray",
     description := "AWS X-Ray bindings implementation",

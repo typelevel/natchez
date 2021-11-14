@@ -147,7 +147,7 @@ private[xray] object XRaySpan {
 
   val Header = "X-Amzn-Trace-Id"
 
-  private[XRaySpan] def encodeHeader(
+  private[xray] def encodeHeader(
       rootId: String,
       parentId: Option[String],
       sampled: Boolean
@@ -165,7 +165,7 @@ private[xray] object XRaySpan {
       Kernel(Map(Header -> encodeHeader(traceId, parentId, sampled)))
   }
 
-  private def parseHeader(header: String): Option[XRayHeader] = {
+  private[xray] def parseHeader(header: String): Option[XRayHeader] = {
     val foo = header
       .split(';')
       .toList

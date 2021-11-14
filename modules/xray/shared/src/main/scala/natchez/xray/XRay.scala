@@ -21,4 +21,5 @@ object XRay {
       .map { socket =>
         new XRayEntryPoint[F](socket, daemonAddress)
       }
+
 }
