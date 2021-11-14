@@ -62,14 +62,15 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   private def toEpochSeconds(t: FiniteDuration): Double =
     t.toMicros.toDouble / 1000000
 
-  def serialize(end: FiniteDuration, exitCase: ExitCase): F[JsonObject] =
-    (fields.get, children.get, XRaySpan.segmentId[F]).mapN { (fs, cs, id) =>
-      def exitFields(ex: Throwable): List[(String, Json)] = List(
+  implicit val exceptionEncoder: Encoder.AsObject[XRayException] =
+    Encoder.AsObject.instance { xex =>
+      val ex = xex.ex
+      JsonObject(
         "fault" -> true.asJson,
         "cause" -> Json.obj(
           "exceptions" -> Json.arr(
             Json.obj(
-              "id" -> id.asJson,
+              "id" -> xex.id.asJson,
               "message" -> ex.getMessage.asJson,
               "type" -> ex.getClass.getName.asJson,
               "stack" -> ex.getStackTrace
@@ -85,7 +86,10 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
           )
         )
       )
+    }
 
+  def serialize(end: FiniteDuration, exitCase: ExitCase): F[JsonObject] =
+    (fields.get, children.get, XRaySpan.segmentId[F]).mapN { (fs, cs, id) =>
       val (badKeys: Map[String, Json], goodKeys: Map[String, Json]) =
         fs.partition { case (k, _) =>
           keyRegex.findFirstMatchIn(k).isDefined
@@ -99,24 +103,19 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
           .mkString(",")
           .asJson)) ++ fixedAnnotations
 
-      val fields: List[(String, Json)] =
-        List(
-          "name" -> name.asJson,
-          "id" -> segmentId.asJson,
-          "start_time" -> toEpochSeconds(startTime).asJson,
-          "end_time" -> toEpochSeconds(end).asJson,
-          "trace_id" -> xrayTraceId.asJson,
-          "subsegments" -> cs.reverse.map(Json.fromJsonObject).asJson,
-          "annotations" -> allAnnotations.asJson
-        ) ++ {
-          exitCase match {
-            case Canceled   => List("fault" -> true.asJson)
-            case Errored(e) => exitFields(e)
-            case Succeeded  => List()
-          }
-        }
-
-      JsonObject.fromIterable(fields)
+      JsonObject(
+        "name" -> name.asJson,
+        "id" -> segmentId.asJson,
+        "start_time" -> toEpochSeconds(startTime).asJson,
+        "end_time" -> toEpochSeconds(end).asJson,
+        "trace_id" -> xrayTraceId.asJson,
+        "subsegments" -> cs.reverse.map(Json.fromJsonObject).asJson,
+        "annotations" -> allAnnotations.asJson
+      ).deepMerge(exitCase match {
+        case Canceled   => JsonObject.singleton("fault", true.asJson)
+        case Errored(e) => XRayException(id, e).asJsonObject
+        case Succeeded  => JsonObject.empty
+      })
     }
 
   private def header: String =
@@ -127,6 +126,8 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
 private[xray] object XRaySpan {
 
   private[XRaySpan] val keyRegex: Regex = """[^A-Za-z0-9_]""".r
+
+  final case class XRayException(id: String, ex: Throwable)
 
   implicit val EncodeTraceValue: Encoder[TraceValue] =
     Encoder.instance {

@@ -12,6 +12,7 @@ import io.circe._
 import io.circe.syntax._
 import com.comcast.ip4s._
 import fs2.io.net.{Datagram, DatagramSocket}
+import scodec.bits.ByteVector
 
 final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
     socket: DatagramSocket[F],
@@ -19,8 +20,9 @@ final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
 ) extends EntryPoint[F] {
 
   def sendSegment(foo: JsonObject): F[Unit] = {
-    val payload = XRayEntryPoint.header ++ foo.asJson.noSpaces.getBytes()
-    val datagram = Datagram(daemonAddress, fs2.Chunk.array(payload))
+    val body = io.circe.Printer.noSpaces.printToByteBuffer(foo.asJson)
+    val payload = XRayEntryPoint.header ++ ByteVector.apply(body)
+    val datagram = Datagram(daemonAddress, fs2.Chunk.byteVector(payload))
     socket.write(datagram)
   }
 
@@ -38,5 +40,7 @@ final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
 }
 
 object XRayEntryPoint {
-  val header = "{\"format\": \"json\", \"version\": 1}\n".getBytes()
+  val header = ByteVector
+    .encodeUtf8("{\"format\": \"json\", \"version\": 1}\n")
+    .getOrElse(ByteVector.empty)
 }

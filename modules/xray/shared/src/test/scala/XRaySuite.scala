@@ -22,18 +22,14 @@ class XRaySuite extends FunSuite {
     assertEquals(
       XRaySpan.parseHeader(noParent),
       Some(
-        XRaySpan.XRayHeader("1-5759e988-bd862e3fe1be46a994272793", None, true)
+        XRaySpan.XRayHeader(rootId, None, true)
       )
     )
 
     assertEquals(
       XRaySpan.parseHeader(parent),
       Some(
-        XRaySpan.XRayHeader(
-          "1-5759e988-bd862e3fe1be46a994272793",
-          Some("53995c3f42cd8ad8"),
-          true
-        )
+        XRaySpan.XRayHeader(rootId, Some(parentId), true)
       )
     )
 
