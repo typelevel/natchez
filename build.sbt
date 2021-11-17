@@ -1,5 +1,5 @@
 val scala212Version        = "2.12.12"
-val scala213Version        = "2.13.5"
+val scala213Version        = "2.13.7"
 val scala30Version         = "3.1.0"
 
 val collectionCompatVersion = "2.4.4"
