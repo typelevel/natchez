@@ -1,6 +1,6 @@
 val scala212Version        = "2.12.12"
 val scala213Version        = "2.13.5"
-val scala30Version         = "3.0.0"
+val scala30Version         = "3.1.0"
 
 val collectionCompatVersion = "2.4.4"
 
@@ -298,9 +298,9 @@ lazy val mtlJS = mtl.js.dependsOn(coreJS)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
-lazy val noop = project
+lazy val noop = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/noop"))
-  .dependsOn(coreJVM)
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -308,6 +308,33 @@ lazy val noop = project
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
     )
+  .jsSettings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+
+lazy val xray = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/xray"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(crossProjectSettings)
+  .settings(
+    name        := "natchez-xray",
+    description := "AWS X-Ray bindings implementation",
+    libraryDependencies ++= Seq(
+      "io.circe"          %%% "circe-core"      % "0.14.1",
+      "co.fs2"            %%% "fs2-io"          % "3.2.2",
+      "com.comcast"       %%% "ip4s-core"       % "3.1.1",
+      "org.scodec"        %%% "scodec-bits"     % "1.1.29"
+    )
+  )
+  .jsSettings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
 
 lazy val mock = project
   .in(file("modules/mock"))
@@ -335,8 +362,8 @@ lazy val examples = project
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.31",
-      "eu.timepit"        %% "refined"        % "0.9.26",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.32",
+      "eu.timepit"        %% "refined"        % "0.9.27",
       "is.cir"            %% "ciris"          % "2.0.1"
     )
   )
@@ -359,7 +386,7 @@ lazy val examples = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
+  .dependsOn(mtlJVM, honeycomb, datadog, jaeger, logJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -389,7 +416,6 @@ lazy val docs = project
       "org.http4s"    %% "http4s-dsl"     % "0.23.0-M1",
       "org.http4s"    %% "http4s-client"  % "0.23.0-M1",
       "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.31",
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
     )
   )
-
