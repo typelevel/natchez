@@ -5,6 +5,7 @@
 package natchez
 package xray
 
+import cats.data.OptionT
 import cats.effect._
 import cats.effect.std.Random
 import cats.syntax.all._
@@ -33,7 +34,7 @@ final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
     make(XRaySpan.root(name, this))
 
   def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    make(XRaySpan.fromKernel(name, kernel, this))
+    make(OptionT(XRaySpan.fromKernel(name, kernel, this)).getOrElseF(new NoSuchElementException().raiseError))
 
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     make(XRaySpan.fromKernelOrElseRoot(name, kernel, this))

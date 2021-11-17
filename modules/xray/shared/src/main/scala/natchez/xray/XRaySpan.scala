@@ -5,6 +5,7 @@
 package natchez.xray
 
 import cats._
+import cats.data._
 import cats.effect._
 import cats.syntax.all._
 import cats.effect.Resource.ExitCase
@@ -225,23 +226,19 @@ private[xray] object XRaySpan {
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F]
-  ): F[XRaySpan[F]] =
-    kernel.toHeaders
-      .get(Header)
-      .flatMap(parseHeader)
-      .map(x => fromHeader(name, x, entry))
-      .get
+  ): F[Option[XRaySpan[F]]] =
+    OptionT.fromOption[F](kernel.toHeaders.get(Header))
+      .subflatMap(parseHeader)
+      .semiflatMap(fromHeader(name, _, entry))
+      .value
 
   def fromKernelOrElseRoot[F[_]: Concurrent: Clock: Random](
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F]
   ): F[XRaySpan[F]] =
-    kernel.toHeaders
-      .get(Header)
-      .flatMap(parseHeader)
-      .map(x => fromHeader(name, x, entry))
-      .getOrElse(root(name, entry))
+    OptionT(fromKernel(name, kernel, entry))
+      .getOrElseF(root(name, entry))
 
   def root[F[_]: Concurrent: Clock: Random](
       name: String,
