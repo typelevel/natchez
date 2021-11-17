@@ -15,7 +15,7 @@ import com.comcast.ip4s._
 import fs2.io.net.{Datagram, DatagramSocket}
 import scodec.bits.ByteVector
 
-final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
+final class XRayEntryPoint[F[_]: Concurrent: Clock: Random : XRayEnvironment](
     socket: DatagramSocket[F],
     daemonAddress: SocketAddress[IpAddress]
 ) extends EntryPoint[F] {

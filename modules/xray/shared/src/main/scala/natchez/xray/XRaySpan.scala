@@ -222,17 +222,26 @@ private[xray] object XRaySpan {
         )
       }
 
-  def fromKernel[F[_]: Concurrent: Clock: Random](
+  def fromKernel[F[_] : Concurrent : Clock : Random : XRayEnvironment](
       name: String,
       kernel: Kernel,
-      entry: XRayEntryPoint[F]
+      entry: XRayEntryPoint[F],
+      useEnvironmentFallback: Boolean = true,
   ): F[Option[XRaySpan[F]]] =
     OptionT.fromOption[F](kernel.toHeaders.get(Header))
       .subflatMap(parseHeader)
       .semiflatMap(fromHeader(name, _, entry))
+      .orElse {
+        OptionT.whenF(useEnvironmentFallback) {
+          XRayEnvironment[F]
+            .kernelFromEnvironment
+            .flatMap(XRaySpan.fromKernel(name, _, entry, useEnvironmentFallback = false))
+        }
+          .flattenOption
+      }
       .value
 
-  def fromKernelOrElseRoot[F[_]: Concurrent: Clock: Random](
+  def fromKernelOrElseRoot[F[_] : Concurrent : Clock : Random : XRayEnvironment](
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F]
