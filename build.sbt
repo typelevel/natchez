@@ -298,6 +298,7 @@ lazy val mtlJS = mtl.js.dependsOn(coreJS)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
+// Noop srcs haved move to core, but keeping artifact for compatibility
 lazy val noop = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/noop"))
   .dependsOn(core)

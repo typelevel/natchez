@@ -9,10 +9,12 @@ import cats.data.Kleisli
 import cats.effect.IO
 import cats.effect.kernel.MonadCancelThrow
 import cats.~>
+import natchez.noop.NoopSpan
 
 trait LiftTrace[F[_], G[_]] {
   def run[A](span: Span[F])(f: Trace[G] => G[A]): F[A]
   def liftK: F ~> G
+  def lowerK: G ~> F
 }
 
 object LiftTrace extends LiftTraceLowPriority {
@@ -20,6 +22,7 @@ object LiftTrace extends LiftTraceLowPriority {
     def run[A](span: Span[IO])(f: Trace[IO] => IO[A]): IO[A] =
       Trace.ioTrace(span).flatMap(f)
     def liftK: IO ~> IO = FunctionK.id
+    def lowerK: IO ~> IO = FunctionK.id
   }
 }
 
@@ -29,5 +32,8 @@ private[natchez] trait LiftTraceLowPriority {
       def run[A](span: Span[F])(f: Trace[Kleisli[F, Span[F], *]] => Kleisli[F, Span[F], A]): F[A] =
         f(Trace.kleisliInstance).run(span)
       def liftK: F ~> Kleisli[F, Span[F], *] = Kleisli.liftK
+      def lowerK: Kleisli[F, Span[F], *] ~> F = new (Kleisli[F, Span[F], *] ~> F) {
+        def apply[A](ga: Kleisli[F, Span[F], A]): F[A] = ga(NoopSpan[F]())
+      }
     }
 }
