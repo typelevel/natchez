@@ -1,6 +1,6 @@
 val scala212Version        = "2.12.12"
 val scala213Version        = "2.13.5"
-val scala30Version         = "3.0.2"
+val scala30Version         = "3.1.0"
 
 val collectionCompatVersion = "2.4.4"
 
@@ -314,6 +314,28 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
+lazy val xray = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/xray"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(crossProjectSettings)
+  .settings(
+    name        := "natchez-xray",
+    description := "AWS X-Ray bindings implementation",
+    libraryDependencies ++= Seq(
+      "io.circe"          %%% "circe-core"      % "0.14.1",
+      "co.fs2"            %%% "fs2-io"          % "3.2.2",
+      "com.comcast"       %%% "ip4s-core"       % "3.1.1",
+      "org.scodec"        %%% "scodec-bits"     % "1.1.29"
+    )
+  )
+  .jsSettings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+
 lazy val mock = project
   .in(file("modules/mock"))
   .dependsOn(coreJVM)
@@ -397,4 +419,3 @@ lazy val docs = project
       "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
     )
   )
-
