@@ -14,12 +14,13 @@ object XRay {
 
   def entryPoint[F[_] : Concurrent : Clock : Random : Network : XRayEnvironment](
       daemonAddress: SocketAddress[IpAddress] =
-        SocketAddress(ip"127.0.0.1", port"2000")
+        SocketAddress(ip"127.0.0.1", port"2000"),
+      useEnvironmentFallback: Boolean = true
   ): Resource[F, EntryPoint[F]] =
     Network[F]
       .openDatagramSocket()
       .map { socket =>
-        new XRayEntryPoint[F](socket, daemonAddress)
+        new XRayEntryPoint[F](socket, daemonAddress, useEnvironmentFallback)
       }
 
 }

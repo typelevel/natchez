@@ -226,7 +226,7 @@ private[xray] object XRaySpan {
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F],
-      useEnvironmentFallback: Boolean = true,
+      useEnvironmentFallback: Boolean,
   ): F[Option[XRaySpan[F]]] =
     OptionT.fromOption[F](kernel.toHeaders.get(Header))
       .subflatMap(parseHeader)
@@ -244,9 +244,10 @@ private[xray] object XRaySpan {
   def fromKernelOrElseRoot[F[_] : Concurrent : Clock : Random : XRayEnvironment](
       name: String,
       kernel: Kernel,
-      entry: XRayEntryPoint[F]
+      entry: XRayEntryPoint[F],
+      useEnvironmentFallback: Boolean,
   ): F[XRaySpan[F]] =
-    OptionT(fromKernel(name, kernel, entry))
+    OptionT(fromKernel(name, kernel, entry, useEnvironmentFallback))
       .getOrElseF(root(name, entry))
 
   def root[F[_]: Concurrent: Clock: Random](
