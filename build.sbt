@@ -4,7 +4,7 @@ val scala30Version         = "3.1.0"
 
 val collectionCompatVersion = "2.4.4"
 
-val catsVersion = "2.6.1"
+val catsVersion = "2.7.0"
 val catsEffectVersion = "3.1.1"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
