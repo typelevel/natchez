@@ -56,7 +56,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit"               % "0.7.29" % Test,
     "org.scalameta" %%% "munit-scalacheck"    % "0.7.29" % Test,
-    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.3"  % Test,
+    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7"  % Test,
   ),
   testFrameworks += new TestFramework("munit.Framework"),
 
@@ -150,7 +150,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.1"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.2"
     )
   )
 
@@ -326,9 +326,9 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "co.fs2"            %%% "fs2-io"          % "3.2.2",
-      "com.comcast"       %%% "ip4s-core"       % "3.1.1",
-      "org.scodec"        %%% "scodec-bits"     % "1.1.29"
+      "co.fs2"            %%% "fs2-io"          % "3.2.3",
+      "com.comcast"       %%% "ip4s-core"       % "3.1.2",
+      "org.scodec"        %%% "scodec-bits"     % "1.1.30"
     )
   )
   .jsSettings(
