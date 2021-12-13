@@ -5,6 +5,7 @@
 package natchez.xray
 
 import cats._
+import cats.data._
 import cats.effect._
 import cats.syntax.all._
 import cats.effect.Resource.ExitCase
@@ -221,27 +222,33 @@ private[xray] object XRaySpan {
         )
       }
 
-  def fromKernel[F[_]: Concurrent: Clock: Random](
+  def fromKernel[F[_] : Concurrent : Clock : Random : XRayEnvironment](
       name: String,
       kernel: Kernel,
-      entry: XRayEntryPoint[F]
-  ): F[XRaySpan[F]] =
-    kernel.toHeaders
-      .get(Header)
-      .flatMap(parseHeader)
-      .map(x => fromHeader(name, x, entry))
-      .get
+      entry: XRayEntryPoint[F],
+      useEnvironmentFallback: Boolean,
+  ): F[Option[XRaySpan[F]]] =
+    OptionT.fromOption[F](kernel.toHeaders.get(Header))
+      .subflatMap(parseHeader)
+      .semiflatMap(fromHeader(name, _, entry))
+      .orElse {
+        OptionT.whenF(useEnvironmentFallback) {
+          XRayEnvironment[F]
+            .kernelFromEnvironment
+            .flatMap(XRaySpan.fromKernel(name, _, entry, useEnvironmentFallback = false))
+        }
+          .flattenOption
+      }
+      .value
 
-  def fromKernelOrElseRoot[F[_]: Concurrent: Clock: Random](
+  def fromKernelOrElseRoot[F[_] : Concurrent : Clock : Random : XRayEnvironment](
       name: String,
       kernel: Kernel,
-      entry: XRayEntryPoint[F]
+      entry: XRayEntryPoint[F],
+      useEnvironmentFallback: Boolean,
   ): F[XRaySpan[F]] =
-    kernel.toHeaders
-      .get(Header)
-      .flatMap(parseHeader)
-      .map(x => fromHeader(name, x, entry))
-      .getOrElse(root(name, entry))
+    OptionT(fromKernel(name, kernel, entry, useEnvironmentFallback))
+      .getOrElseF(root(name, entry))
 
   def root[F[_]: Concurrent: Clock: Random](
       name: String,

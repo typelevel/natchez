@@ -5,6 +5,7 @@
 package natchez
 package xray
 
+import cats.data.OptionT
 import cats.effect._
 import cats.effect.std.Random
 import cats.syntax.all._
@@ -14,9 +15,10 @@ import com.comcast.ip4s._
 import fs2.io.net.{Datagram, DatagramSocket}
 import scodec.bits.ByteVector
 
-final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
+final class XRayEntryPoint[F[_]: Concurrent: Clock: Random : XRayEnvironment](
     socket: DatagramSocket[F],
-    daemonAddress: SocketAddress[IpAddress]
+    daemonAddress: SocketAddress[IpAddress],
+    useEnvironmentFallback: Boolean,
 ) extends EntryPoint[F] {
 
   def sendSegment(foo: JsonObject): F[Unit] = {
@@ -33,10 +35,10 @@ final class XRayEntryPoint[F[_]: Concurrent: Clock: Random](
     make(XRaySpan.root(name, this))
 
   def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    make(XRaySpan.fromKernel(name, kernel, this))
+    make(OptionT(XRaySpan.fromKernel(name, kernel, this, useEnvironmentFallback)).getOrElseF(new NoSuchElementException().raiseError))
 
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    make(XRaySpan.fromKernelOrElseRoot(name, kernel, this))
+    make(XRaySpan.fromKernelOrElseRoot(name, kernel, this, useEnvironmentFallback))
 }
 
 object XRayEntryPoint {

@@ -30,7 +30,8 @@ object XRayEnvironment extends XRayEnvironmentCompanionPlatform {
 
       override def kernelFromEnvironment: F[Kernel] =
         OptionT(traceId)
-          .map(XRaySpan.XRayHeader(_, None, sampled = true).toKernel)
+          .subflatMap(XRaySpan.parseHeader)
+          .map(_.toKernel)
           .getOrElse(Kernel(Map.empty))
     }
 }
