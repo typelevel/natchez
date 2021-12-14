@@ -71,7 +71,7 @@ lazy val commonSettings = Seq(
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
   ).filterNot(_ => scalaVersion.value.startsWith("3.")),
 
   // dottydoc really doesn't work at all right now
