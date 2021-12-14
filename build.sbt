@@ -418,5 +418,6 @@ lazy val docs = project
       "org.http4s"    %% "http4s-client"  % "0.23.7",
       "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
       "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
-    )
+    ),
+    excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
