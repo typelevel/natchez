@@ -274,8 +274,8 @@ lazy val newrelic = project
       "io.circe"               %% "circe-core"              % "0.14.1",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.13.1",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.13.1"
     )
   )
 
