@@ -5,7 +5,7 @@ val scala30Version         = "3.1.0"
 val collectionCompatVersion = "2.6.0"
 
 val catsVersion = "2.7.0"
-val catsEffectVersion = "3.3.3"
+val catsEffectVersion = "3.3.4"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -191,7 +191,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.42.1",
+      "io.grpc"              % "grpc-netty"                      % "1.42.2",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.46.Final"
     )
   )
