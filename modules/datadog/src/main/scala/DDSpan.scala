@@ -16,7 +16,7 @@ import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 import scala.jdk.CollectionConverters._
 import java.net.URI
 
-private[datadog] final case class DDSpan[F[_]: Sync](
+final case class DDSpan[F[_]: Sync](
   tracer: ot.Tracer,
   span:   ot.Span,
   uriPrefix: Option[URI]
