@@ -362,8 +362,8 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "log4cats-slf4j" % "2.2.0",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.33",
+      "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.35",
       "eu.timepit"        %% "refined"        % "0.9.28",
       "is.cir"            %% "ciris"          % "2.3.2"
     )
@@ -416,8 +416,8 @@ lazy val docs = project
     libraryDependencies ++= Seq(
       "org.http4s"    %% "http4s-dsl"     % "0.23.7",
       "org.http4s"    %% "http4s-client"  % "0.23.7",
-      "org.typelevel" %% "log4cats-slf4j" % "2.2.0",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.33",
+      "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.35",
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
