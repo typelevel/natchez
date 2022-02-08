@@ -1,11 +1,11 @@
 val scala212Version        = "2.12.15"
 val scala213Version        = "2.13.8"
-val scala30Version         = "3.1.0"
+val scala30Version         = "3.1.1"
 
 val collectionCompatVersion = "2.6.0"
 
 val catsVersion = "2.7.0"
-val catsEffectVersion = "3.3.4"
+val catsEffectVersion = "3.3.5"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -150,7 +150,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.4.0"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.4.1"
     )
   )
 
@@ -363,7 +363,7 @@ lazy val examples = project
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.35",
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.36",
       "eu.timepit"        %% "refined"        % "0.9.28",
       "is.cir"            %% "ciris"          % "2.3.2"
     )
@@ -417,7 +417,7 @@ lazy val docs = project
       "org.http4s"    %% "http4s-dsl"     % "0.23.7",
       "org.http4s"    %% "http4s-client"  % "0.23.7",
       "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.35",
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.36",
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
