@@ -22,6 +22,9 @@ trait Trace[F[_]] {
    */
   def kernel: F[Kernel]
 
+  /** Creates a new span, and within it acquires and releases the spanR `r`. */
+  def spanR[A](name: String)(r: Resource[F, A]): Resource[F, A]
+
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
 
@@ -54,6 +57,17 @@ object Trace {
         def kernel: IO[Kernel] =
           local.get.flatMap(_.kernel)
 
+        def spanR[A](name: String)(r: Resource[IO, A]): Resource[IO, A] =
+          Resource.eval(local.get).flatMap(parent =>
+            parent.span(name).flatMap { child =>
+              def inChild[B](io: IO[B]): IO[B] =
+                local.set(child).bracket(_ => io)(_ => local.set(parent))
+              Resource(inChild(r.allocated).map { case (a, release) =>
+                a -> inChild(release)
+              })
+            }
+          )
+
         def span[A](name: String)(k: IO[A]): IO[A] =
           local.get.flatMap { parent =>
             parent.span(name).flatMap { child =>
@@ -82,6 +96,7 @@ object Trace {
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
+        def spanR[A](name: String)(r: Resource[F, A]): Resource[F, A] = r
         def span[A](name: String)(k: F[A]): F[A] = k
         def traceId: F[Option[String]] = none.pure[F]
         def traceUri: F[Option[URI]] = none.pure[F]
@@ -109,6 +124,17 @@ object Trace {
     def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.put(fields: _*))
 
+    def spanR[A](name: String)(r: Resource[Kleisli[F, Span[F], *], A]): Resource[Kleisli[F, Span[F], *], A] =
+      Resource.suspend(
+        Kleisli((span: Span[F]) =>
+          Applicative[F].pure(
+            span.span(name).flatMap(
+              child => r.mapK(Kleisli.applyK(child))
+            ).mapK(Kleisli.liftK[F, Span[F]])
+          )
+        )
+      )
+
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
 
@@ -120,6 +146,17 @@ object Trace {
 
         def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).put(fields: _*))
+
+        def spanR[A](name: String)(r: Resource[Kleisli[F, E, *], A]): Resource[Kleisli[F, E, *], A] =
+          Resource.suspend(
+            Kleisli((e: E) =>
+              Applicative[F].pure(
+                f(e).span(name).flatMap(
+                  child => r.mapK(Kleisli.applyK(g(e, child)))
+                ).mapK(Kleisli.liftK[F, E])
+              )
+            )
+          )
 
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
@@ -140,7 +177,7 @@ object Trace {
 
   }
 
-  implicit def liftKleisli[F[_], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
+  implicit def liftKleisli[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
     new Trace[Kleisli[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
@@ -148,6 +185,15 @@ object Trace {
 
       def kernel: Kleisli[F, E, Kernel] =
         Kleisli.liftF(trace.kernel)
+
+      def spanR[A](name: String)(r: Resource[Kleisli[F, E, *], A]): Resource[Kleisli[F, E, *], A] =
+        Resource.suspend(
+          Kleisli((e: E) => Applicative[F].pure(
+            trace.spanR(name)(
+              r.mapK(Kleisli.applyK(e))
+            ).mapK(Kleisli.liftK[F, E])
+          ))
+        )
 
       def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
         Kleisli(e => trace.span[A](name)(k.run(e)))
