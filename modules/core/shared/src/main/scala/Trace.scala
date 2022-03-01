@@ -205,14 +205,16 @@ object Trace {
         Kleisli.liftF(trace.traceUri)
     }
 
-  implicit def liftStateT[F[_]: Monad, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
+  implicit def liftStateT[F[_]: MonadCancelThrow, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
     new Trace[StateT[F, S, *]] {
-
       def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
         StateT.liftF(trace.put(fields: _*))
 
       def kernel: StateT[F, S, Kernel] =
         StateT.liftF(trace.kernel)
+
+      def spanR[A](name: String)(r: Resource[StateT[F, S, *], A]): Resource[StateT[F, S, *], A] =
+        trace.spanR(name)(Resource.unit).mapK(StateT.liftK[F, S]) *> r
 
       def span[A](name: String)(k: StateT[F, S, A]): StateT[F, S, A] =
         StateT(s => trace.span[(S, A)](name)(k.run(s)))
@@ -224,7 +226,7 @@ object Trace {
         StateT.liftF(trace.traceUri)
     }
 
-  implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
+  implicit def liftEitherT[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
     new Trace[EitherT[F, E, *]] {
 
       def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
@@ -232,6 +234,9 @@ object Trace {
 
       def kernel: EitherT[F, E, Kernel] =
         EitherT.liftF(trace.kernel)
+
+      def spanR[A](name: String)(r: Resource[EitherT[F, E, *], A]): Resource[EitherT[F, E, *], A] =
+        trace.spanR(name)(Resource.unit).mapK(EitherT.liftK[F, E]) *> r
 
       def span[A](name: String)(k: EitherT[F, E, A]): EitherT[F, E, A] =
         EitherT(trace.span(name)(k.value))
@@ -243,7 +248,7 @@ object Trace {
         EitherT.liftF(trace.traceUri)
     }
 
-  implicit def liftOptionT[F[_]: Functor](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
+  implicit def liftOptionT[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
     new Trace[OptionT[F, *]] {
 
       def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
@@ -251,6 +256,9 @@ object Trace {
 
       def kernel: OptionT[F, Kernel] =
         OptionT.liftF(trace.kernel)
+
+      def spanR[A](name: String)(r: Resource[OptionT[F, *], A]): Resource[OptionT[F, *], A] =
+        trace.spanR(name)(Resource.unit).mapK(OptionT.liftK[F]) *> r
 
       def span[A](name: String)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name)(k.value))
@@ -262,7 +270,7 @@ object Trace {
         OptionT.liftF(trace.traceUri)
     }
 
-  implicit def liftNested[F[_]: Functor, G[_]: Applicative](implicit trace: Trace[F]): Trace[Nested[F, G, *]] =
+  implicit def liftNested[F[_]: MonadCancelThrow, G[_]: Applicative](implicit trace: Trace[F], FG: MonadCancelThrow[Nested[F, G, *]]): Trace[Nested[F, G, *]] =
     new Trace[Nested[F, G, *]] {
 
       def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
@@ -270,6 +278,13 @@ object Trace {
 
       def kernel: Nested[F, G, Kernel] =
         trace.kernel.map(_.pure[G]).nested
+
+      def spanR[A](name: String)(r: Resource[Nested[F, G, *], A]): Resource[Nested[F, G, *], A] =
+        trace.spanR(name)(Resource.unit).mapK(
+          new (F ~> Nested[F, G, *]) {
+            def apply[B](fa: F[B]): Nested[F, G, B] = Nested(fa.map(_.pure[G]))
+          }
+        ) >> r
 
       def span[A](name: String)(k: Nested[F, G, A]): Nested[F, G, A] =
         trace.span(name)(k.value).nested
