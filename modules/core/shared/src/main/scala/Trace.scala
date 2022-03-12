@@ -5,9 +5,11 @@
 package natchez
 
 import cats._
+import cats.arrow.FunctionK
 import cats.data._
 import cats.effect._
 import cats.syntax.all._
+import fs2.Stream
 import java.net.URI
 
 /** A tracing effect, which always has a current span. */
@@ -23,7 +25,7 @@ trait Trace[F[_]] {
   def kernel: F[Kernel]
 
   /** Creates a new span, and within it acquires and releases the spanR `r`. */
-  def spanR[A](name: String)(r: Resource[F, A]): Resource[F, A]
+  def spanR(name: String): Resource[F, F ~> F]
 
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
@@ -57,23 +59,17 @@ object Trace {
         def kernel: IO[Kernel] =
           local.get.flatMap(_.kernel)
 
-        def spanR[A](name: String)(r: Resource[IO, A]): Resource[IO, A] =
-          Resource.eval(local.get).flatMap(parent =>
-            parent.span(name).flatMap { child =>
-              def inChild[B](io: IO[B]): IO[B] =
-                local.set(child).bracket(_ => io)(_ => local.set(parent))
-              Resource(inChild(r.allocated).map { case (a, release) =>
-                a -> inChild(release)
-              })
-            }
-          )
+        def spanR(name: String): Resource[IO, IO ~> IO] =
+          for {
+            parent <- Resource.eval(local.get)
+            child <- parent.span(name)
+          } yield new (IO ~> IO) {
+            def apply[A](fa: IO[A]): IO[A] =
+              local.set(child).bracket(_ => fa)(_ => local.set(parent))
+          }
 
         def span[A](name: String)(k: IO[A]): IO[A] =
-          local.get.flatMap { parent =>
-            parent.span(name).flatMap { child =>
-              Resource.make(local.set(child))(_ => local.set(parent))
-            } .use { _ => k }
-          }
+          spanR(name).surround(k)
 
         def traceId: IO[Option[String]] =
           local.get.flatMap(_.traceId)
@@ -96,7 +92,8 @@ object Trace {
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
-        def spanR[A](name: String)(r: Resource[F, A]): Resource[F, A] = r
+        def spanR(name: String): Resource[F, F ~> F] =
+          Resource.pure(FunctionK.id)
         def span[A](name: String)(k: F[A]): F[A] = k
         def traceId: F[Option[String]] = none.pure[F]
         def traceUri: F[Option[URI]] = none.pure[F]
@@ -124,16 +121,14 @@ object Trace {
     def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.put(fields: _*))
 
-    def spanR[A](name: String)(r: Resource[Kleisli[F, Span[F], *], A]): Resource[Kleisli[F, Span[F], *], A] =
-      Resource.suspend(
-        Kleisli((span: Span[F]) =>
-          Applicative[F].pure(
-            span.span(name).flatMap(
-              child => r.mapK(Kleisli.applyK(child))
-            ).mapK(Kleisli.liftK[F, Span[F]])
-          )
-        )
-      )
+    def spanR(name: String): Resource[Kleisli[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
+      Resource(Kleisli((span: Span[F]) => span.span(name).allocated.map {
+        case (child, release) =>
+          new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
+            def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
+              fa.local(_ => child)
+          } -> Kleisli.liftF[F, Span[F], Unit](release)
+      }))
 
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
@@ -147,16 +142,14 @@ object Trace {
         def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).put(fields: _*))
 
-        def spanR[A](name: String)(r: Resource[Kleisli[F, E, *], A]): Resource[Kleisli[F, E, *], A] =
-          Resource.suspend(
-            Kleisli((e: E) =>
-              Applicative[F].pure(
-                f(e).span(name).flatMap(
-                  child => r.mapK(Kleisli.applyK(g(e, child)))
-                ).mapK(Kleisli.liftK[F, E])
-              )
-            )
-          )
+        def spanR(name: String): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
+          Resource(Kleisli((e: E) => f(e).span(name).allocated.map {
+            case (child, release) =>
+              new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
+                def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
+                  fa.local(_ => g(e, child))
+              } -> Kleisli.liftF[F, E, Unit](release)
+          }))
 
         def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name).use(s => k.run(g(e, s))))
@@ -186,13 +179,14 @@ object Trace {
       def kernel: Kleisli[F, E, Kernel] =
         Kleisli.liftF(trace.kernel)
 
-      def spanR[A](name: String)(r: Resource[Kleisli[F, E, *], A]): Resource[Kleisli[F, E, *], A] =
-        Resource.suspend(
-          Kleisli((e: E) => Applicative[F].pure(
-            trace.spanR(name)(
-              r.mapK(Kleisli.applyK(e))
-            ).mapK(Kleisli.liftK[F, E])
-          ))
+      def spanR(name: String): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
+        Resource(
+          Kleisli((e: E) =>
+            trace.spanR(name).allocated.map { case (f, release) =>
+              f.compose(Kleisli.applyK(e)).andThen(Kleisli.liftK[F, E]) ->
+              Kleisli.liftF[F, E, Unit](f(release))
+            }
+          )
         )
 
       def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
@@ -213,8 +207,18 @@ object Trace {
       def kernel: StateT[F, S, Kernel] =
         StateT.liftF(trace.kernel)
 
-      def spanR[A](name: String)(r: Resource[StateT[F, S, *], A]): Resource[StateT[F, S, *], A] =
-        trace.spanR(name)(Resource.unit).mapK(StateT.liftK[F, S]) *> r
+      def spanR(name: String): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
+        Resource(
+          StateT.liftF(
+            trace.spanR(name).allocated.map { case (f, release) =>
+              new (StateT[F, S, *] ~> StateT[F, S, *]) {
+                def apply[A](fa: StateT[F, S, A]): StateT[F, S, A] =
+                  StateT.applyF(f(fa.runF))
+              } ->
+              StateT.liftF[F, S, Unit](f(release))
+            }
+          )
+        )
 
       def span[A](name: String)(k: StateT[F, S, A]): StateT[F, S, A] =
         StateT(s => trace.span[(S, A)](name)(k.run(s)))
@@ -235,8 +239,18 @@ object Trace {
       def kernel: EitherT[F, E, Kernel] =
         EitherT.liftF(trace.kernel)
 
-      def spanR[A](name: String)(r: Resource[EitherT[F, E, *], A]): Resource[EitherT[F, E, *], A] =
-        trace.spanR(name)(Resource.unit).mapK(EitherT.liftK[F, E]) *> r
+      def spanR(name: String): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
+        Resource(
+          EitherT.liftF(
+            trace.spanR(name).allocated.map { case (f, release) =>
+              new (EitherT[F, E, *] ~> EitherT[F, E, *]) {
+                def apply[A](fa: EitherT[F, E, A]): EitherT[F, E, A] =
+                  EitherT(f(fa.value))
+              } ->
+              EitherT.liftF[F, E, Unit](f(release))
+            }
+          )
+        )
 
       def span[A](name: String)(k: EitherT[F, E, A]): EitherT[F, E, A] =
         EitherT(trace.span(name)(k.value))
@@ -257,8 +271,18 @@ object Trace {
       def kernel: OptionT[F, Kernel] =
         OptionT.liftF(trace.kernel)
 
-      def spanR[A](name: String)(r: Resource[OptionT[F, *], A]): Resource[OptionT[F, *], A] =
-        trace.spanR(name)(Resource.unit).mapK(OptionT.liftK[F]) *> r
+      def spanR(name: String): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
+        Resource(
+          OptionT.liftF(
+            trace.spanR(name).allocated.map { case (f, release) =>
+              new (OptionT[F, *] ~> OptionT[F, *]) {
+                def apply[A](fa: OptionT[F, A]): OptionT[F, A] =
+                  OptionT(f(fa.value))
+              } ->
+              OptionT.liftF[F, Unit](f(release))
+            }
+          )
+        )
 
       def span[A](name: String)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name)(k.value))
@@ -279,12 +303,18 @@ object Trace {
       def kernel: Nested[F, G, Kernel] =
         trace.kernel.map(_.pure[G]).nested
 
-      def spanR[A](name: String)(r: Resource[Nested[F, G, *], A]): Resource[Nested[F, G, *], A] =
-        trace.spanR(name)(Resource.unit).mapK(
-          new (F ~> Nested[F, G, *]) {
-            def apply[B](fa: F[B]): Nested[F, G, B] = Nested(fa.map(_.pure[G]))
-          }
-        ) >> r
+      def spanR(name: String): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
+        Resource(
+          Nested(
+            trace.spanR(name).allocated.map { case (f, release) => (
+              new (Nested[F, G, *] ~> Nested[F, G, *]) {
+                def apply[A](fa: Nested[F, G, A]): Nested[F, G, A] =
+                   Nested(f(fa.value))
+              } ->
+              Nested(f(release).map(_.pure[G]))
+            ).pure[G] }
+          )
+        )
 
       def span[A](name: String)(k: Nested[F, G, A]): Nested[F, G, A] =
         trace.span(name)(k.value).nested
@@ -294,5 +324,71 @@ object Trace {
 
       def traceUri: Nested[F, G, Option[URI]] =
         trace.traceUri.map(_.pure[G]).nested
+    }
+
+  implicit def liftResource[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[Resource[F, *]] =
+    new Trace[Resource[F, *]] {
+      def put(fields: (String, TraceValue)*): Resource[F, Unit] =
+        Resource.eval(trace.put(fields: _*))
+
+      def kernel: Resource[F, Kernel] =
+        Resource.eval(trace.kernel)
+
+      def spanR(name: String): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
+        Resource(
+          Resource.eval(
+            trace.spanR(name).allocated.map { case (f, release) =>
+              new (Resource[F, *] ~> Resource[F, *]) {
+                def apply[A](fa: Resource[F, A]): Resource[F, A] =
+                  fa.mapK(f)
+              } ->
+              Resource.eval[F, Unit](f(release))
+            }
+          )
+        )
+
+      def span[A](name: String)(k: Resource[F, A]): Resource[F, A] =
+        trace.spanR(name).flatMap { f =>
+          Resource(f(k.allocated).map { case (a, release) =>
+            a -> f(release)
+          })
+        }
+
+      def traceId: Resource[F, Option[String]] =
+        Resource.eval(trace.traceId)
+
+      def traceUri: Resource[F, Option[URI]] =
+        Resource.eval(trace.traceUri)
+    }
+
+  implicit def liftStream[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[Stream[F, *]] =
+    new Trace[Stream[F, *]] {
+      def put(fields: (String, TraceValue)*): Stream[F, Unit] =
+        Stream.eval(trace.put(fields: _*))
+
+      def kernel: Stream[F, Kernel] =
+        Stream.eval(trace.kernel)
+
+      def spanR(name: String): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
+        Resource(
+          Stream.eval(
+            trace.spanR(name).allocated.map { case (f, release) =>
+              new (Stream[F, *] ~> Stream[F, *]) {
+                def apply[A](fa: Stream[F, A]): Stream[F, A] =
+                  fa.translate(f)
+              } ->
+              Stream.eval[F, Unit](f(release))
+            }
+          )
+        )
+
+      def span[A](name: String)(k: Stream[F, A]): Stream[F, A] =
+        Stream.resource(trace.spanR(name)).flatMap(k.translate)
+
+      def traceId: Stream[F, Option[String]] =
+        Stream.eval(trace.traceId)
+
+      def traceUri: Stream[F, Option[URI]] =
+        Stream.eval(trace.traceUri)
     }
 }
