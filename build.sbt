@@ -2,7 +2,7 @@ val scala212Version        = "2.12.15"
 val scala213Version        = "2.13.8"
 val scala30Version         = "3.1.1"
 
-val collectionCompatVersion = "2.6.0"
+val collectionCompatVersion = "2.7.0"
 
 val catsVersion = "2.7.0"
 val catsEffectVersion = "3.3.8"
