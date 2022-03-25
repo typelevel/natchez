@@ -224,6 +224,21 @@ lazy val opentracing = project
     )
   )
 
+lazy val opentelemetry = project
+  .in(file("modules/opentelemetry"))
+  .dependsOn(coreJVM)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-opentelemetry",
+    description := "Base OpenTelemetry Utilities for Natchez",
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
+      "io.opentelemetry"        % "opentelemetry-sdk"       % "1.12.0"
+    )
+  )
+
+
 
 lazy val datadog = project
   .in(file("modules/datadog"))
