@@ -47,12 +47,11 @@ def entrypoint[F[_] : Sync](projectId: String)(configure: TraceConfiguration.Bui
               )
               .build()
           )
-          .buildAndRegisterGlobal()
+          .build()
       )
     )(sdk =>
       Sync[F].blocking {
         sdk.getSdkTracerProvider.close()
-        GlobalOpenTelemetry.set(null)
       }
     )
     .flatMap(sdk => Resource.eval(OpenTelemetry.entryPointForSdk[F](sdk)))
