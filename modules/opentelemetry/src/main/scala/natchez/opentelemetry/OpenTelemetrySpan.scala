@@ -95,7 +95,7 @@ private[opentelemetry] object OpenTelemetrySpan {
       .delay(
         parent.tracer
           .spanBuilder(name)
-          .setParent(Context.current())
+          .setParent(Context.current().`with`(parent.span))
           .startSpan()
       )
       .map(OpenTelemetrySpan(parent.sdk, parent.tracer, _))
