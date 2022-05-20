@@ -249,7 +249,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.14.1",
+      "io.circe"          %%% "circe-core"      % "0.14.2",
       "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
@@ -271,7 +271,7 @@ lazy val newrelic = project
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.14.1",
+      "io.circe"               %% "circe-core"              % "0.14.2",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
@@ -325,7 +325,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-xray",
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.14.1",
+      "io.circe"          %%% "circe-core"      % "0.14.2",
       "co.fs2"            %%% "fs2-io"          % "3.2.7",
       "com.comcast"       %%% "ip4s-core"       % "3.1.3",
       "org.scodec"        %%% "scodec-bits"     % "1.1.31"
