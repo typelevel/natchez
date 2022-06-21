@@ -1,11 +1,11 @@
-val scala212Version        = "2.12.12"
-val scala213Version        = "2.13.5"
-val scala30Version         = "3.0.2"
+val scala212Version        = "2.12.15"
+val scala213Version        = "2.13.8"
+val scala30Version         = "3.1.2"
 
-val collectionCompatVersion = "2.4.4"
+val collectionCompatVersion = "2.6.0"
 
-val catsVersion = "2.6.1"
-val catsEffectVersion = "3.1.1"
+val catsVersion = "2.7.0"
+val catsEffectVersion = "3.3.12"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -54,8 +54,9 @@ lazy val commonSettings = Seq(
 
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit"               % "0.7.26" % Test,
-    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.3"  % Test,
+    "org.scalameta" %%% "munit"               % "0.7.29" % Test,
+    "org.scalameta" %%% "munit-scalacheck"    % "0.7.29" % Test,
+    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7"  % Test,
   ),
   testFrameworks += new TestFramework("munit.Framework"),
 
@@ -70,7 +71,7 @@ lazy val commonSettings = Seq(
     "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
   ),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
   ).filterNot(_ => scalaVersion.value.startsWith("3.")),
 
   // dottydoc really doesn't work at all right now
@@ -149,7 +150,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.1"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.4.1"
     )
   )
 
@@ -190,8 +191,8 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.38.1",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
+      "io.grpc"              % "grpc-netty"                      % "1.42.2",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.46.Final"
     )
   )
 
@@ -234,8 +235,8 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.80.0",
-      "com.datadoghq" % "dd-trace-api" % "0.80.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.91.0",
+      "com.datadoghq" % "dd-trace-api" % "0.91.0"
     )
   )
 
@@ -298,9 +299,9 @@ lazy val mtlJS = mtl.js.dependsOn(coreJS)
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
-lazy val noop = project
+lazy val noop = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/noop"))
-  .dependsOn(coreJVM)
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -308,6 +309,33 @@ lazy val noop = project
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
     )
+  .jsSettings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+
+lazy val xray = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/xray"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(crossProjectSettings)
+  .settings(
+    name        := "natchez-xray",
+    description := "AWS X-Ray bindings implementation",
+    libraryDependencies ++= Seq(
+      "io.circe"          %%% "circe-core"      % "0.14.1",
+      "co.fs2"            %%% "fs2-io"          % "3.2.7",
+      "com.comcast"       %%% "ip4s-core"       % "3.1.3",
+      "org.scodec"        %%% "scodec-bits"     % "1.1.31"
+    )
+  )
+  .jsSettings(
+    Test / scalaJSStage := FastOptStage,
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
 
 lazy val mock = project
   .in(file("modules/mock"))
@@ -335,9 +363,9 @@ lazy val examples = project
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.32",
-      "eu.timepit"        %% "refined"        % "0.9.27",
-      "is.cir"            %% "ciris"          % "2.0.1"
+      "org.slf4j"         %  "slf4j-simple"   % "1.7.36",
+      "eu.timepit"        %% "refined"        % "0.9.28",
+      "is.cir"            %% "ciris"          % "2.3.2"
     )
   )
 
@@ -359,7 +387,7 @@ lazy val examples = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
+  .dependsOn(mtlJVM, honeycomb, datadog, jaeger, logJVM)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -386,10 +414,10 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"     % "0.23.0-M1",
-      "org.http4s"    %% "http4s-client"  % "0.23.0-M1",
+      "org.http4s"    %% "http4s-dsl"     % "0.23.7",
+      "org.http4s"    %% "http4s-client"  % "0.23.7",
       "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
-    )
+      "org.slf4j"     %  "slf4j-simple"   % "1.7.36",
+    ),
+    excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
-
