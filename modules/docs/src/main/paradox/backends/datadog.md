@@ -41,5 +41,5 @@ import java.net.URI
 
 // Will return `None` if there's no tracer registered already
 def entryPointUseGlobal[F[_]: Sync]: F[Option[EntryPoint[F]]] =
-  DDTracer.globalTracerEntryPoint[F](Some(new URI(s"https://app.datadoghq.com")))
+  DDTracer.globalTracerEntryPoint[F]
 ```
