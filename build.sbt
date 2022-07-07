@@ -251,7 +251,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
       "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test,
     )
   )
 lazy val logJVM = log.jvm.dependsOn(coreJVM)
