@@ -5,7 +5,7 @@ val scala30Version         = "3.1.2"
 val collectionCompatVersion = "2.6.0"
 
 val catsVersion = "2.7.0"
-val catsEffectVersion = "3.3.11"
+val catsEffectVersion = "3.3.12"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -326,7 +326,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "co.fs2"            %%% "fs2-io"          % "3.2.7",
+      "co.fs2"            %%% "fs2-io"          % "3.2.9",
       "com.comcast"       %%% "ip4s-core"       % "3.1.3",
       "org.scodec"        %%% "scodec-bits"     % "1.1.31"
     )
