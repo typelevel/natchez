@@ -13,9 +13,10 @@ object TraceValue {
   case class StringValue(value: String)   extends TraceValue
   case class BooleanValue(value: Boolean) extends TraceValue
   case class NumberValue(value: Number)   extends TraceValue
-
+  
   implicit def stringToTraceValue(value: String): TraceValue = StringValue(value)
   implicit def boolToTraceValue(value: Boolean):  TraceValue = BooleanValue(value)
   implicit def intToTraceValue(value: Int):       TraceValue = NumberValue(value)
+  implicit def longToTraceValue(value: Long):     TraceValue = NumberValue(value)
 
 }
