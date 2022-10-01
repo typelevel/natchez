@@ -2,11 +2,11 @@ ThisBuild / tlBaseVersion := "0.1"
 
 val scala212Version        = "2.12.15"
 val scala213Version        = "2.13.8"
-val scala30Version         = "3.1.2"
+val scala30Version         = "3.1.3"
 
 val collectionCompatVersion = "2.8.1"
 
-val catsVersion = "2.7.0"
+val catsVersion = "2.8.0"
 val catsEffectVersion = "3.3.14"
 
 // Publishing
@@ -295,7 +295,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
       "io.circe"          %%% "circe-core"      % "0.14.1",
       "co.fs2"            %%% "fs2-io"          % "3.2.14",
       "com.comcast"       %%% "ip4s-core"       % "3.1.3",
-      "org.scodec"        %%% "scodec-bits"     % "1.1.31"
+      "org.scodec"        %%% "scodec-bits"     % "1.1.34"
     )
   )
   .jsSettings(
