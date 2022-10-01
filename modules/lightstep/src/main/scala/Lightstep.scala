@@ -6,7 +6,7 @@ package natchez
 package lightstep
 
 import cats.effect.{ Resource, Sync }
-import cats.implicits._
+import cats.syntax.all._
 import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
 import natchez.opentracing.GlobalTracer
