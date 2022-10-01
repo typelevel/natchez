@@ -235,8 +235,8 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.91.0",
-      "com.datadoghq" % "dd-trace-api" % "0.91.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.108.1",
+      "com.datadoghq" % "dd-trace-api" % "0.108.1"
     )
   )
 
@@ -326,7 +326,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "co.fs2"            %%% "fs2-io"          % "3.2.12",
+      "co.fs2"            %%% "fs2-io"          % "3.2.14",
       "com.comcast"       %%% "ip4s-core"       % "3.1.3",
       "org.scodec"        %%% "scodec-bits"     % "1.1.31"
     )
