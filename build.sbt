@@ -1,3 +1,5 @@
+ThisBuild / tlBaseVersion := "0.1"
+
 val scala212Version        = "2.12.16"
 val scala213Version        = "2.13.8"
 val scala30Version         = "3.1.3"
@@ -7,107 +9,72 @@ val collectionCompatVersion = "2.8.1"
 val catsVersion = "2.8.0"
 val catsEffectVersion = "3.3.14"
 
-// We do `evictionCheck` in CI and don't sweat the Java deps for now.
-inThisBuild(Seq(
-  evictionRules ++= Seq(
-    "io.netty"               % "*" % "always",
-    "io.grpc"                % "*" % "always",
-    "com.github.jnr"         % "*" % "always",
-    "com.google.guava"       % "*" % "always",
-    "io.opentracing"         % "*" % "always",
-    "io.opentracing.contrib" % "*" % "always",
-    "com.squareup.okhttp3"   % "*" % "always",
-    "com.squareup.okio"      % "*" % "always",
-    "com.newrelic.telemetry" % "*" % "always",
-    "org.typelevel"          % "*" % "semver-spec",
-    "org.scala-js"           % "*" % "semver-spec",
-    "org.jctools"            % "*" % "always",
-    "org.jetbrains"          % "*" % "always",
-    "org.jboss.logging"      % "*" % "always",
-    "org.jboss.threads"      % "*" % "always",
-    "org.wildfly.common"     % "*" % "always",
-    "org.jboss.xnio"         % "*" % "always",
-    "com.lihaoyi"            % "*" % "always",
+// Publishing
+
+ThisBuild / organization := "org.tpolecat"
+ThisBuild / licenses     := Seq(("MIT", url("http://opensource.org/licenses/MIT")))
+ThisBuild / developers   := List(
+  Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
+)
+ThisBuild / tlSonatypeUseLegacyHost := false
+
+// start MiMa from here
+ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
+
+ThisBuild / githubWorkflowAddedJobs +=
+  WorkflowJob(
+    id = "docs",
+    name = s"Make site",
+    scalas = List(scala213Version),
+    steps = List(WorkflowStep.CheckoutFull) ++
+      WorkflowStep.SetupJava(githubWorkflowJavaVersions.value.toList) ++
+      githubWorkflowGeneratedCacheSteps.value ++ 
+      List(WorkflowStep.Sbt(List("docs/makeSite")))
   )
-))
 
-// Global Settings
+// Headers
 lazy val commonSettings = Seq(
-
-  // Publishing
-  organization := "org.tpolecat",
-  licenses    ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  homepage     := Some(url("https://github.com/tpolecat/natchez")),
-  developers   := List(
-    Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
-  ),
-
-  // Headers
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
   headerLicense  := Some(HeaderLicense.Custom(
     """|Copyright (c) 2019-2020 by Rob Norris and Contributors
-       |This software is licensed under the MIT License (MIT).
-       |For more information see LICENSE or https://opensource.org/licenses/MIT
-       |""".stripMargin
+        |This software is licensed under the MIT License (MIT).
+        |For more information see LICENSE or https://opensource.org/licenses/MIT
+        |""".stripMargin
     )
-  ),
-
-  // Testing
-  libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit"               % "0.7.29" % Test,
-    "org.scalameta" %%% "munit-scalacheck"    % "0.7.29" % Test,
-    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7"  % Test,
-  ),
-  testFrameworks += new TestFramework("munit.Framework"),
-
-  // Compilation
-  scalaVersion       := scala213Version,
-  crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
-  Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
-  Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
-  Compile / doc     / scalacOptions ++= Seq(
-    "-groups",
-    "-sourcepath", (LocalRootProject / baseDirectory).value.getAbsolutePath,
-    "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
-  ),
-  libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full),
-  ).filterNot(_ => scalaVersion.value.startsWith("3.")),
-
-  // dottydoc really doesn't work at all right now
-  Compile / doc / sources := {
-    val old = (Compile / doc / sources).value
-    if (scalaVersion.value.startsWith("3."))
-      Seq()
-    else
-      old
-  },
-
+  )
 )
 
-// root project
-commonSettings
-publish / skip := true
+// Testing
+ThisBuild / libraryDependencies ++= Seq(
+  "org.scalameta" %%% "munit"               % "0.7.29" % Test,
+  "org.scalameta" %%% "munit-scalacheck"    % "0.7.29" % Test,
+  "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7"  % Test,
+)
 
-lazy val crossProjectSettings = Seq(
-  Compile / unmanagedSourceDirectories ++= {
-    val major = if (scalaVersion.value.startsWith("3.")) "-3" else "-2"
-    List(CrossType.Pure, CrossType.Full).flatMap(
-      _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + major)))
-  },
+// Compilation
+ThisBuild / scalaVersion       := scala213Version
+ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
 
-  Test / unmanagedSourceDirectories ++= {
-    val major = if (scalaVersion.value.startsWith("3.")) "-3" else "-2"
-    List(CrossType.Pure, CrossType.Full).flatMap(
-      _.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + major)))
-  },
+lazy val root = tlCrossRootProject.aggregate(
+  core,
+  jaeger,
+  honeycomb,
+  opencensus,
+  lightstep, lightstepGrpc, lightstepHttp,
+  opentracing,
+  datadog,
+  log,
+  newrelic,
+  mtl,
+  noop,
+  xray,
+  examples
 )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
-  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
@@ -193,7 +160,8 @@ lazy val lightstepGrpc = project
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
       "io.grpc"              % "grpc-netty"                      % "1.49.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
-    )
+    ),
+    mimaPreviousArtifacts := Set()
   )
 
 lazy val lightstepHttp = project
@@ -206,7 +174,8 @@ lazy val lightstepHttp = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-okhttp" % "0.30.3"
-    )
+    ),
+    mimaPreviousArtifacts := Set()
   )
 
 lazy val opentracing = project
@@ -244,7 +213,6 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/log"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
-  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
@@ -320,7 +288,6 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
   .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
-  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-xray",
     description := "AWS X-Ray bindings implementation",
@@ -354,10 +321,9 @@ lazy val mock = project
 lazy val examples = project
   .in(file("modules/examples"))
   .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, newrelic, logJVM)
-  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip       := true,
     name                 := "natchez-examples",
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
@@ -373,8 +339,7 @@ lazy val examples = project
 //   .in(file("modules/log-odin"))
 //   .dependsOn(coreJVM)
 //   .enablePlugins(AutomateHeaderPlugin)
-//   .settings(commonSettings)
-//   .settings(
+// //   .settings(
 //     publish / skip := scalaVersion.value.startsWith("3."),
 //     name        := "natchez-log-odin",
 //     description := "Logging bindings for Natchez, using Odin.",
@@ -393,7 +358,6 @@ lazy val docs = project
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
   .enablePlugins(MdocPlugin)
-  .settings(commonSettings)
   .settings(
     scalacOptions      := Nil,
     git.remoteRepo     := "git@github.com:tpolecat/natchez.git",

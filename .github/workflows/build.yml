@@ -6,15 +6,4 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK
-        uses: olafurpg/setup-scala@v10
-      - name: Cache SBT
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cache/coursier/v1
-            ~/.sbt
-          key: sbt-${{ hashFiles('**/build.sbt') }}
-      - name: Run tests
-        run: sbt headerCheck +clean +test docs/makeSite
+      - run: echo dijkstra would not have liked this
