@@ -53,7 +53,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val commonNativeSettings = Seq(
-  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
+  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
 )
 
 // Compilation
