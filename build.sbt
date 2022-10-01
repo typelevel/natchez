@@ -18,6 +18,8 @@ ThisBuild / developers   := List(
 )
 ThisBuild / tlSonatypeUseLegacyHost := false
 
+ThisBuild / tlCiReleaseBranches += "series/0.1"
+
 // start MiMa from here
 ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
 
