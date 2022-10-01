@@ -41,14 +41,17 @@ lazy val commonSettings = Seq(
         |For more information see LICENSE or https://opensource.org/licenses/MIT
         |""".stripMargin
     )
+  ),
+  // Testing
+  libraryDependencies ++= Seq(
+    "org.scalameta" %%% "munit"             % "1.0.0-M6" % Test,
+    "org.scalameta" %%% "munit-scalacheck"  % "1.0.0-M6" % Test,
+    "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M3"  % Test,
   )
 )
 
-// Testing
-ThisBuild / libraryDependencies ++= Seq(
-  "org.scalameta" %%% "munit"               % "0.7.29" % Test,
-  "org.scalameta" %%% "munit-scalacheck"    % "0.7.29" % Test,
-  "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7"  % Test,
+lazy val commonNativeSettings = Seq(
+  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
 )
 
 // Compilation
@@ -71,7 +74,7 @@ lazy val root = tlCrossRootProject.aggregate(
   examples
 )
 
-lazy val core = crossProject(JSPlatform, JVMPlatform)
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
@@ -84,18 +87,11 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
     )
   )
-
-lazy val coreJVM = core.jvm
-lazy val coreJS = core.js
-  .settings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
+  .nativeSettings(commonNativeSettings)
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
-  .dependsOn(coreJVM, opentracing)
+  .dependsOn(core.jvm, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -109,7 +105,7 @@ lazy val jaeger = project
 
 lazy val honeycomb = project
   .in(file("modules/honeycomb"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -123,7 +119,7 @@ lazy val honeycomb = project
 
 lazy val opencensus = project
   .in(file("modules/opencensus"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -136,7 +132,7 @@ lazy val opencensus = project
 
 lazy val lightstep = project
   .in(file("modules/lightstep"))
-  .dependsOn(coreJVM, opentracing)
+  .dependsOn(core.jvm, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -180,7 +176,7 @@ lazy val lightstepHttp = project
 
 lazy val opentracing = project
   .in(file("modules/opentracing"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -196,7 +192,7 @@ lazy val opentracing = project
 
 lazy val datadog = project
   .in(file("modules/datadog"))
-  .dependsOn(coreJVM, opentracing)
+  .dependsOn(core.jvm, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -209,37 +205,32 @@ lazy val datadog = project
     )
   )
 
-lazy val log = crossProject(JSPlatform, JVMPlatform)
+lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/log"))
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.14.1",
-      "org.typelevel"     %%% "log4cats-core"   % "2.4.0",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
+      "io.circe"          %%% "circe-core"      % "0.14.3",
+      "org.typelevel"     %%% "log4cats-core"   % "2.5.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test,
     )
   )
-lazy val logJVM = log.jvm.dependsOn(coreJVM)
-lazy val logJS = log.js.dependsOn(coreJS)
-  .settings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
+  .nativeSettings(commonNativeSettings)
 
 lazy val newrelic = project
   .in(file("modules/newrelic"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.14.1",
+      "io.circe"               %% "circe-core"              % "0.14.3",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core"           % "0.15.0",
@@ -247,8 +238,9 @@ lazy val newrelic = project
     )
   )
 
-lazy val mtl = crossProject(JSPlatform, JVMPlatform)
+lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/mtl"))
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -258,16 +250,9 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform)
       "org.typelevel"          %%% "cats-mtl"    % "1.3.0",
     )
   )
+  .nativeSettings(commonNativeSettings)
 
-lazy val mtlJVM = mtl.jvm.dependsOn(coreJVM)
-lazy val mtlJS = mtl.js.dependsOn(coreJS)
-  .settings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
-
-lazy val noop = crossProject(JSPlatform, JVMPlatform)
+lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/noop"))
   .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
@@ -277,11 +262,7 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform)
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
     )
-  .jsSettings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
+  .nativeSettings(commonNativeSettings)
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
   .in(file("modules/xray"))
@@ -292,21 +273,19 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-xray",
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.14.1",
+      "io.circe"          %%% "circe-core"      % "0.14.3",
       "co.fs2"            %%% "fs2-io"          % "3.2.14",
       "com.comcast"       %%% "ip4s-core"       % "3.1.3",
       "org.scodec"        %%% "scodec-bits"     % "1.1.34"
     )
   )
   .jsSettings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   )
 
 lazy val mock = project
   .in(file("modules/mock"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -320,7 +299,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, newrelic, logJVM)
+  .dependsOn(core.jvm, jaeger, honeycomb, lightstepHttp, datadog, newrelic, log.jvm)
   .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .settings(commonSettings)
   .settings(
@@ -328,7 +307,7 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "log4cats-slf4j" % "2.4.0",
+      "org.typelevel"     %% "log4cats-slf4j" % "2.5.0",
       "org.slf4j"         %  "slf4j-simple"   % "2.0.0",
       "eu.timepit"        %% "refined"        % "0.9.28",
       "is.cir"            %% "ciris"          % "2.3.3"
@@ -337,7 +316,7 @@ lazy val examples = project
 
 // lazy val logOdin = project
 //   .in(file("modules/log-odin"))
-//   .dependsOn(coreJVM)
+//   .dependsOn(core.jvm)
 //   .enablePlugins(AutomateHeaderPlugin)
 // //   .settings(
 //     publish / skip := scalaVersion.value.startsWith("3."),
@@ -352,7 +331,7 @@ lazy val examples = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, datadog, jaeger, logJVM)
+  .dependsOn(mtl.jvm, honeycomb, datadog, jaeger, log.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -366,10 +345,10 @@ lazy val docs = project
     paradoxTheme       := Some(builtinParadoxTheme("generic")),
     version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     paradoxProperties ++= Map(
-      "scala-versions"            -> (coreJVM / crossScalaVersions).value.map(CrossVersion.partialVersion).flatten.distinct.map { case (a, b) => s"$a.$b"} .mkString("/"),
+      "scala-versions"            -> (core.jvm / crossScalaVersions).value.map(CrossVersion.partialVersion).flatten.distinct.map { case (a, b) => s"$a.$b"} .mkString("/"),
       "org"                       -> organization.value,
       "scala.binary.version"      -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-      "core-dep"                  -> s"${(coreJVM / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "core-dep"                  -> s"${(core.jvm / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
       "version"                   -> version.value,
       "scaladoc.natchez.base_url" -> s"https://static.javadoc.io/org.tpolecat/natchez-core_2.13/${version.value}",
     ),
