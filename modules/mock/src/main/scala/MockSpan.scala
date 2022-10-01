@@ -8,7 +8,7 @@ package mock
 import scala.jdk.CollectionConverters._
 
 import cats.effect.{ Resource, Sync }
-import cats.implicits._
+import cats.syntax.all._
 import io.{ opentracing => ot }
 import io.opentracing.propagation.{ Format, TextMapAdapter }
 import natchez.TraceValue.{ BooleanValue, NumberValue, StringValue }
