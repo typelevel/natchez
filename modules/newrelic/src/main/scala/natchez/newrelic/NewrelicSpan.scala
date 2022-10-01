@@ -9,7 +9,7 @@ import java.util.UUID
 
 import cats.effect.Ref
 import cats.effect.{Resource, Sync}
-import cats.implicits._
+import cats.syntax.all._
 import com.newrelic.telemetry.Attributes
 import com.newrelic.telemetry.spans.{Span, SpanBatch, SpanBatchSender}
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
