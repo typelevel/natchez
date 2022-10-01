@@ -1,11 +1,11 @@
 val scala212Version        = "2.12.16"
 val scala213Version        = "2.13.8"
-val scala30Version         = "3.1.2"
+val scala30Version         = "3.1.3"
 
-val collectionCompatVersion = "2.6.0"
+val collectionCompatVersion = "2.8.1"
 
-val catsVersion = "2.7.0"
-val catsEffectVersion = "3.3.12"
+val catsVersion = "2.8.0"
+val catsEffectVersion = "3.3.14"
 
 // We do `evictionCheck` in CI and don't sweat the Java deps for now.
 inThisBuild(Seq(
@@ -150,7 +150,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.4.1"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.5.2"
     )
   )
 
@@ -191,8 +191,8 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.42.2",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.46.Final"
+      "io.grpc"              % "grpc-netty"                      % "1.49.0",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
     )
   )
 
@@ -235,8 +235,8 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.91.0",
-      "com.datadoghq" % "dd-trace-api" % "0.91.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.108.1",
+      "com.datadoghq" % "dd-trace-api" % "0.108.1"
     )
   )
 
@@ -250,7 +250,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform)
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
+      "org.typelevel"     %%% "log4cats-core"   % "2.4.0",
       "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
     )
   )
@@ -274,8 +274,8 @@ lazy val newrelic = project
       "io.circe"               %% "circe-core"              % "0.14.1",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.15.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.15.0"
     )
   )
 
@@ -287,7 +287,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform)
     name        := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel"          %%% "cats-mtl"    % "1.2.1",
+      "org.typelevel"          %%% "cats-mtl"    % "1.3.0",
     )
   )
 
@@ -326,9 +326,9 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.1",
-      "co.fs2"            %%% "fs2-io"          % "3.2.7",
+      "co.fs2"            %%% "fs2-io"          % "3.2.14",
       "com.comcast"       %%% "ip4s-core"       % "3.1.3",
-      "org.scodec"        %%% "scodec-bits"     % "1.1.31"
+      "org.scodec"        %%% "scodec-bits"     % "1.1.34"
     )
   )
   .jsSettings(
@@ -362,10 +362,10 @@ lazy val examples = project
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.36",
+      "org.typelevel"     %% "log4cats-slf4j" % "2.4.0",
+      "org.slf4j"         %  "slf4j-simple"   % "2.0.0",
       "eu.timepit"        %% "refined"        % "0.9.28",
-      "is.cir"            %% "ciris"          % "2.3.2"
+      "is.cir"            %% "ciris"          % "2.3.3"
     )
   )
 
@@ -414,10 +414,10 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"     % "0.23.7",
-      "org.http4s"    %% "http4s-client"  % "0.23.7",
-      "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.36",
+      "org.http4s"    %% "http4s-dsl"     % "0.23.15",
+      "org.http4s"    %% "http4s-client"  % "0.23.15",
+      "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
+      "org.slf4j"     %  "slf4j-simple"   % "2.0.0",
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
