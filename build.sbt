@@ -192,7 +192,7 @@ lazy val lightstepGrpc = project
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
       "io.grpc"              % "grpc-netty"                      % "1.49.0",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.46.Final"
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
     )
   )
 
