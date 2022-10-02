@@ -65,6 +65,7 @@ lazy val root = tlCrossRootProject.aggregate(
   jaeger,
   honeycomb,
   opencensus,
+  opentelemetry,
   lightstep, lightstepGrpc, lightstepHttp,
   opentracing,
   datadog,
@@ -191,6 +192,22 @@ lazy val opentracing = project
       "io.opentracing" % "opentracing-util" % "0.33.0" % "provided"
     )
   )
+
+lazy val opentelemetry = project
+  .in(file("modules/opentelemetry"))
+  .dependsOn(core.jvm)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-opentelemetry",
+    description := "Base OpenTelemetry Utilities for Natchez",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
+      "io.opentelemetry"        % "opentelemetry-sdk"       % "1.12.0"
+    )
+  )
+
 
 
 lazy val datadog = project
