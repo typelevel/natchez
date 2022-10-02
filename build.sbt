@@ -321,6 +321,7 @@ lazy val logOdin = project
   .in(file("modules/log-odin"))
   .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
   .settings(
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
