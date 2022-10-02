@@ -73,6 +73,7 @@ lazy val root = tlCrossRootProject.aggregate(
   mtl,
   noop,
   xray,
+  logOdin,
   examples
 )
 
@@ -316,20 +317,21 @@ lazy val examples = project
     )
   )
 
-// lazy val logOdin = project
-//   .in(file("modules/log-odin"))
-//   .dependsOn(core.jvm)
-//   .enablePlugins(AutomateHeaderPlugin)
-// //   .settings(
-//     publish / skip := scalaVersion.value.startsWith("3."),
-//     name        := "natchez-log-odin",
-//     description := "Logging bindings for Natchez, using Odin.",
-//     libraryDependencies ++= Seq(
-//       "io.circe"              %% "circe-core" % "0.14.0",
-//       "com.github.valskalla"  %% "odin-core"  % "0.9.1",
-//       "com.github.valskalla"  %% "odin-json"  % "0.9.1"
-//     ).filterNot(_ => scalaVersion.value.startsWith("3."))
-//   )
+lazy val logOdin = project
+  .in(file("modules/log-odin"))
+  .dependsOn(core.jvm)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-log-odin",
+    description := "Logging bindings for Natchez, using Odin.",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
+    libraryDependencies ++= Seq(
+      "io.circe"              %% "circe-core" % "0.14.1",
+      "com.github.valskalla"  %% "odin-core"  % "0.13.0",
+      "com.github.valskalla"  %% "odin-json"  % "0.13.0"
+    )
+  )
 
 lazy val docs = project
   .in(file("modules/docs"))
