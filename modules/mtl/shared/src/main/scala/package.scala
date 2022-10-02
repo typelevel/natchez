@@ -5,7 +5,7 @@
 package natchez
 
 import cats.mtl.Local
-import cats.effect._
+import cats.effect.{Trace => _, _}
 
 package object mtl {
   implicit def natchezMtlTraceForLocal[F[_]](

@@ -1,112 +1,86 @@
-val scala212Version        = "2.12.12"
-val scala213Version        = "2.13.5"
-val scala30Version         = "3.0.2"
+ThisBuild / tlBaseVersion := "0.1"
 
-val collectionCompatVersion = "2.4.4"
+val scala212Version        = "2.12.16"
+val scala213Version        = "2.13.8"
+val scala30Version         = "3.1.3"
 
-val catsVersion = "2.6.1"
-val catsEffectVersion = "3.1.1"
+val collectionCompatVersion = "2.8.1"
 
-// We do `evictionCheck` in CI and don't sweat the Java deps for now.
-inThisBuild(Seq(
-  evictionRules ++= Seq(
-    "io.netty"               % "*" % "always",
-    "io.grpc"                % "*" % "always",
-    "com.github.jnr"         % "*" % "always",
-    "com.google.guava"       % "*" % "always",
-    "io.opentracing"         % "*" % "always",
-    "io.opentracing.contrib" % "*" % "always",
-    "com.squareup.okhttp3"   % "*" % "always",
-    "com.squareup.okio"      % "*" % "always",
-    "com.newrelic.telemetry" % "*" % "always",
-    "org.typelevel"          % "*" % "semver-spec",
-    "org.scala-js"           % "*" % "semver-spec",
-    "org.jctools"            % "*" % "always",
-    "org.jetbrains"          % "*" % "always",
-    "org.jboss.logging"      % "*" % "always",
-    "org.jboss.threads"      % "*" % "always",
-    "org.wildfly.common"     % "*" % "always",
-    "org.jboss.xnio"         % "*" % "always",
-    "com.lihaoyi"            % "*" % "always",
+val catsVersion = "2.8.0"
+val catsEffectVersion = "3.3.14"
+
+// Publishing
+
+ThisBuild / organization := "org.tpolecat"
+ThisBuild / licenses     := Seq(("MIT", url("http://opensource.org/licenses/MIT")))
+ThisBuild / developers   := List(
+  Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
+)
+ThisBuild / tlSonatypeUseLegacyHost := false
+
+ThisBuild / tlCiReleaseBranches += "series/0.1"
+
+// start MiMa from here
+ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
+
+ThisBuild / githubWorkflowAddedJobs +=
+  WorkflowJob(
+    id = "docs",
+    name = s"Make site",
+    scalas = List(scala213Version),
+    steps = List(WorkflowStep.CheckoutFull) ++
+      WorkflowStep.SetupJava(githubWorkflowJavaVersions.value.toList) ++
+      githubWorkflowGeneratedCacheSteps.value ++ 
+      List(WorkflowStep.Sbt(List("docs/makeSite")))
   )
-))
 
-// Global Settings
+// Headers
 lazy val commonSettings = Seq(
-
-  // Publishing
-  organization := "org.tpolecat",
-  licenses    ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  homepage     := Some(url("https://github.com/tpolecat/natchez")),
-  developers   := List(
-    Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
-  ),
-
-  // Headers
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
   headerLicense  := Some(HeaderLicense.Custom(
     """|Copyright (c) 2019-2020 by Rob Norris and Contributors
-       |This software is licensed under the MIT License (MIT).
-       |For more information see LICENSE or https://opensource.org/licenses/MIT
-       |""".stripMargin
+        |This software is licensed under the MIT License (MIT).
+        |For more information see LICENSE or https://opensource.org/licenses/MIT
+        |""".stripMargin
     )
   ),
-
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit"               % "0.7.26" % Test,
-    "org.typelevel" %%% "munit-cats-effect-3" % "1.0.3"  % Test,
-  ),
-  testFrameworks += new TestFramework("munit.Framework"),
-
-  // Compilation
-  scalaVersion       := scala213Version,
-  crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version),
-  Compile / console / scalacOptions --= Seq("-Xfatal-warnings", "-Ywarn-unused:imports"),
-  Compile / doc     / scalacOptions --= Seq("-Xfatal-warnings"),
-  Compile / doc     / scalacOptions ++= Seq(
-    "-groups",
-    "-sourcepath", (LocalRootProject / baseDirectory).value.getAbsolutePath,
-    "-doc-source-url", "https://github.com/tpolecat/natchez/blob/v" + version.value + "€{FILE_PATH}.scala"
-  ),
-  libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
-  ).filterNot(_ => scalaVersion.value.startsWith("3.")),
-
-  // dottydoc really doesn't work at all right now
-  Compile / doc / sources := {
-    val old = (Compile / doc / sources).value
-    if (scalaVersion.value.startsWith("3."))
-      Seq()
-    else
-      old
-  },
-
+    "org.scalameta" %%% "munit"             % "1.0.0-M6" % Test,
+    "org.scalameta" %%% "munit-scalacheck"  % "1.0.0-M6" % Test,
+    "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M3"  % Test,
+  )
 )
 
-// root project
-commonSettings
-publish / skip := true
-
-lazy val crossProjectSettings = Seq(
-  Compile / unmanagedSourceDirectories ++= {
-    val major = if (scalaVersion.value.startsWith("3.")) "-3" else "-2"
-    List(CrossType.Pure, CrossType.Full).flatMap(
-      _.sharedSrcDir(baseDirectory.value, "main").toList.map(f => file(f.getPath + major)))
-  },
-
-  Test / unmanagedSourceDirectories ++= {
-    val major = if (scalaVersion.value.startsWith("3.")) "-3" else "-2"
-    List(CrossType.Pure, CrossType.Full).flatMap(
-      _.sharedSrcDir(baseDirectory.value, "test").toList.map(f => file(f.getPath + major)))
-  },
+lazy val commonNativeSettings = Seq(
+  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
 )
 
-lazy val core = crossProject(JSPlatform, JVMPlatform)
+// Compilation
+ThisBuild / scalaVersion       := scala213Version
+ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
+
+lazy val root = tlCrossRootProject.aggregate(
+  core,
+  jaeger,
+  honeycomb,
+  opencensus,
+  lightstep, lightstepGrpc, lightstepHttp,
+  opentracing,
+  datadog,
+  log,
+  newrelic,
+  mtl,
+  noop,
+  xray,
+  logOdin,
+  examples
+)
+
+lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
-  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-core",
     description := "Tagless, non-blocking OpenTracing implementation for Scala.",
@@ -116,18 +90,11 @@ lazy val core = crossProject(JSPlatform, JVMPlatform)
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
     )
   )
-
-lazy val coreJVM = core.jvm
-lazy val coreJS = core.js
-  .settings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
+  .nativeSettings(commonNativeSettings)
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
-  .dependsOn(coreJVM, opentracing)
+  .dependsOn(core.jvm, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -135,13 +102,13 @@ lazy val jaeger = project
     description := "Jaeger support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.jaegertracing"        % "jaeger-client"           % "1.6.0",
+      "io.jaegertracing"        % "jaeger-client"           % "1.8.1",
     )
   )
 
 lazy val honeycomb = project
   .in(file("modules/honeycomb"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -149,26 +116,26 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.3.1"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.5.2"
     )
   )
 
 lazy val opencensus = project
   .in(file("modules/opencensus"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.28.3"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.31.1"
     )
   )
 
 lazy val lightstep = project
   .in(file("modules/lightstep"))
-  .dependsOn(coreJVM, opentracing)
+  .dependsOn(core.jvm, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -190,9 +157,10 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.38.1",
-      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.39.Final"
-    )
+      "io.grpc"              % "grpc-netty"                      % "1.49.0",
+      "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
+    ),
+    mimaPreviousArtifacts := Set()
   )
 
 lazy val lightstepHttp = project
@@ -205,12 +173,13 @@ lazy val lightstepHttp = project
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-okhttp" % "0.30.3"
-    )
+    ),
+    mimaPreviousArtifacts := Set()
   )
 
 lazy val opentracing = project
   .in(file("modules/opentracing"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -226,7 +195,7 @@ lazy val opentracing = project
 
 lazy val datadog = project
   .in(file("modules/datadog"))
-  .dependsOn(coreJVM, opentracing)
+  .dependsOn(core.jvm, opentracing)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -234,73 +203,61 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.80.0",
-      "com.datadoghq" % "dd-trace-api" % "0.80.0"
+      "com.datadoghq" % "dd-trace-ot"  % "0.108.1",
+      "com.datadoghq" % "dd-trace-api" % "0.108.1"
     )
   )
 
-lazy val log = crossProject(JSPlatform, JVMPlatform)
+lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/log"))
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
-  .settings(crossProjectSettings)
   .settings(
     name        := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe"          %%% "circe-core"      % "0.14.1",
-      "org.typelevel"     %%% "log4cats-core"   % "2.1.1",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.3.0" % Test,
+      "io.circe"          %%% "circe-core"      % "0.14.3",
+      "org.typelevel"     %%% "log4cats-core"   % "2.5.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.4.0" % Test,
     )
   )
-lazy val logJVM = log.jvm.dependsOn(coreJVM)
-lazy val logJS = log.js.dependsOn(coreJS)
-  .settings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
+  .nativeSettings(commonNativeSettings)
 
 lazy val newrelic = project
   .in(file("modules/newrelic"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name        := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe"               %% "circe-core"              % "0.14.1",
+      "io.circe"               %% "circe-core"              % "0.14.3",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry"                % "0.10.0",
-      "com.newrelic.telemetry" % "telemetry-core"           % "0.12.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.12.0"
+      "com.newrelic.telemetry" % "telemetry-core"           % "0.15.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp"    % "0.15.0"
     )
   )
 
-lazy val mtl = crossProject(JSPlatform, JVMPlatform)
+lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/mtl"))
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name        := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel"          %%% "cats-mtl"    % "1.2.1",
+      "org.typelevel"          %%% "cats-mtl"    % "1.3.0",
     )
   )
+  .nativeSettings(commonNativeSettings)
 
-lazy val mtlJVM = mtl.jvm.dependsOn(coreJVM)
-lazy val mtlJS = mtl.js.dependsOn(coreJS)
-  .settings(
-    Test / scalaJSStage := FastOptStage,
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-  )
-
-lazy val noop = project
+lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/noop"))
-  .dependsOn(coreJVM)
+  .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -308,10 +265,30 @@ lazy val noop = project
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
     )
+  .nativeSettings(commonNativeSettings)
+
+lazy val xray = crossProject(JSPlatform, JVMPlatform)
+  .in(file("modules/xray"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name        := "natchez-xray",
+    description := "AWS X-Ray bindings implementation",
+    libraryDependencies ++= Seq(
+      "io.circe"          %%% "circe-core"      % "0.14.3",
+      "co.fs2"            %%% "fs2-io"          % "3.2.14",
+      "com.comcast"       %%% "ip4s-core"       % "3.1.3",
+      "org.scodec"        %%% "scodec-bits"     % "1.1.34"
+    )
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
 
 lazy val mock = project
   .in(file("modules/mock"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
@@ -325,27 +302,25 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(coreJVM, jaeger, honeycomb, lightstepHttp, datadog, newrelic, logJVM)
-  .enablePlugins(AutomateHeaderPlugin)
+  .dependsOn(core.jvm, jaeger, honeycomb, lightstepHttp, datadog, newrelic, log.jvm)
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    publish / skip       := true,
     name                 := "natchez-examples",
     description          := "Example programs for Natchez.",
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"         %  "slf4j-simple"   % "1.7.32",
-      "eu.timepit"        %% "refined"        % "0.9.27",
-      "is.cir"            %% "ciris"          % "2.0.1"
+      "org.typelevel"     %% "log4cats-slf4j" % "2.5.0",
+      "org.slf4j"         %  "slf4j-simple"   % "2.0.0",
+      "eu.timepit"        %% "refined"        % "0.9.29",
+      "is.cir"            %% "ciris"          % "2.3.3"
     )
   )
 
 lazy val logOdin = project
   .in(file("modules/log-odin"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
-  .settings(commonSettings)
   .settings(
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
@@ -358,13 +333,12 @@ lazy val logOdin = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtlJVM, honeycomb, jaeger, logJVM)
+  .dependsOn(mtl.jvm, honeycomb, datadog, jaeger, log.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
   .enablePlugins(GhpagesPlugin)
   .enablePlugins(MdocPlugin)
-  .settings(commonSettings)
   .settings(
     scalacOptions      := Nil,
     git.remoteRepo     := "git@github.com:tpolecat/natchez.git",
@@ -373,10 +347,10 @@ lazy val docs = project
     paradoxTheme       := Some(builtinParadoxTheme("generic")),
     version            := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     paradoxProperties ++= Map(
-      "scala-versions"            -> (coreJVM / crossScalaVersions).value.map(CrossVersion.partialVersion).flatten.distinct.map { case (a, b) => s"$a.$b"} .mkString("/"),
+      "scala-versions"            -> (core.jvm / crossScalaVersions).value.map(CrossVersion.partialVersion).flatten.distinct.map { case (a, b) => s"$a.$b"} .mkString("/"),
       "org"                       -> organization.value,
       "scala.binary.version"      -> s"2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
-      "core-dep"                  -> s"${(coreJVM / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
+      "core-dep"                  -> s"${(core.jvm / name).value}_2.${CrossVersion.partialVersion(scalaVersion.value).get._2}",
       "version"                   -> version.value,
       "scaladoc.natchez.base_url" -> s"https://static.javadoc.io/org.tpolecat/natchez-core_2.13/${version.value}",
     ),
@@ -385,10 +359,10 @@ lazy val docs = project
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value,
     mdocExtraArguments := Seq("--no-link-hygiene"), // paradox handles this
     libraryDependencies ++= Seq(
-      "org.http4s"    %% "http4s-dsl"     % "0.23.0-M1",
-      "org.http4s"    %% "http4s-client"  % "0.23.0-M1",
-      "org.typelevel" %% "log4cats-slf4j" % "2.1.1",
-      "org.slf4j"     %  "slf4j-simple"   % "1.7.32",
-    )
+      "org.http4s"    %% "http4s-dsl"     % "0.23.15",
+      "org.http4s"    %% "http4s-client"  % "0.23.15",
+      "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
+      "org.slf4j"     %  "slf4j-simple"   % "2.0.0",
+    ),
+    excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
-

@@ -6,7 +6,7 @@ package example
 
 import cats._
 import cats.data.Kleisli
-import cats.effect._
+import cats.effect.{Trace => _, _}
 import cats.syntax.all._
 import natchez._
 import scala.util.Random
