@@ -4,7 +4,9 @@
 
 package natchez
 
-import cats.Applicative, cats.syntax.applicative._
+import cats.{~>, Applicative}
+import cats.syntax.applicative._
+import cats.data.Kleisli
 import cats.effect.Resource
 import cats.effect.Resource.ExitCase
 import java.net.URI
@@ -53,4 +55,46 @@ object Span {
       case ExitCase.Errored(f: Fields) => span.put(f.fields.toList: _*)
       case _ => Applicative[F].unit
     }))
+
+  /**
+    * A no-op `Span` implementation which ignores all child span creation.
+    */
+  def noop[F[_]: Applicative]: Span[F] = new NoopSpan
+
+  /**
+    * A `Span` implementation which creates a new root span using the supplied `EntryPoint`
+    * for each requested child span.
+    */
+  def makeRoots[F[_]: Applicative](ep: EntryPoint[F]): Span[F] = new RootsSpan(ep)
+
+  private abstract class EphemeralSpan[F[_]: Applicative] extends Span[F] {
+    def put(fields: (String, TraceValue)*): F[Unit] = ().pure[F]
+    def kernel: F[Kernel] = Kernel(Map.empty).pure[F]
+    def traceId: F[Option[String]] = (None: Option[String]).pure[F]
+    def spanId: F[Option[String]] = (None: Option[String]).pure[F]
+    def traceUri: F[Option[URI]] = (None: Option[URI]).pure[F]
+  }
+
+  private class NoopSpan[F[_]: Applicative] extends EphemeralSpan[F] {
+    def span(name: String): Resource[F, Span[F]] = Resource.pure(this)
+  }
+
+  private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
+    def span(name: String): Resource[F, Span[F]] = ep.root(name)
+  }
+
+  private def resolve[F[_]](span: Span[F]): Kleisli[F, Span[F], *] ~> F =
+    new (Kleisli[F, Span[F], *] ~> F) {
+      def apply[A](k: Kleisli[F, Span[F], A]) = k(span)
+    }
+
+  /**
+    * Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by ignoring all span creation.
+    */
+  def dropTracing[F[_]: Applicative]: Kleisli[F, Span[F], *] ~> F = resolve(noop)
+
+  /**
+    * Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by creating a new root span for each direct child span.
+    */
+  def rootTracing[F[_]: Applicative](ep: EntryPoint[F]): Kleisli[F, Span[F], *] ~> F = resolve(makeRoots(ep))
 }
