@@ -201,6 +201,7 @@ lazy val opentelemetry = project
   .settings(
     name        := "natchez-opentelemetry",
     description := "Base OpenTelemetry Utilities for Natchez",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "io.opentelemetry"        % "opentelemetry-sdk"       % "1.12.0"
