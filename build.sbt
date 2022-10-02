@@ -324,6 +324,7 @@ lazy val logOdin = project
   .settings(
     name        := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
       "io.circe"              %% "circe-core" % "0.14.1",
       "com.github.valskalla"  %% "odin-core"  % "0.13.0",
