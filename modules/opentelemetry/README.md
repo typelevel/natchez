@@ -1,6 +1,6 @@
 # OpenTelemetry
 
-OpenTelemetry is capable of exporting to different collector types. Exporters are added registered globally against a
+OpenTelemetry is capable of exporting to different collector types. Exporters are registered globally against a
 singleton registry. There is nothing stopping someone registering a new exporter outside of a side effect, so it is up
 to the user whether to do so inside the effects system or not.
 
