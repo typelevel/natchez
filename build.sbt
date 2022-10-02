@@ -65,6 +65,7 @@ lazy val root = tlCrossRootProject.aggregate(
   jaeger,
   honeycomb,
   opencensus,
+  opentelemetry,
   lightstep, lightstepGrpc, lightstepHttp,
   opentracing,
   datadog,
@@ -194,7 +195,7 @@ lazy val opentracing = project
 
 lazy val opentelemetry = project
   .in(file("modules/opentelemetry"))
-  .dependsOn(coreJVM)
+  .dependsOn(core.jvm)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
