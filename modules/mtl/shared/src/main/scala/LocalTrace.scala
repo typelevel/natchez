@@ -7,7 +7,7 @@ package natchez
 package mtl
 
 import cats.mtl.Local
-import cats.effect._
+import cats.effect.MonadCancel
 import cats.syntax.all._
 import java.net.URI
 
