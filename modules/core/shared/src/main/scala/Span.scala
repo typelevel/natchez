@@ -57,7 +57,7 @@ object Span {
     }))
 
   /**
-    * A no-op `Span` implementation which ignors all child span creation.
+    * A no-op `Span` implementation which ignores all child span creation.
     */
   def noop[F[_]: Applicative]: Span[F] = new NoopSpan
 
