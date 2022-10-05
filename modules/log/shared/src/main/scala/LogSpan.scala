@@ -34,7 +34,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   import LogSpan._
 
   def parentId: Option[UUID] =
-    parent.map(_.fold(identity, _.traceUUID))
+    parent.map(_.fold(identity, _.sid))
 
   def get(key: String): F[Option[Json]] =
     fields.get.map(_.get(key))
