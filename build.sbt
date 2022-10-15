@@ -2,7 +2,7 @@ ThisBuild / tlBaseVersion := "0.1"
 
 val scala212Version        = "2.12.16"
 val scala213Version        = "2.13.8"
-val scala30Version         = "3.1.3"
+val scala30Version         = "3.2.0"
 
 val collectionCompatVersion = "2.8.1"
 
@@ -158,7 +158,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.49.0",
+      "io.grpc"              % "grpc-netty"                      % "1.49.2",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
     ),
     mimaPreviousArtifacts := Set()
