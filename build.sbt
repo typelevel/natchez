@@ -1,6 +1,6 @@
 ThisBuild / tlBaseVersion := "0.1"
 
-val scala212Version        = "2.12.16"
+val scala212Version        = "2.12.17"
 val scala213Version        = "2.13.10"
 val scala30Version         = "3.2.0"
 
@@ -33,6 +33,11 @@ ThisBuild / githubWorkflowAddedJobs +=
       githubWorkflowGeneratedCacheSteps.value ++ 
       List(WorkflowStep.Sbt(List("docs/makeSite")))
   )
+
+// https://github.com/sbt/sbt/issues/6997
+ThisBuild / libraryDependencySchemes ++= Seq(
+  "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+)
 
 // Headers
 lazy val commonSettings = Seq(
