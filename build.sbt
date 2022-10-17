@@ -34,6 +34,11 @@ ThisBuild / githubWorkflowAddedJobs +=
       List(WorkflowStep.Sbt(List("docs/makeSite")))
   )
 
+// https://github.com/sbt/sbt/issues/6997
+ThisBuild / libraryDependencySchemes ++= Seq(
+  "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+)
+
 // Headers
 lazy val commonSettings = Seq(
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
