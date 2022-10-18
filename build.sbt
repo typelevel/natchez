@@ -163,7 +163,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.49.2",
+      "io.grpc"              % "grpc-netty"                      % "1.50.0",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
     ),
     mimaPreviousArtifacts := Set()
