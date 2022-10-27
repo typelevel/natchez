@@ -25,6 +25,9 @@ trait Trace[F[_]] {
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
 
+  /** Create a new span and add current span and kernel to parents of new span */
+  def span[A](name: String, kernel: Kernel)(k: F[A]): F[A]
+
   /**
    * A unique ID for this trace, if available. This can be useful to include in error messages for
    * example, so you can quickly find the associated trace.
@@ -67,6 +70,12 @@ object Trace {
         def traceUri: IO[Option[URI]] =
           local.get.flatMap(_.traceUri)
 
+        override def span[A](name: String, kernel: Kernel)(k: IO[A]): IO[A] =
+          local.get.flatMap { parent =>
+            parent.span(name, kernel).flatMap { child =>
+              Resource.make(local.set(child))(_ => local.set(parent))
+            }.use { _ => k }
+          }
       }
     }
 
@@ -130,6 +139,8 @@ object Trace {
         def traceUri: Kleisli[F,E,Option[URI]] =
           Kleisli(e => f(e).traceUri)
 
+        def span[A](name: String, kernel: Kernel)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
+          Kleisli(e => f(e).span(name, kernel).use(s => k.run(g(e, s))))
       }
 
     def traceId: Kleisli[F,Span[F],Option[String]] =
@@ -138,6 +149,8 @@ object Trace {
     def traceUri: Kleisli[F,Span[F],Option[URI]] =
       Kleisli(_.traceUri)
 
+    def span[A](name: String, kernel: Kernel)(k: ReaderT[F, Span[F], A]): ReaderT[F, Span[F], A] =
+      Kleisli(_.span(name, kernel))
   }
 
   implicit def liftKleisli[F[_], E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
@@ -157,6 +170,9 @@ object Trace {
 
       def traceUri: Kleisli[F, E, Option[URI]] =
         Kleisli.liftF(trace.traceUri)
+
+      def span[A](name: String, kernel: Kernel)(k: ReaderT[F, E, A]): ReaderT[F, E, A] =
+        Kleisli(e => trace.span[A](name, kernel)(k.run(e)))
     }
 
   implicit def liftStateT[F[_]: Monad, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
@@ -176,6 +192,9 @@ object Trace {
 
       def traceUri: StateT[F, S, Option[URI]] =
         StateT.liftF(trace.traceUri)
+
+      override def span[A](name: String, kernel: Kernel)(k: StateT[F, S, A]): StateT[F, S, A] =
+        StateT(s => trace.span[(S, A)](name, kernel)(k.run(s)))
     }
 
   implicit def liftEitherT[F[_]: Functor, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
@@ -195,6 +214,9 @@ object Trace {
 
       def traceUri: EitherT[F, E, Option[URI]] =
         EitherT.liftF(trace.traceUri)
+
+      def span[A](name: String, kernel: Kernel)(k: EitherT[F, E, A]): EitherT[F, E, A] =
+        EitherT(trace.span(name, kernel)(k.value))
     }
 
   implicit def liftOptionT[F[_]: Functor](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
@@ -214,6 +236,9 @@ object Trace {
 
       def traceUri: OptionT[F, Option[URI]] =
         OptionT.liftF(trace.traceUri)
+
+      override def span[A](name: String, kernel: Kernel)(k: OptionT[F, A]): OptionT[F, A] =
+        OptionT(trace.span(name, kernel)(k.value))
     }
 
   implicit def liftNested[F[_]: Functor, G[_]: Applicative](implicit trace: Trace[F]): Trace[Nested[F, G, *]] =
@@ -233,5 +258,8 @@ object Trace {
 
       def traceUri: Nested[F, G, Option[URI]] =
         trace.traceUri.map(_.pure[G]).nested
+
+      override def span[A](name: String, kernel: Kernel)(k: Nested[F, G, A]): Nested[F, G, A] =
+        trace.span(name, kernel)(k.value).nested
     }
 }

@@ -20,6 +20,9 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
   override def span[A](name: String)(k: F[A]): F[A] =
     k
 
+  override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
+    k
+
   def traceId: F[Option[String]] =
     none.pure[F]
 

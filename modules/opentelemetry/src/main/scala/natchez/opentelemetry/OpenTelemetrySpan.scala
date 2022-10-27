@@ -62,6 +62,9 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](sdk: Open
 
   def traceUri: F[Option[URI]] = none[URI].pure[F]
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
+    Resource.makeCase(OpenTelemetrySpan.fromKernelWithSpan(sdk, tracer, name, kernel, span))(OpenTelemetrySpan.finish).widen
+  )
 }
 
 private[opentelemetry] object OpenTelemetrySpan {
@@ -112,6 +115,18 @@ private[opentelemetry] object OpenTelemetrySpan {
           .startSpan()
       )
       .map(OpenTelemetrySpan(sdk, tracer, _))
+
+  def fromKernelWithSpan[F[_]: Sync](
+      sdk: OpenTelemetrySdk,
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel,
+      span: TSpan
+  ): F[OpenTelemetrySpan[F]] = Sync[F].delay {
+      val ctx = sdk.getPropagators.getTextMapPropagator
+        .extract(Context.current(), kernel, spanContextGetter)
+      tracer.spanBuilder(name).setParent(ctx).addLink(span.getSpanContext).startSpan
+    }.map(OpenTelemetrySpan(sdk, tracer, _))
 
   def fromKernel[F[_] : Sync](
                                sdk: OpenTelemetrySdk,

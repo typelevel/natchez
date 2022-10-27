@@ -31,4 +31,9 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
 
     def traceUri: F[Option[URI]] =
       local.ask.flatMap(_.traceUri)
+
+  override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
+    local.ask.flatMap { span =>
+      span.span(name, kernel).use(local.scope(k))
+    }
 }

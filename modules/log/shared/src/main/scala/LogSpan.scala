@@ -97,6 +97,10 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     sid.toString.some.pure[F]
 
   def traceUri: F[Option[URI]]   = none.pure[F]
+
+  def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Span.putErrorFields(Resource.makeCase(LogSpan.fromKernel(service, name, kernel))(LogSpan.finishChild[F]).widen)
+
 }
 
 private[log] object LogSpan {
