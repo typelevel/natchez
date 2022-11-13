@@ -1,3 +1,5 @@
+import com.typesafe.tools.mima.core._
+
 ThisBuild / tlBaseVersion := "0.1"
 
 val scala212Version        = "2.12.17"
@@ -307,6 +309,13 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+  .settings(
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("natchez.xray.XRayEnvironment.env"),
+      ProblemFilters.exclude[MissingTypesProblem]("natchez.xray.XRayEnvironment$"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.XRayEnvironmentCompanionPlatform"),
+    )
   )
 
 lazy val mock = project
