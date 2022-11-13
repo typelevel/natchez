@@ -315,6 +315,8 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
       ProblemFilters.exclude[DirectMissingMethodProblem]("natchez.xray.XRayEnvironment.env"),
       ProblemFilters.exclude[MissingTypesProblem]("natchez.xray.XRayEnvironment$"),
       ProblemFilters.exclude[MissingClassProblem]("natchez.xray.XRayEnvironmentCompanionPlatform"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process$"),
     )
   )
 
