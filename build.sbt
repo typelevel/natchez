@@ -1,3 +1,5 @@
+import com.typesafe.tools.mima.core._
+
 ThisBuild / tlBaseVersion := "0.1"
 
 val scala212Version        = "2.12.17"
@@ -6,8 +8,8 @@ val scala30Version         = "3.2.0"
 
 val collectionCompatVersion = "2.8.1"
 
-val catsVersion = "2.8.0"
-val catsEffectVersion = "3.3.14"
+val catsVersion = "2.9.0"
+val catsEffectVersion = "3.4.0"
 
 // Publishing
 
@@ -290,6 +292,7 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(commonNativeSettings)
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
   .in(file("modules/xray"))
   .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
@@ -306,6 +309,15 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+  .settings(
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("natchez.xray.XRayEnvironment.env"),
+      ProblemFilters.exclude[MissingTypesProblem]("natchez.xray.XRayEnvironment$"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.XRayEnvironmentCompanionPlatform"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process$"),
+    )
   )
 
 lazy val mock = project
