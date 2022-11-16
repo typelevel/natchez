@@ -24,6 +24,13 @@ _Credits: [Wikipedia](https://en.wikipedia.org/wiki/Natchez_Trace) and the [Nati
 
 **Natchez** is a minimal distributed tracing library for Cats, inspired by earlier work done on [puretracing](https://github.com/tabdulradi/puretracing). Natchez is published for **Scala $scala-versions$**, with limited support for Scala-JS.
 
+Below are the available version series (see [releases](https://github.com/tpolecat/natchez/releases) for exact version numbers). You are strongly encouraged to use the **Active** series. Older series will receive bug fixes when necessary but are not actively maintained.
+
+| Series    | Status     | 2.12 | 2.13 | 3.0 | Cats-Effect |
+|:---------:|------------|:----:|:----:|:---:|:-----------:|
+| **0.1.x** | **Active** | ✅   | ✅   | ✅   | **3.x**   |
+| 0.0.x     | EOL        | ✅   | ✅   | ✅   | 2.x |
+
 ## Quick Start
 
 1. Choose your dependency:
@@ -52,13 +59,10 @@ _Credits: [Wikipedia](https://en.wikipedia.org/wiki/Natchez_Trace) and the [Nati
 
 ## How to Contribute
 
+This is a community-supported project and contributions are welcome!
+
 - If you see a typo in the doc, click the link at the bottom and fix it!
 - If you find a bug please open an issue (or fix it and open a PR) at our [GitHub Repository](https://github.com/tpolecat/natchez).
 - If you want to make a larger contribution, please open an issue first so we can discuss.
 
-Note that there are two active version series right now:
-
-- Versions **0.0.x** are built with Cats-Effect 2 from branch `master`. This is a terminal series and will end sometime in 2021.
-- Versions **0.1.x** are built with Cats-Effect 3 from branch `series/0.1`. This will be the continuing series moving forward.
-- Contibutions should target the `master` branch. Maintainers will merge these into `series/0.1` as needed.
-
+Contibutions should target the **newest active branch** (see above). Maintainers will back-port to older branches when appropriate.

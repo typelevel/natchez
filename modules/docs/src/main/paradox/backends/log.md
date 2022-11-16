@@ -14,6 +14,7 @@ The log handler constructs a JSON object for each root span, with a `children` c
 
 ```scala mdoc:passthrough
 import cats.effect._
+import cats.effect.unsafe.implicits.global
 import cats.syntax.all._
 import org.typelevel.log4cats.Logger
 import natchez.log.Log

@@ -8,7 +8,7 @@ _The examples on this page use the following imports:_
 ```scala mdoc
 import cats.{ Applicative, Monad }
 import cats.data.Kleisli
-import cats.effect.Bracket
+import cats.effect.MonadCancel
 import cats.mtl.Local
 import cats.syntax.all._
 import natchez.{ Span, Trace }
@@ -50,12 +50,12 @@ object NoTraceForYou {
 
 ## Kleisli Instance
 
-Given `Bracket[F, Throwable]` there is a `Trace[F]` instance for `Kleisli[F, Span[F], *]`. This allows us to discharge a `Trace` constraint, given an initial `Span`.
+Given `MonadCancel[F, Throwable]` there is a `Trace[F]` instance for `Kleisli[F, Span[F], *]`. This allows us to discharge a `Trace` constraint, given an initial `Span`.
 
 ```scala mdoc
-// Given Bracket[F, Throwable] and a Span[F] we can call `wibble`
+// Given MonadCancel[F, Throwable] and a Span[F] we can call `wibble`
 def go[F[_]](span: Span[F])(
-  implicit ev: Bracket[F, Throwable]
+  implicit ev: MonadCancel[F, Throwable]
 ): F[Unit] =
   wibble[Kleisli[F, Span[F], *]]("bob", 42).run(span)
 ```
@@ -68,11 +68,11 @@ It is not always possible instantiate arbitrary `F` as `Kleisli`, depending on t
 
 ## Cats-MTL Local Instance
 
-By first adding the `natchez-mtl` module (which pulls in Cats-MTL), given `Bracket[F, Throwable]` and `Local[F, Span[F]]` there is an instance `Trace[F]`.
+By first adding the `natchez-mtl` module (which pulls in Cats-MTL), given `MonadCancel[F, Throwable]` and `Local[F, Span[F]]` there is an instance `Trace[F]`.
 
 ```scala mdoc
 def goLocal[F[_]](
-  implicit ev0: Bracket[F, Throwable],
+  implicit ev0: MonadCancel[F, Throwable],
            ev1: Local[F, Span[F]]
 ): F[Unit] =
   wibble("bob", 42)

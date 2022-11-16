@@ -14,7 +14,7 @@ object Utils {
   // Converts an OpenTelemetry CompletableResultCode into an Async action of return type unit
   // This will raise if the action failed, but we don't get any information on the failure so we throw an empty exception
   def asyncFromCompletableResultCode[F[_]: Async](name: String, crc: CompletableResultCode): F[Unit] = {
-    Async[F].asyncF[Unit] { cb =>
+    Async[F].async[Unit] { cb =>
       Sync[F].delay {
         crc.whenComplete(
           () => if (crc.isSuccess) {
@@ -22,7 +22,8 @@ object Utils {
           } else {
             cb(CompletableResultCodeFailure(s"The OpenTelemetry action '$name' failed").asLeft)
           }
-        ): Unit
+        )
+        None
       }
     }
   }

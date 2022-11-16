@@ -5,7 +5,7 @@
 package natchez.newrelic
 
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 import com.newrelic.telemetry.spans.SpanBatchSender
 import natchez.{EntryPoint, Kernel, Span}
 

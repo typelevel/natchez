@@ -4,9 +4,11 @@
 
 package natchez.log
 
-import cats.effect.concurrent.Ref
+import cats.effect.Ref
 import cats.effect._
-import cats.effect.ExitCase._
+import cats.effect.std.UUIDGen
+import cats.effect.Resource.ExitCase
+import cats.effect.Resource.ExitCase._
 import cats.syntax.all._
 import java.time.Instant
 import java.util.UUID
@@ -52,7 +54,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   def span(label: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finishChild[F]).widen)
 
-  def json(finish: Instant, exitCase: ExitCase[Throwable]): F[JsonObject] =
+  def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
 
       // Assemble our JSON object such that the Natchez fields always come first, in the same
@@ -77,10 +79,10 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "trace.trace_id"  -> traceUUID.asJson,
         ) ++ {
           exitCase match {
-            case Completed                  => List("exit.case" -> "completed".asJson)
-            case Canceled                   => List("exit.case" -> "canceled".asJson)
-            case Error(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map { case (k, v) => (k, v.asJson) }
-            case Error(ex)         => exitFields(ex)
+            case Succeeded           => List("exit.case" -> "succeeded".asJson)
+            case Canceled            => List("exit.case" -> "canceled".asJson)
+            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map { case (k, v) => (k, v.asJson) }
+            case Errored(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
 
@@ -122,12 +124,12 @@ private[log] object LogSpan {
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =
-    Sync[F].delay(UUID.randomUUID)
+    UUIDGen.randomUUID
 
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync: Logger](format: Json => String): (LogSpan[F], ExitCase[Throwable]) => F[Unit] = { (span, exitCase) =>
+  def finish[F[_]: Sync: Logger](format: Json => String): (LogSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
       j  <- span.json(n, exitCase)
@@ -139,7 +141,7 @@ private[log] object LogSpan {
     } yield ()
   }
 
-  def finishChild[F[_]: Sync: Logger]: (LogSpan[F], ExitCase[Throwable]) => F[Unit] =
+  def finishChild[F[_]: Sync: Logger]: (LogSpan[F], ExitCase) => F[Unit] =
     finish(_ => sys.error("implementation error; child JSON should never be logged"))
 
   def child[F[_]: Sync: Logger](

@@ -9,6 +9,7 @@ import io.{ opentracing => ot }
 import cats.data.Nested
 import cats.effect.Sync
 import cats.effect.Resource
+import cats.effect.Resource.ExitCase
 import cats.syntax.all._
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
@@ -42,13 +43,11 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
     }
 
   def span(name: String): Resource[F,Span[F]] =
-    Span.putErrorFields(
-      Resource.make(
-        Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start))(
-        s => Sync[F].delay(s.finish)
-      ).map(JaegerSpan(tracer, _, prefix))
-    )
-    
+    Span.putErrorFields {
+      Resource.makeCase(
+        Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start).map(JaegerSpan(tracer, _, prefix))
+      )(JaegerSpan.finish)
+    }
 
   def traceId: F[Option[String]] =
     Sync[F].pure {
@@ -67,4 +66,25 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       uri.resolve(s"/trace/$id")
     } .value
 
+}
+
+private[jaeger] object JaegerSpan {
+
+  def finish[F[_]: Sync]: (JaegerSpan[F], ExitCase) => F[Unit] = (outer, exitCase) => {
+    val handleExit = exitCase match {
+      case ExitCase.Errored(ex) =>
+        Sync[F].delay {
+          outer.span
+            .setTag(ot.tag.Tags.ERROR.getKey, true)
+            .log(Map(
+              ot.log.Fields.EVENT -> ot.tag.Tags.ERROR.getKey,
+              ot.log.Fields.ERROR_OBJECT -> ex,
+              ot.log.Fields.MESSAGE -> ex.getMessage,
+              ot.log.Fields.STACK -> ex.getStackTrace.mkString("\n")
+            ).asJava)
+        }.void
+      case _ => Sync[F].unit
+    }
+    handleExit >> Sync[F].delay(outer.span.finish())
+  }
 }

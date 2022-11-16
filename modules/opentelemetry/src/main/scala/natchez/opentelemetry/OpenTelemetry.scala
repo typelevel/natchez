@@ -5,9 +5,9 @@
 package natchez
 package opentelemetry
 
-import cats.effect._
-import cats.implicits._
-import io.opentelemetry.api.GlobalOpenTelemetry
+import cats.syntax.all._
+import cats.effect.{Async, Resource, Sync}
+import io.opentelemetry.api.{GlobalOpenTelemetry, OpenTelemetry => OTel}
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.sdk.{OpenTelemetrySdk, OpenTelemetrySdkBuilder}
 
@@ -16,13 +16,13 @@ import java.net.URI
 object OpenTelemetry {
   private final val instrumentationName = "natchez.opentelemetry"
 
-  // Helper methods to help you construct Otel resources that clean themselves up
-  // We need a name so the failure error can contain something useful
-  def lift[F[_]: Async, T: Shutdownable](name: String, create: F[T]): Resource[F, T] =
-    Resource.make(create) { t =>
-      Sync[F].delay { Shutdownable[T].shutdown(t) }
-        .flatMap(Utils.asyncFromCompletableResultCode(s"$name cleanup", _))
-    }
+  def entryPointFor[F[_] : Sync](otel: OTel): F[OpenTelemetryEntryPoint[F]] =
+    Sync[F].delay(otel.getTracer("natchez")).map(t => 
+      OpenTelemetryEntryPoint(otel, t, None)
+    )
+
+  def entryPointFor[F[_] : Sync](otel: OTel, tracer: Tracer, prefix: Option[URI]): OpenTelemetryEntryPoint[F] =
+    OpenTelemetryEntryPoint(otel, tracer, prefix)
 
   def entryPoint[F[_] : Sync](uriPrefix: Option[URI] = None, globallyRegister: Boolean = false)(
     configure: OpenTelemetrySdkBuilder => Resource[F, OpenTelemetrySdkBuilder]
@@ -56,5 +56,13 @@ object OpenTelemetry {
     Sync[F].delay {
       val ot = GlobalOpenTelemetry.get()
       OpenTelemetryEntryPoint(ot, ot.getTracer(instrumentationName), uriPrefix)
+    }
+
+  // Helper methods to help you construct Otel resources that clean themselves up
+  // We need a name so the failure error can contain something useful
+  def lift[F[_]: Async, T: Shutdownable](name: String, create: F[T]): Resource[F, T] =
+    Resource.make(create) { t =>
+      Sync[F].delay { Shutdownable[T].shutdown(t) }
+        .flatMap(Utils.asyncFromCompletableResultCode(s"$name cleanup", _))
     }
 }

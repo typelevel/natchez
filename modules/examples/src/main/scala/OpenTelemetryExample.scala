@@ -1,3 +1,7 @@
+// Copyright (c) 2019-2020 by Rob Norris and Contributors
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
 import cats.data.Kleisli
 import cats.effect._
 import cats.implicits._
@@ -12,7 +16,6 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes
 import natchez.{EntryPoint, Span, Trace}
 import natchez.opentelemetry.OpenTelemetry
 
-import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.DurationInt
 
 // change this into an object if you'd like to run it
@@ -65,15 +68,15 @@ class OpenTelemetryExample extends IOApp {
       }
     }
 
-  def program[F[_]: Sync: Trace: Timer]: F[Unit] =
+  def program[F[_]: Async: Trace]: F[Unit] =
     Trace[F].traceId.flatTap(tid => Sync[F].delay { println(s"did some work with traceid of $tid") }) *>
       Trace[F].span("outer span") {
         Trace[F].put("foo" -> "bar") *>
           (Trace[F].span("first thing") {
-            Timer[F].sleep(2.seconds)
+            Temporal[F].sleep(2.seconds)
           },
             Trace[F].span("second thing") {
-              Timer[F].sleep(2.seconds)
+              Temporal[F].sleep(2.seconds)
             }).tupled
       }.void
 }
