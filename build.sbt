@@ -336,7 +336,7 @@ lazy val mock = project
 
 lazy val examples = project
   .in(file("modules/examples"))
-  .dependsOn(core.jvm, jaeger, honeycomb, lightstepHttp, datadog, newrelic, log.jvm)
+  .dependsOn(core.jvm, jaeger, honeycomb, lightstepHttp, datadog, newrelic, log.jvm, opentelemetry)
   .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .settings(commonSettings)
   .settings(
@@ -347,7 +347,9 @@ lazy val examples = project
       "org.typelevel"     %% "log4cats-slf4j" % "2.5.0",
       "org.slf4j"         %  "slf4j-simple"   % "2.0.3",
       "eu.timepit"        %% "refined"        % "0.10.1",
-      "is.cir"            %% "ciris"          % "2.4.0"
+      "is.cir"            %% "ciris"          % "2.4.0",
+      "io.opentelemetry"  % "opentelemetry-exporter-otlp" % "1.12.0",
+      "io.grpc"           % "grpc-okhttp"                 % "1.38.0", // required for the OpenTelemetry exporter
     )
   )
 
@@ -369,7 +371,7 @@ lazy val logOdin = project
 
 lazy val docs = project
   .in(file("modules/docs"))
-  .dependsOn(mtl.jvm, honeycomb, datadog, jaeger, log.jvm)
+  .dependsOn(mtl.jvm, honeycomb, datadog, jaeger, log.jvm, opentelemetry)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -399,6 +401,7 @@ lazy val docs = project
       "org.http4s"    %% "http4s-client"  % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
       "org.slf4j"     %  "slf4j-simple"   % "2.0.3",
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.12.0", // for the opentelemetry example
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm
   )
