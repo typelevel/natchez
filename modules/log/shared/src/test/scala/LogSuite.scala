@@ -41,14 +41,14 @@ class LogSuite extends CatsEffectSuite {
         """|test: [info] {
            |  "name" : "root span",
            |  "service" : "service",
-           |  "exit.case" : "completed",
+           |  "exit.case" : "succeeded",
            |  "foo" : 1,
            |  "bar" : true,
            |  "children" : [
            |    {
            |      "name" : "child",
            |      "service" : "service",
-           |      "exit.case" : "completed",
+           |      "exit.case" : "succeeded",
            |      "baz" : "qux",
            |      "children" : [
            |      ]

@@ -43,6 +43,33 @@ object Trace {
 
   def apply[F[_]](implicit ev: Trace[F]): ev.type = ev
 
+  /** A `Trace` instance that uses `IOLocal` internally. */
+  def ioTrace(rootSpan: Span[IO]): IO[Trace[IO]] =
+    IOLocal(rootSpan).map { local =>
+      new Trace[IO] {
+
+        def put(fields: (String, TraceValue)*): IO[Unit] =
+          local.get.flatMap(_.put(fields: _*))
+
+        def kernel: IO[Kernel] =
+          local.get.flatMap(_.kernel)
+
+        def span[A](name: String)(k: IO[A]): IO[A] =
+          local.get.flatMap { parent =>
+            parent.span(name).flatMap { child =>
+              Resource.make(local.set(child))(_ => local.set(parent))
+            } .use { _ => k }
+          }
+
+        def traceId: IO[Option[String]] =
+          local.get.flatMap(_.traceId)
+
+        def traceUri: IO[Option[URI]] =
+          local.get.flatMap(_.traceUri)
+
+      }
+    }
+
   object Implicits {
 
     /**
@@ -63,10 +90,10 @@ object Trace {
   }
 
   /**
-   * `Kleisli[F, Span[F], *]` is a `Trace` given `Bracket[F, Throwable]`. The instance can be
+   * `Kleisli[F, Span[F], *]` is a `Trace` given `MonadCancel[F, Throwable]`. The instance can be
    * widened to an environment that *contains* a `Span[F]` via the `lens` method.
    */
-  implicit def kleisliInstance[F[_]](implicit ev: Bracket[F, Throwable]): KleisliTrace[F] =
+  implicit def kleisliInstance[F[_]](implicit ev: MonadCancel[F, Throwable]): KleisliTrace[F] =
     new KleisliTrace[F]
 
   /**
@@ -74,7 +101,7 @@ object Trace {
    * context into our computations. We can also "lensMap" out to `Kleisli[F, E, *]` given a lens
    * from `E` to `Span[F]`.
    */
-  class KleisliTrace[F[_]](implicit ev: Bracket[F, Throwable]) extends Trace[Kleisli[F, Span[F], *]] {
+  class KleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) extends Trace[Kleisli[F, Span[F], *]] {
 
     def kernel: Kleisli[F, Span[F], Kernel] =
       Kleisli(_.kernel)

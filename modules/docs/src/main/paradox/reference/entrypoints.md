@@ -45,7 +45,7 @@ def continuedRoutes(ep: EntryPoint[IO]): HttpRoutes[IO] =
     case req@(GET -> Root / "hello" / name) =>
 
       val k: Kernel =
-        Kernel(req.headers.toList.map { h => h.name.value -> h.value }.toMap)
+        Kernel(req.headers.headers.map { h => h.name.toString -> h.value }.toMap)
 
       ep.continueOrElseRoot("hello", k).use { span =>
         span.put("the-name" -> name) *>

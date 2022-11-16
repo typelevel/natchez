@@ -5,8 +5,7 @@
 package example
 
 import cats._
-import cats.data.Kleisli
-import cats.effect._
+import cats.effect.{Trace => _, _}
 import cats.syntax.all._
 import natchez._
 import scala.util.Random
@@ -15,7 +14,7 @@ import scala.concurrent.duration._
 
 object Main extends IOApp {
 
-  def runF[F[_]: Sync: Trace: Parallel: Timer]: F[Unit] =
+  def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(5)))
@@ -114,7 +113,7 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     entryPoint[IO].use { ep =>
       ep.root("this is the root span").use { span =>
-        runF[Kleisli[IO, Span[IO], *]].run(span)
+        Trace.ioTrace(span).flatMap(implicit t => runF[IO])
       } *> IO.sleep(1.second) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
     } as ExitCode.Success
   }
