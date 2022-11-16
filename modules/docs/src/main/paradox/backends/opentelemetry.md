@@ -15,12 +15,8 @@ Then add any exporter, for example:
 @@dependency[sbt,Maven,Gradle] {
 group="io.opentelemetry"
 artifact="opentelemetry-exporter-otlp"
-version="1.4.0-SNAPSHOT"
+version="1.12.0"
 }
-
-## Note on the OpenTelemetry version numbers
-
-Currently, this depends on `1.4.0-SNAPSHOT` because of a bug I discovered upstream while writing this, where the `shutdown()` calls could block indefinitely, this has been fixed in the snapshot build, and this note can be removed once there's a stable release with this fix.
 
 ## Configuring an OpenTelemetry entrypoint
 
@@ -29,7 +25,8 @@ There are two methods you'll need to construct an `OpenTelemetry` `EndPoint`.
 `OpenTelemetry.lift` is used to turn an `F[_]` that constructs a `SpanExporter`, `SpanProcessor` or `SdkTraceProvider` into a `Resource` that will shut it down cleanly.
 This takes a `String` of what you've constructed, so we can give a nice error if it fails to shut down cleanly.
 
-The `OpenTelemetry.entryPoint` method takes a boolean called `globallyRegister` which tells it whether to register this `OpenTelemetrySdk` globally, this may be helpful if you have other java dependencies that use the global tracer, it defaults to false.
+The `OpenTelemetry.entryPoint` method takes a boolean called `globallyRegister` which tells it whether to register this `OpenTelemetry` globally. This may be helpful if you have other Java dependencies that use the global tracer. It defaults to false.
+
 It also takes an `OpenTelemetrySdkBuilder => Resource[F, OpenTelemetrySdkBuilder]` so that you can configure the Sdk.
 
 Here's an example of configuring one with the `otlp` exporter with batch span processing:
