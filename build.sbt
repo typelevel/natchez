@@ -1,13 +1,15 @@
+import com.typesafe.tools.mima.core._
+
 ThisBuild / tlBaseVersion := "0.1"
 
-val scala212Version        = "2.12.16"
-val scala213Version        = "2.13.8"
-val scala30Version         = "3.1.3"
+val scala212Version        = "2.12.17"
+val scala213Version        = "2.13.10"
+val scala30Version         = "3.2.0"
 
 val collectionCompatVersion = "2.8.1"
 
-val catsVersion = "2.8.0"
-val catsEffectVersion = "3.3.14"
+val catsVersion = "2.9.0"
+val catsEffectVersion = "3.4.0"
 
 // Publishing
 
@@ -33,6 +35,11 @@ ThisBuild / githubWorkflowAddedJobs +=
       githubWorkflowGeneratedCacheSteps.value ++ 
       List(WorkflowStep.Sbt(List("docs/makeSite")))
   )
+
+// https://github.com/sbt/sbt/issues/6997
+ThisBuild / libraryDependencySchemes ++= Seq(
+  "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
+)
 
 // Headers
 lazy val commonSettings = Seq(
@@ -117,7 +124,7 @@ lazy val honeycomb = project
     description := "Honeycomb support for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.5.2"
+      "io.honeycomb.libhoney"   % "libhoney-java"           % "1.5.3"
     )
   )
 
@@ -158,7 +165,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc"                     % "0.30.3",
-      "io.grpc"              % "grpc-netty"                      % "1.49.0",
+      "io.grpc"              % "grpc-netty"                      % "1.49.2",
       "io.netty"             % "netty-tcnative-boringssl-static" % "2.0.54.Final"
     ),
     mimaPreviousArtifacts := Set()
@@ -204,7 +211,7 @@ lazy val opentelemetry = project
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.opentelemetry"        % "opentelemetry-sdk"       % "1.12.0"
+      "io.opentelemetry"        % "opentelemetry-sdk"       % "1.19.0"
     )
   )
 
@@ -220,8 +227,8 @@ lazy val datadog = project
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot"  % "0.108.1",
-      "com.datadoghq" % "dd-trace-api" % "0.108.1"
+      "com.datadoghq" % "dd-trace-ot"  % "0.108.2",
+      "com.datadoghq" % "dd-trace-api" % "0.108.2"
     )
   )
 
@@ -285,6 +292,7 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(commonNativeSettings)
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
   .in(file("modules/xray"))
   .dependsOn(core)
   .enablePlugins(AutomateHeaderPlugin)
@@ -294,13 +302,22 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.3",
-      "co.fs2"            %%% "fs2-io"          % "3.2.14",
-      "com.comcast"       %%% "ip4s-core"       % "3.1.3",
+      "co.fs2"            %%% "fs2-io"          % "3.3.0",
+      "com.comcast"       %%% "ip4s-core"       % "3.2.0",
       "org.scodec"        %%% "scodec-bits"     % "1.1.34"
     )
   )
   .jsSettings(
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+  )
+  .settings(
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("natchez.xray.XRayEnvironment.env"),
+      ProblemFilters.exclude[MissingTypesProblem]("natchez.xray.XRayEnvironment$"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.XRayEnvironmentCompanionPlatform"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process$"),
+    )
   )
 
 lazy val mock = project
@@ -328,9 +345,9 @@ lazy val examples = project
     scalacOptions        -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel"     %% "log4cats-slf4j" % "2.5.0",
-      "org.slf4j"         %  "slf4j-simple"   % "2.0.0",
-      "eu.timepit"        %% "refined"        % "0.9.29",
-      "is.cir"            %% "ciris"          % "2.3.3",
+      "org.slf4j"         %  "slf4j-simple"   % "2.0.3",
+      "eu.timepit"        %% "refined"        % "0.10.1",
+      "is.cir"            %% "ciris"          % "2.4.0"
       "io.opentelemetry"  % "opentelemetry-exporter-otlp" % "1.12.0",
       "io.grpc"           % "grpc-okhttp"                 % "1.38.0", // required for the OpenTelemetry exporter
     )
@@ -383,7 +400,7 @@ lazy val docs = project
       "org.http4s"    %% "http4s-dsl"     % "0.23.15",
       "org.http4s"    %% "http4s-client"  % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
-      "org.slf4j"     %  "slf4j-simple"   % "2.0.0",
+      "org.slf4j"     %  "slf4j-simple"   % "2.0.3",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.12.0", // for the opentelemetry example
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3", // pray this does more good than harm

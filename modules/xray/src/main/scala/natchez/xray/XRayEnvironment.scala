@@ -4,8 +4,10 @@
 
 package natchez.xray
 
+import cats._
 import cats.data._
 import cats.effect._
+import cats.effect.std.Env
 import com.comcast.ip4s.{IpAddress, SocketAddress}
 import natchez.Kernel
 
@@ -15,18 +17,21 @@ trait XRayEnvironment[F[_]] {
   def kernelFromEnvironment: F[Kernel]
 }
 
-object XRayEnvironment extends XRayEnvironmentCompanionPlatform {
+object XRayEnvironment {
   def apply[F[_]: XRayEnvironment]: XRayEnvironment[F] = implicitly
 
-  implicit def instance[F[_]: Sync]: XRayEnvironment[F] =
+  @deprecated("Use overload with `Env` constraint", "0.1.5")
+  def instance[F[_]](F: Sync[F]): XRayEnvironment[F] = instance(F, Env.make(F))
+
+  implicit def instance[F[_]: Functor: Env]: XRayEnvironment[F] =
     new XRayEnvironment[F] {
       override def daemonAddress: F[Option[SocketAddress[IpAddress]]] =
-        OptionT(Sync[F].delay(env.get("AWS_XRAY_DAEMON_ADDRESS")))
+        OptionT(Env[F].get("AWS_XRAY_DAEMON_ADDRESS"))
           .subflatMap(SocketAddress.fromStringIp)
           .value
 
       override def traceId: F[Option[String]] =
-        Sync[F].delay(env.get("_X_AMZN_TRACE_ID"))
+        Env[F].get("_X_AMZN_TRACE_ID")
 
       override def kernelFromEnvironment: F[Kernel] =
         OptionT(traceId)
