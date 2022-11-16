@@ -347,7 +347,7 @@ lazy val examples = project
       "org.typelevel"     %% "log4cats-slf4j" % "2.5.0",
       "org.slf4j"         %  "slf4j-simple"   % "2.0.3",
       "eu.timepit"        %% "refined"        % "0.10.1",
-      "is.cir"            %% "ciris"          % "2.4.0"
+      "is.cir"            %% "ciris"          % "2.4.0",
       "io.opentelemetry"  % "opentelemetry-exporter-otlp" % "1.12.0",
       "io.grpc"           % "grpc-okhttp"                 % "1.38.0", // required for the OpenTelemetry exporter
     )
