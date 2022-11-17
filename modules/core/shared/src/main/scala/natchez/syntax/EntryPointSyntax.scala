@@ -4,12 +4,9 @@
 
 package natchez.syntax
 
-import cats.effect.kernel.MonadCancel
-import cats.effect.kernel.Resource
+import cats.effect.MonadCancel
 import cats.~>
 import natchez.EntryPoint
-import natchez.Kernel
-import natchez.Span
 
 final class EntryPointOps[F[_]](
     ep: EntryPoint[F]
