@@ -4,6 +4,8 @@
 
 package natchez
 
+import cats.~>
+import cats.effect.MonadCancel
 import cats.effect.Resource
 
 /**
@@ -31,4 +33,33 @@ trait EntryPoint[F[_]] {
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]]
 
 
+}
+
+object EntryPoint {
+
+  def mapK[F[_], G[_]](
+      ep: EntryPoint[F],
+      f: F ~> G
+  )(implicit F: MonadCancel[F, _], G: MonadCancel[G, _]): EntryPoint[G] = {
+
+    def aux(r: Resource[F, Span[F]]): Resource[G, Span[G]] = r
+      .map(Span.mapK(_, f))
+      .mapK(f)
+
+    new EntryPoint[G] {
+
+      override def root(name: String): Resource[G, Span[G]] = aux(ep.root(name))
+
+      override def continue(
+          name: String,
+          kernel: Kernel
+      ): Resource[G, Span[G]] = aux(ep.continue(name, kernel))
+
+      override def continueOrElseRoot(
+          name: String,
+          kernel: Kernel
+      ): Resource[G, Span[G]] = aux(ep.continueOrElseRoot(name, kernel))
+
+    }
+  }
 }

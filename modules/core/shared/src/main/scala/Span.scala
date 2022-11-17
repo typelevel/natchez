@@ -4,11 +4,12 @@
 
 package natchez
 
-import cats.{~>, Applicative}
-import cats.syntax.applicative._
 import cats.data.Kleisli
+import cats.effect.MonadCancel
 import cats.effect.Resource
 import cats.effect.Resource.ExitCase
+import cats.syntax.applicative._
+import cats.{~>, Applicative}
 import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */
@@ -97,4 +98,29 @@ object Span {
     * Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by creating a new root span for each direct child span.
     */
   def rootTracing[F[_]: Applicative](ep: EntryPoint[F]): Kleisli[F, Span[F], *] ~> F = resolve(makeRoots(ep))
+
+  def mapK[F[_], G[_]](spanF: Span[F], f: F ~> G)(
+      implicit F: MonadCancel[F, _],
+      G: MonadCancel[G, _]
+  ): Span[G] = {
+    new Span[G] {
+      override def put(fields: (String, TraceValue)*): G[Unit] = f(
+        spanF.put(fields: _*)
+      )
+
+      override def kernel: G[Kernel] = f(spanF.kernel)
+
+      override def span(name: String): Resource[G, Span[G]] = spanF
+        .span(name)
+        .map(mapK(_, f))
+        .mapK(f)
+
+      override def traceId: G[Option[String]] = f(spanF.traceId)
+
+      override def spanId: G[Option[String]] = f(spanF.spanId)
+
+      override def traceUri: G[Option[URI]] = f(spanF.traceUri)
+
+    }
+  }
 }
