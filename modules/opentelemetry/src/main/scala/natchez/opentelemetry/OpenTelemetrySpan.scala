@@ -2,7 +2,8 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package natchez.opentelemetry
+package natchez
+package opentelemetry
 
 
 import cats.effect.{Resource, Sync}
@@ -15,33 +16,43 @@ import io.opentelemetry.context.Context
 
 import java.lang
 import io.opentelemetry.api.trace.{Tracer, Span => TSpan}
-import io.opentelemetry.sdk.OpenTelemetrySdk
-import natchez.{Fields, Kernel, Span, TraceValue}
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import io.opentelemetry.api.{OpenTelemetry => OTel}
+import TraceValue.{BooleanValue, NumberValue, StringValue}
 
 import java.net.URI
 import scala.collection.mutable
 
-private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](sdk: OpenTelemetrySdk, tracer: Tracer, span: TSpan) extends Span[F] {
+private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](otel: OTel, tracer: Tracer, span: TSpan, prefix: Option[URI]) extends Span[F] {
 
   import OpenTelemetrySpan._
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (k, StringValue(v)) =>
-        val safeString =
-          if (v == null) "null" else v
+      case (k, StringValue(v))                       =>
+        val safeString = if (v == null) "null" else v
         Sync[F].delay(span.setAttribute(k, safeString))
-      case (k, NumberValue(v)) =>
-        Sync[F].delay(span.setAttribute(k, v.doubleValue()))
-      case (k, BooleanValue(v)) =>
-        Sync[F].delay(span.setAttribute(k, v))
+      // all integer types are cast up to Long, since that's all OpenTelemetry lets us use
+      case (k, NumberValue(n: java.lang.Byte))       => Sync[F].delay(span.setAttribute(k, n.toLong))
+      case (k, NumberValue(n: java.lang.Short))      => Sync[F].delay(span.setAttribute(k, n.toLong))
+      case (k, NumberValue(n: java.lang.Integer))    => Sync[F].delay(span.setAttribute(k, n.toLong))
+      case (k, NumberValue(n: java.lang.Long))       => Sync[F].delay(span.setAttribute(k, n))
+      // and all float types are changed to Double
+      case (k, NumberValue(n: java.lang.Float))      => Sync[F].delay(span.setAttribute(k, n.toDouble))
+      case (k, NumberValue(n: java.lang.Double))     => Sync[F].delay(span.setAttribute(k, n))
+      // anything which could be too big to put in a Long is converted to a String
+      case (k, NumberValue(n: java.math.BigDecimal)) => Sync[F].delay(span.setAttribute(k, n.toString))
+      case (k, NumberValue(n: java.math.BigInteger)) => Sync[F].delay(span.setAttribute(k, n.toString))
+      case (k, NumberValue(n: BigDecimal))           => Sync[F].delay(span.setAttribute(k, n.toString))
+      case (k, NumberValue(n: BigInt))               => Sync[F].delay(span.setAttribute(k, n.toString))
+      // and any other Number can fall back to a Double
+      case (k, NumberValue(v))                       => Sync[F].delay(span.setAttribute(k, v.doubleValue()))
+      case (k, BooleanValue(v))                      => Sync[F].delay(span.setAttribute(k, v))
     }
 
   override def kernel: F[Kernel] =
     Sync[F].delay {
       val headers: mutable.Map[String, String] = mutable.Map.empty[String, String]
-      sdk.getPropagators.getTextMapPropagator.inject(Context.current(), headers, spanContextSetter)
+      otel.getPropagators.getTextMapPropagator.inject(Context.current().`with`(span), headers, spanContextSetter)
       Kernel(headers.toMap)
     }
 
@@ -61,9 +72,16 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](sdk: Open
     }
 
   def traceUri: F[Option[URI]] = none[URI].pure[F]
+  // TODO
+  // override def traceUri: F[Option[URI]] =
+  //   (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
+  //     uri.resolve(s"/trace/$id")
+  //   }.value
 
   override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
-    Resource.makeCase(OpenTelemetrySpan.fromKernelWithSpan(sdk, tracer, name, kernel, span))(OpenTelemetrySpan.finish).widen
+    Resource.makeCase(OpenTelemetrySpan.fromKernelWithSpan(otel, tracer, name, kernel, span, prefix))(
+      OpenTelemetrySpan.finish
+    ).widen
   )
 }
 
@@ -101,11 +119,12 @@ private[opentelemetry] object OpenTelemetrySpan {
           .setParent(Context.current().`with`(parent.span))
           .startSpan()
       )
-      .map(OpenTelemetrySpan(parent.sdk, parent.tracer, _))
+      .map(OpenTelemetrySpan(parent.otel, parent.tracer, _, parent.prefix))
 
   def root[F[_] : Sync](
-                         sdk: OpenTelemetrySdk,
+                         otel: OTel,
                          tracer: Tracer,
+                         prefix: Option[URI],
                          name: String
                        ): F[OpenTelemetrySpan[F]] =
     Sync[F]
@@ -114,45 +133,48 @@ private[opentelemetry] object OpenTelemetrySpan {
           .spanBuilder(name)
           .startSpan()
       )
-      .map(OpenTelemetrySpan(sdk, tracer, _))
+      .map(OpenTelemetrySpan(otel, tracer, _, prefix))
 
   def fromKernelWithSpan[F[_]: Sync](
-      sdk: OpenTelemetrySdk,
+      sdk: OTel,
       tracer: Tracer,
       name: String,
       kernel: Kernel,
-      span: TSpan
+      span: TSpan,
+      prefix: Option[URI]
   ): F[OpenTelemetrySpan[F]] = Sync[F].delay {
       val ctx = sdk.getPropagators.getTextMapPropagator
         .extract(Context.current(), kernel, spanContextGetter)
       tracer.spanBuilder(name).setParent(ctx).addLink(span.getSpanContext).startSpan
-    }.map(OpenTelemetrySpan(sdk, tracer, _))
+    }.map(OpenTelemetrySpan(sdk, tracer, _, prefix))
 
   def fromKernel[F[_] : Sync](
-                               sdk: OpenTelemetrySdk,
+                               otel: OTel,
                                tracer: Tracer,
+                               prefix: Option[URI],
                                name: String,
                                kernel: Kernel
                              ): F[OpenTelemetrySpan[F]] =
     Sync[F]
       .delay {
-        val ctx = sdk.getPropagators.getTextMapPropagator
+        val ctx = otel.getPropagators.getTextMapPropagator
           .extract(Context.current(), kernel, spanContextGetter)
         tracer.spanBuilder(name).setParent(ctx).startSpan()
       }
-      .map(OpenTelemetrySpan(sdk, tracer, _))
+      .map(OpenTelemetrySpan(otel, tracer, _, prefix))
 
   def fromKernelOrElseRoot[F[_]](
-                                  sdk: OpenTelemetrySdk,
+                                  otel: OTel,
                                   tracer: Tracer,
+                                  prefix: Option[URI],
                                   name: String,
                                   kernel: Kernel
                                 )(implicit ev: Sync[F]): F[OpenTelemetrySpan[F]] =
-    fromKernel(sdk, tracer, name, kernel).recoverWith {
+    fromKernel(otel, tracer, prefix, name, kernel).recoverWith {
       case _: NoSuchElementException =>
-        root(sdk, tracer, name) // means headers are incomplete or invalid
+        root(otel, tracer, prefix, name) // means headers are incomplete or invalid
       case _: NullPointerException =>
-        root(sdk, tracer, name) // means headers are incomplete or invalid
+        root(otel, tracer, prefix, name) // means headers are incomplete or invalid
     }
 
   private val spanContextGetter: TextMapGetter[Kernel] = new TextMapGetter[Kernel] {
@@ -172,4 +194,3 @@ private[opentelemetry] object OpenTelemetrySpan {
     }
   }
 }
-

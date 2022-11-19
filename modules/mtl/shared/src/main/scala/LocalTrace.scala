@@ -6,8 +6,10 @@ package natchez
 
 package mtl
 
+import cats.~>
 import cats.mtl.Local
 import cats.effect.MonadCancel
+import cats.effect.Resource
 import cats.syntax.all._
 import java.net.URI
 
@@ -20,6 +22,15 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
 
     def put(fields: (String, TraceValue)*): F[Unit] =
       local.ask.flatMap(_.put(fields: _*))
+
+    def spanR(name: String): Resource[F, F ~> F] =
+      Resource(local.ask.flatMap(_.span(name).allocated.map {
+        case (child, release) =>
+          new (F ~> F) {
+            def apply[A](fa: F[A]): F[A] =
+              local.scope(fa)(child)
+          } -> release
+      }))
 
     def span[A](name: String)(k: F[A]): F[A] =
       local.ask.flatMap { span =>
