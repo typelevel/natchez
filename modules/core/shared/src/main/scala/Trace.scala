@@ -114,6 +114,8 @@ object Trace {
         def put(fields: (String, TraceValue)*): F[Unit] = void
         def spanR(name: String): Resource[F, F ~> F] =
           Resource.pure(FunctionK.id)
+        def spanR(name: String, kernel: Kernel): Resource[F, F ~> F] =
+          Resource.pure(FunctionK.id)
         def span[A](name: String)(k: F[A]): F[A] = k
         def traceId: F[Option[String]] = none.pure[F]
         def traceUri: F[Option[URI]] = none.pure[F]
