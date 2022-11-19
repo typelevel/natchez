@@ -349,7 +349,7 @@ lazy val examples = project
       "eu.timepit"        %% "refined"        % "0.10.1",
       "is.cir"            %% "ciris"          % "3.0.0",
       "io.opentelemetry"  % "opentelemetry-exporter-otlp" % "1.12.0",
-      "io.grpc"           % "grpc-okhttp"                 % "1.38.1", // required for the OpenTelemetry exporter
+      "io.grpc"           % "grpc-okhttp"                 % "1.51.0", // required for the OpenTelemetry exporter
     )
   )
 
