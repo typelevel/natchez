@@ -13,7 +13,7 @@ object ImplicitResolutionTest {
   def kleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) =
     Trace[Kleisli[F, Span[F], *]]
 
-  def kleisliLiftedTrace[F[_]: Trace] =
+  def kleisliLiftedTrace[F[_]](implicit ev1: Trace[F], ev2: MonadCancel[F, Throwable]) =
     Trace[Kleisli[F, Int, *]]
 
   def kleisliKleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) =
