@@ -25,9 +25,7 @@ trait Trace[F[_]] {
   def kernel: F[Kernel]
 
   /** Creates a new span, and within it acquires and releases the spanR `r`. */
-  def spanR(name: String): Resource[F, F ~> F]
-
-  def spanR(name: String, kernel: Kernel): Resource[F, F ~> F]
+  def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F]
 
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String)(k: F[A]): F[A]
@@ -64,19 +62,10 @@ object Trace {
         def kernel: IO[Kernel] =
           local.get.flatMap(_.kernel)
 
-        def spanR(name: String): Resource[IO, IO ~> IO] =
+        def spanR(name: String, kernel: Option[Kernel] = None): Resource[IO, IO ~> IO] =
           for {
             parent <- Resource.eval(local.get)
-            child <- parent.span(name)
-          } yield new (IO ~> IO) {
-            def apply[A](fa: IO[A]): IO[A] =
-              local.set(child).bracket(_ => fa)(_ => local.set(parent))
-          }
-
-        def spanR(name: String, kernel: Kernel): Resource[IO, IO ~> IO] =
-          for {
-            parent <- Resource.eval(local.get)
-            child <- parent.span(name, kernel)
+            child <- kernel.fold(parent.span(name))(parent.span(name, _))
           } yield new (IO ~> IO) {
             def apply[A](fa: IO[A]): IO[A] =
               local.set(child).bracket(_ => fa)(_ => local.set(parent))
@@ -143,8 +132,8 @@ object Trace {
     def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.put(fields: _*))
 
-    def spanR(name: String): Resource[Kleisli[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
-      Resource(Kleisli((span: Span[F]) => span.span(name).allocated.map {
+    def spanR(name: String, kernel: Option[Kernel] = None): Resource[Kleisli[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
+      Resource(Kleisli((span: Span[F]) => kernel.fold(span.span(name))(span.span(name, _)).allocated.map {
         case (child, release) =>
           new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
             def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
@@ -164,8 +153,8 @@ object Trace {
         def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).put(fields: _*))
 
-        def spanR(name: String): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
-          Resource(Kleisli((e: E) => f(e).span(name).allocated.map {
+        def spanR(name: String, kernel: Option[Kernel] = None): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
+          Resource(Kleisli((e: E) => kernel.fold(f(e).span(name))(f(e).span(name, _)).allocated.map {
             case (child, release) =>
               new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
                 def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
@@ -184,15 +173,6 @@ object Trace {
 
         def span[A](name: String, kernel: Kernel)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
           Kleisli(e => f(e).span(name, kernel).use(s => k.run(g(e, s))))
-
-        def spanR(name: String, kernel: Kernel): Resource[ReaderT[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
-          Resource(Kleisli((e: E) => f(e).span(name, kernel).allocated.map {
-            case (child, release) =>
-              new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
-                def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
-                  fa.local(_ => g(e, child))
-              } -> Kleisli.liftF[F, E, Unit](release)
-          }))
       }
 
     def traceId: Kleisli[F,Span[F],Option[String]] =
@@ -203,15 +183,6 @@ object Trace {
 
     def span[A](name: String, kernel: Kernel)(k: ReaderT[F, Span[F], A]): ReaderT[F, Span[F], A] =
       Kleisli(_.span(name, kernel))
-
-    override def spanR(name: String, kernel: Kernel): Resource[ReaderT[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
-      Resource(Kleisli((span: Span[F]) => span.span(name, kernel).allocated.map {
-        case (child, release) =>
-          new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
-            def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-              fa.local(_ => child)
-          } -> Kleisli.liftF[F, Span[F], Unit](release)
-      }))
   }
 
   implicit def liftKleisli[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
@@ -223,10 +194,10 @@ object Trace {
       def kernel: Kleisli[F, E, Kernel] =
         Kleisli.liftF(trace.kernel)
 
-      def spanR(name: String): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
+      def spanR(name: String, kernel: Option[Kernel]): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
         Resource(
           Kleisli((e: E) =>
-            trace.spanR(name).allocated.map { case (f, release) =>
+            trace.spanR(name, kernel).allocated.map { case (f, release) =>
               f.compose(Kleisli.applyK(e)).andThen(Kleisli.liftK[F, E]) ->
               Kleisli.liftF[F, E, Unit](f(release))
             }
@@ -244,16 +215,6 @@ object Trace {
 
       def span[A](name: String, kernel: Kernel)(k: ReaderT[F, E, A]): ReaderT[F, E, A] =
         Kleisli(e => trace.span[A](name, kernel)(k.run(e)))
-
-      override def spanR(name: String, kernel: Kernel): Resource[ReaderT[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
-        Resource(
-          Kleisli((e: E) =>
-            trace.spanR(name, kernel).allocated.map { case (f, release) =>
-              f.compose(Kleisli.applyK(e)).andThen(Kleisli.liftK[F, E]) ->
-                Kleisli.liftF[F, E, Unit](f(release))
-            }
-          )
-        )
     }
 
   implicit def liftStateT[F[_]: MonadCancelThrow, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
@@ -264,10 +225,10 @@ object Trace {
       def kernel: StateT[F, S, Kernel] =
         StateT.liftF(trace.kernel)
 
-      def spanR(name: String): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
+      def spanR(name: String, kernel: Option[Kernel] = None): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
         Resource(
           StateT.liftF(
-            trace.spanR(name).allocated.map { case (f, release) =>
+            trace.spanR(name, kernel).allocated.map { case (f, release) =>
               new (StateT[F, S, *] ~> StateT[F, S, *]) {
                 def apply[A](fa: StateT[F, S, A]): StateT[F, S, A] =
                   StateT.applyF(f(fa.runF))
@@ -288,19 +249,6 @@ object Trace {
 
       override def span[A](name: String, kernel: Kernel)(k: StateT[F, S, A]): StateT[F, S, A] =
         StateT(s => trace.span[(S, A)](name, kernel)(k.run(s)))
-
-      def spanR(name: String, kernel: Kernel): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
-        Resource(
-          StateT.liftF(
-            trace.spanR(name, kernel).allocated.map { case (f, release) =>
-              new (StateT[F, S, *] ~> StateT[F, S, *]) {
-                def apply[A](fa: StateT[F, S, A]): StateT[F, S, A] =
-                  StateT.applyF(f(fa.runF))
-              } ->
-                StateT.liftF[F, S, Unit](f(release))
-            }
-          )
-        )
     }
 
   implicit def liftEitherT[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
@@ -312,10 +260,10 @@ object Trace {
       def kernel: EitherT[F, E, Kernel] =
         EitherT.liftF(trace.kernel)
 
-      def spanR(name: String): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
+      def spanR(name: String, kernel: Option[Kernel] = None): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
         Resource(
           EitherT.liftF(
-            trace.spanR(name).allocated.map { case (f, release) =>
+            trace.spanR(name, kernel).allocated.map { case (f, release) =>
               new (EitherT[F, E, *] ~> EitherT[F, E, *]) {
                 def apply[A](fa: EitherT[F, E, A]): EitherT[F, E, A] =
                   EitherT(f(fa.value))
@@ -336,19 +284,6 @@ object Trace {
 
       def span[A](name: String, kernel: Kernel)(k: EitherT[F, E, A]): EitherT[F, E, A] =
         EitherT(trace.span(name, kernel)(k.value))
-
-      def spanR(name: String, kernel: Kernel): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
-        Resource(
-          EitherT.liftF(
-            trace.spanR(name, kernel).allocated.map { case (f, release) =>
-              new (EitherT[F, E, *] ~> EitherT[F, E, *]) {
-                def apply[A](fa: EitherT[F, E, A]): EitherT[F, E, A] =
-                  EitherT(f(fa.value))
-              } ->
-                EitherT.liftF[F, E, Unit](f(release))
-            }
-          )
-        )
     }
 
   implicit def liftOptionT[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
@@ -360,10 +295,10 @@ object Trace {
       def kernel: OptionT[F, Kernel] =
         OptionT.liftF(trace.kernel)
 
-      def spanR(name: String): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
+      def spanR(name: String, kernel: Option[Kernel] = None): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
         Resource(
           OptionT.liftF(
-            trace.spanR(name).allocated.map { case (f, release) =>
+            trace.spanR(name, kernel).allocated.map { case (f, release) =>
               new (OptionT[F, *] ~> OptionT[F, *]) {
                 def apply[A](fa: OptionT[F, A]): OptionT[F, A] =
                   OptionT(f(fa.value))
@@ -384,19 +319,6 @@ object Trace {
 
       override def span[A](name: String, kernel: Kernel)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name, kernel)(k.value))
-
-      def spanR(name: String, kernel: Kernel): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
-        Resource(
-          OptionT.liftF(
-            trace.spanR(name, kernel).allocated.map { case (f, release) =>
-              new (OptionT[F, *] ~> OptionT[F, *]) {
-                def apply[A](fa: OptionT[F, A]): OptionT[F, A] =
-                  OptionT(f(fa.value))
-              } ->
-                OptionT.liftF[F, Unit](f(release))
-            }
-          )
-        )
     }
 
   implicit def liftNested[F[_]: MonadCancelThrow, G[_]: Applicative](implicit trace: Trace[F], FG: MonadCancelThrow[Nested[F, G, *]]): Trace[Nested[F, G, *]] =
@@ -408,10 +330,10 @@ object Trace {
       def kernel: Nested[F, G, Kernel] =
         trace.kernel.map(_.pure[G]).nested
 
-      def spanR(name: String): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
+      def spanR(name: String, kernel: Option[Kernel] = None): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
         Resource(
           Nested(
-            trace.spanR(name).allocated.map { case (f, release) => (
+            trace.spanR(name, kernel).allocated.map { case (f, release) => (
               new (Nested[F, G, *] ~> Nested[F, G, *]) {
                 def apply[A](fa: Nested[F, G, A]): Nested[F, G, A] =
                    Nested(f(fa.value))
@@ -432,19 +354,6 @@ object Trace {
 
       override def span[A](name: String, kernel: Kernel)(k: Nested[F, G, A]): Nested[F, G, A] =
         trace.span(name, kernel)(k.value).nested
-
-      def spanR(name: String, kernel: Kernel): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
-        Resource(
-          Nested(
-            trace.spanR(name, kernel).allocated.map { case (f, release) => (
-              new (Nested[F, G, *] ~> Nested[F, G, *]) {
-                def apply[A](fa: Nested[F, G, A]): Nested[F, G, A] =
-                  Nested(f(fa.value))
-              } ->
-                Nested(f(release).map(_.pure[G]))
-              ).pure[G] }
-          )
-        )
     }
 
   implicit def liftResource[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[Resource[F, *]] =
@@ -455,10 +364,10 @@ object Trace {
       def kernel: Resource[F, Kernel] =
         Resource.eval(trace.kernel)
 
-      def spanR(name: String): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
+      def spanR(name: String, kernel: Option[Kernel] = None): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
         Resource(
           Resource.eval(
-            trace.spanR(name).allocated.map { case (f, release) =>
+            trace.spanR(name, kernel).allocated.map { case (f, release) =>
               new (Resource[F, *] ~> Resource[F, *]) {
                 def apply[A](fa: Resource[F, A]): Resource[F, A] =
                   fa.mapK(f)
@@ -483,24 +392,11 @@ object Trace {
 
       /** Create a new span and add current span and kernel to parents of new span */
       def span[A](name: String, kernel: Kernel)(k: Resource[F, A]): Resource[F, A] =
-        trace.spanR(name, kernel).flatMap { f =>
+        trace.spanR(name, kernel.some).flatMap { f =>
           Resource(f(k.allocated).map { case (a, release) =>
             a -> f(release)
           })
         }
-
-      def spanR(name: String, kernel: Kernel): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
-        Resource(
-          Resource.eval(
-            trace.spanR(name, kernel).allocated.map { case (f, release) =>
-              new (Resource[F, *] ~> Resource[F, *]) {
-                def apply[A](fa: Resource[F, A]): Resource[F, A] =
-                  fa.mapK(f)
-              } ->
-                Resource.eval[F, Unit](f(release))
-            }
-          )
-        )
     }
 
   implicit def liftStream[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[Stream[F, *]] =
@@ -511,10 +407,10 @@ object Trace {
       def kernel: Stream[F, Kernel] =
         Stream.eval(trace.kernel)
 
-      def spanR(name: String): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
+      def spanR(name: String, kernel: Option[Kernel] = None): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
         Resource(
           Stream.eval(
-            trace.spanR(name).allocated.map { case (f, release) =>
+            trace.spanR(name, kernel).allocated.map { case (f, release) =>
               new (Stream[F, *] ~> Stream[F, *]) {
                 def apply[A](fa: Stream[F, A]): Stream[F, A] =
                   fa.translate(f)
@@ -535,19 +431,6 @@ object Trace {
 
       /** Create a new span and add current span and kernel to parents of new span */
       def span[A](name: String, kernel: Kernel)(k: Stream[F, A]): Stream[F, A] =
-        Stream.resource(trace.spanR(name, kernel)).flatMap(k.translate)
-
-      def spanR(name: String, kernel: Kernel): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
-        Resource(
-          Stream.eval(
-            trace.spanR(name, kernel).allocated.map { case (f, release) =>
-              new (Stream[F, *] ~> Stream[F, *]) {
-                def apply[A](fa: Stream[F, A]): Stream[F, A] =
-                  fa.translate(f)
-              } ->
-                Stream.eval[F, Unit](f(release))
-            }
-          )
-        )
+        Stream.resource(trace.spanR(name, kernel.some)).flatMap(k.translate)
     }
 }

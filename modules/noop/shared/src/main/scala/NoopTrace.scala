@@ -20,7 +20,7 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
   override def kernel: F[Kernel] =
     Applicative[F].pure(Kernel(Map.empty))
 
-  override def spanR(name: String): Resource[F, F ~> F] =
+  override def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F] =
     Resource.pure(FunctionK.id)
 
   override def span[A](name: String)(k: F[A]): F[A] =
@@ -34,8 +34,4 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
   def traceUri: F[Option[URI]] =
     none.pure[F]
-
-  override def spanR(name: String, kernel: Kernel): Resource[F, F ~> F] =
-    Resource.pure(FunctionK.id)
-
 }
