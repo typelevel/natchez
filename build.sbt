@@ -10,6 +10,7 @@ val collectionCompatVersion = "2.8.1"
 
 val catsVersion = "2.9.0"
 val catsEffectVersion = "3.4.1"
+val fs2Version = "3.3.0"
 
 // Publishing
 
@@ -303,7 +304,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
       "io.circe"          %%% "circe-core"      % "0.14.3",
-      "co.fs2"            %%% "fs2-io"          % "3.3.0",
+      "co.fs2"            %%% "fs2-io"          % fs2Version,
       "com.comcast"       %%% "ip4s-core"       % "3.2.0",
       "org.scodec"        %%% "scodec-bits"     % "1.1.34"
     )
