@@ -4,11 +4,12 @@
 
 package natchez
 
-import cats.{~>, Applicative}
-import cats.syntax.applicative._
 import cats.data.Kleisli
+import cats.effect.MonadCancel
 import cats.effect.Resource
 import cats.effect.Resource.ExitCase
+import cats.syntax.applicative._
+import cats.{~>, Applicative}
 import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */
@@ -44,6 +45,31 @@ trait Span[F[_]] {
    */
   def traceUri: F[Option[URI]]
 
+  /** Converts this `Span[F]` to a `Span[G]` using a `F ~> G`. */
+  def mapK[G[_]](f: F ~> G)(
+      implicit F: MonadCancel[F, _],
+      G: MonadCancel[G, _]
+  ): Span[G] = {
+    val outer = this
+    new Span[G] {
+      override def put(fields: (String, TraceValue)*): G[Unit] = f(
+        outer.put(fields: _*)
+      )
+
+      override def kernel: G[Kernel] = f(outer.kernel)
+
+      override def span(name: String): Resource[G, Span[G]] = outer
+        .span(name)
+        .map(_.mapK(f))
+        .mapK(f)
+
+      override def traceId: G[Option[String]] = f(outer.traceId)
+
+      override def spanId: G[Option[String]] = f(outer.spanId)
+
+      override def traceUri: G[Option[URI]] = f(outer.traceUri)
+    }
+  }
 }
 
 object Span {
