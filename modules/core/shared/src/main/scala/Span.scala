@@ -71,6 +71,12 @@ trait Span[F[_]] {
       override def spanId: G[Option[String]] = f(outer.spanId)
 
       override def traceUri: G[Option[URI]] = f(outer.traceUri)
+
+      /** Create resource with new span and add current span and kernel to parents of new span */
+      override def span(name: String, kernel: Kernel): Resource[G, Span[G]] = outer
+        .span(name, kernel)
+        .map(_.mapK(f))
+        .mapK(f)
     }
   }
 }
