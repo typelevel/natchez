@@ -32,34 +32,31 @@ trait EntryPoint[F[_]] {
    */
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]]
 
-
-}
-
-object EntryPoint {
-
-  def mapK[F[_], G[_]](
-      ep: EntryPoint[F],
+  /**
+    * Converts this `EntryPoint[F]` to an `EntryPoint[G]` using an `F ~> G`.
+    */
+  def mapK[G[_]](
       f: F ~> G
   )(implicit F: MonadCancel[F, _], G: MonadCancel[G, _]): EntryPoint[G] = {
+    val outer = this
 
     def aux(r: Resource[F, Span[F]]): Resource[G, Span[G]] = r
-      .map(Span.mapK(_, f))
+      .map(_.mapK(f))
       .mapK(f)
 
     new EntryPoint[G] {
 
-      override def root(name: String): Resource[G, Span[G]] = aux(ep.root(name))
+      override def root(name: String): Resource[G, Span[G]] = aux(outer.root(name))
 
       override def continue(
           name: String,
           kernel: Kernel
-      ): Resource[G, Span[G]] = aux(ep.continue(name, kernel))
+      ): Resource[G, Span[G]] = aux(outer.continue(name, kernel))
 
       override def continueOrElseRoot(
           name: String,
           kernel: Kernel
-      ): Resource[G, Span[G]] = aux(ep.continueOrElseRoot(name, kernel))
-
+      ): Resource[G, Span[G]] = aux(outer.continueOrElseRoot(name, kernel))
     }
   }
 }

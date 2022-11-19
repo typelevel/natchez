@@ -45,6 +45,31 @@ trait Span[F[_]] {
    */
   def traceUri: F[Option[URI]]
 
+  /** Converts this `Span[F]` to a `Span[G]` using a `F ~> G`. */
+  def mapK[G[_]](f: F ~> G)(
+      implicit F: MonadCancel[F, _],
+      G: MonadCancel[G, _]
+  ): Span[G] = {
+    val outer = this
+    new Span[G] {
+      override def put(fields: (String, TraceValue)*): G[Unit] = f(
+        outer.put(fields: _*)
+      )
+
+      override def kernel: G[Kernel] = f(outer.kernel)
+
+      override def span(name: String): Resource[G, Span[G]] = outer
+        .span(name)
+        .map(_.mapK(f))
+        .mapK(f)
+
+      override def traceId: G[Option[String]] = f(outer.traceId)
+
+      override def spanId: G[Option[String]] = f(outer.spanId)
+
+      override def traceUri: G[Option[URI]] = f(outer.traceUri)
+    }
+  }
 }
 
 object Span {
@@ -98,29 +123,4 @@ object Span {
     * Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by creating a new root span for each direct child span.
     */
   def rootTracing[F[_]: Applicative](ep: EntryPoint[F]): Kleisli[F, Span[F], *] ~> F = resolve(makeRoots(ep))
-
-  def mapK[F[_], G[_]](spanF: Span[F], f: F ~> G)(
-      implicit F: MonadCancel[F, _],
-      G: MonadCancel[G, _]
-  ): Span[G] = {
-    new Span[G] {
-      override def put(fields: (String, TraceValue)*): G[Unit] = f(
-        spanF.put(fields: _*)
-      )
-
-      override def kernel: G[Kernel] = f(spanF.kernel)
-
-      override def span(name: String): Resource[G, Span[G]] = spanF
-        .span(name)
-        .map(mapK(_, f))
-        .mapK(f)
-
-      override def traceId: G[Option[String]] = f(spanF.traceId)
-
-      override def spanId: G[Option[String]] = f(spanF.spanId)
-
-      override def traceUri: G[Option[URI]] = f(spanF.traceUri)
-
-    }
-  }
 }
