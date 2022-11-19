@@ -211,7 +211,7 @@ lazy val opentelemetry = project
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "io.opentelemetry"        % "opentelemetry-sdk"       % "1.19.0"
+      "io.opentelemetry"        % "opentelemetry-sdk"       % "1.20.1"
     )
   )
 
