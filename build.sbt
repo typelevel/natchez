@@ -4,7 +4,7 @@ ThisBuild / tlBaseVersion := "0.1"
 
 val scala212Version        = "2.12.17"
 val scala213Version        = "2.13.10"
-val scala30Version         = "3.2.0"
+val scala30Version         = "3.2.1"
 
 val collectionCompatVersion = "2.8.1"
 
