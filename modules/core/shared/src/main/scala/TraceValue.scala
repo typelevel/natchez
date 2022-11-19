@@ -17,5 +17,8 @@ object TraceValue {
   implicit def stringToTraceValue(value: String): TraceValue = StringValue(value)
   implicit def boolToTraceValue(value: Boolean):  TraceValue = BooleanValue(value)
   implicit def intToTraceValue(value: Int):       TraceValue = NumberValue(value)
+  implicit def longToTraceValue(value: Long):     TraceValue = NumberValue(value)
+  implicit def floatToTraceValue(value: Float):   TraceValue = NumberValue(value)
+  implicit def doubleToTraceValue(value: Double): TraceValue = NumberValue(value)
 
 }

@@ -14,6 +14,7 @@ Natchez supports the following tracing back ends. If you're not sure which one y
 * [No-Op](noop.md)
 * [Odin](odin.md)
 * [OpenCensus](opencensus.md)
+* [OpenTelemetry](opentelemetry.md)
 
 @@@
 

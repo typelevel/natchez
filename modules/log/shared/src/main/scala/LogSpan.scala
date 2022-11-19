@@ -6,6 +6,7 @@ package natchez.log
 
 import cats.effect.Ref
 import cats.effect._
+import cats.effect.std.UUIDGen
 import cats.effect.Resource.ExitCase
 import cats.effect.Resource.ExitCase._
 import cats.syntax.all._
@@ -33,7 +34,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   import LogSpan._
 
   def parentId: Option[UUID] =
-    parent.map(_.fold(identity, _.traceUUID))
+    parent.map(_.fold(identity, _.sid))
 
   def get(key: String): F[Option[Json]] =
     fields.get.map(_.get(key))
@@ -123,7 +124,7 @@ private[log] object LogSpan {
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =
-    Sync[F].delay(UUID.randomUUID)
+    UUIDGen.randomUUID
 
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)

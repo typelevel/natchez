@@ -89,7 +89,7 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
           exitCase match {
             case Succeeded           => List("exit.case" -> "completed".asJson)
             case Canceled            => List("exit.case" -> "canceled".asJson)
-            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
+            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.fmap(_.asJson))
             case Errored(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
