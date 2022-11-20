@@ -27,6 +27,9 @@ trait Span[F[_]] {
   /** Resource that yields a child span with the given name. */
   def span(name: String): Resource[F, Span[F]]
 
+  /** Resource that yields a child span of both this span and the given kernel. */
+  def span(name: String, kernel: Kernel): Resource[F, Span[F]]
+
   /**
    * A unique ID for the trace of this span, if available.
    * This can be useful to include in error messages for example, so you can quickly find the associated trace.
@@ -68,6 +71,12 @@ trait Span[F[_]] {
       override def spanId: G[Option[String]] = f(outer.spanId)
 
       override def traceUri: G[Option[URI]] = f(outer.traceUri)
+
+      /** Create resource with new span and add current span and kernel to parents of new span */
+      override def span(name: String, kernel: Kernel): Resource[G, Span[G]] = outer
+        .span(name, kernel)
+        .map(_.mapK(f))
+        .mapK(f)
     }
   }
 }
@@ -103,10 +112,12 @@ object Span {
 
   private class NoopSpan[F[_]: Applicative] extends EphemeralSpan[F] {
     def span(name: String): Resource[F, Span[F]] = Resource.pure(this)
+    override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Resource.pure(this)
   }
 
   private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
     def span(name: String): Resource[F, Span[F]] = ep.root(name)
+    override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = ep.continueOrElseRoot(name, kernel)
   }
 
   private def resolve[F[_]](span: Span[F]): Kleisli[F, Span[F], *] ~> F =

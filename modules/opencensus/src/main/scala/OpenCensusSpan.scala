@@ -17,6 +17,7 @@ import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 
 import scala.collection.mutable
 import java.net.URI
+import scala.jdk.CollectionConverters._
 
 private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     tracer: Tracer,
@@ -48,6 +49,10 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
       .inject(span.getContext, headers, spanContextSetter)
     Kernel(headers.toMap)
   }
+
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
+    Resource.makeCase(OpenCensusSpan.fromKernelWithSpan(tracer, name, kernel, span))(OpenCensusSpan.finish).widen
+  )
 
   override def span(name: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen)
@@ -123,6 +128,19 @@ private[opencensus] object OpenCensusSpan {
         .startSpan()
       ).map(OpenCensusSpan(tracer, _))
 
+  def fromKernelWithSpan[F[_]: Sync](
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel,
+      span: io.opencensus.trace.Span
+  ): F[OpenCensusSpan[F]] = Sync[F].delay {
+      val ctx = Tracing.getPropagationComponent.getB3Format
+        .extract(kernel, spanContextGetter)
+      tracer.spanBuilderWithRemoteParent(name, ctx)
+        .setParentLinks(List(span).asJava)
+        .startSpan()
+    }.map(OpenCensusSpan(tracer, _))
+
   def fromKernel[F[_]: Sync](
     tracer: Tracer,
     name:   String,
@@ -149,8 +167,5 @@ private[opencensus] object OpenCensusSpan {
         root(tracer, name, sampler) // means headers are incomplete or invalid
     }
 
-  private val spanContextGetter: Getter[Kernel] = new Getter[Kernel] {
-    override def get(carrier: Kernel, key: String): String =
-      carrier.toHeaders(key)
-  }
+  private val spanContextGetter: Getter[Kernel] = (carrier: Kernel, key: String) => carrier.toHeaders(key)
 }

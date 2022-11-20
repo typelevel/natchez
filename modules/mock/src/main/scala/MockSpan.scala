@@ -46,6 +46,13 @@ final case class MockSpan[F[_] : Sync](
       }
       .map(MockSpan(tracer, _))
 
+  def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
+    val parent = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+    Resource.make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).asChildOf(parent).start)){ s =>
+        Sync[F].delay(s.finish())
+      }.map(MockSpan(tracer, _))
+  }
+
   def traceId: F[Option[String]] =
     span.context.toTraceId.some.pure[F]
 

@@ -62,6 +62,9 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   def span(label: String): Resource[F, Span[F]] =
     Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Resource.makeCase(LogSpan.fromKernel(service, name, kernel))(LogSpan.finish[F]).widen
+
   def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
 

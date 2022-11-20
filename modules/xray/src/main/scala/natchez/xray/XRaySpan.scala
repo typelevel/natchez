@@ -122,6 +122,12 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   private def header: String =
     encodeHeader(xrayTraceId, Some(segmentId), sampled)
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Resource.makeCase(kernel.toHeaders
+      .get(Header)
+      .flatMap(parseHeader)
+      .traverse(XRaySpan.fromHeader(name, _, entry))
+      .map(_.getOrElse(this)))(XRaySpan.finish[F](_, entry, _))
 }
 
 private[xray] object XRaySpan {

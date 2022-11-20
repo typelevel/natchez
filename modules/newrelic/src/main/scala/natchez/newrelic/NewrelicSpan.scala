@@ -56,6 +56,9 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
   def spanId: F[Option[String]] = id.some.pure[F]
 
   def traceUri: F[Option[URI]] = none[URI].pure[F]
+
+  override def span(name: String, kernel: Kernel): Resource[F, natchez.Span[F]] =
+    Resource.make(NewrelicSpan.fromKernel(service, name, kernel)(sender))(NewrelicSpan.finish[F]).widen
 }
 
 object NewrelicSpan {

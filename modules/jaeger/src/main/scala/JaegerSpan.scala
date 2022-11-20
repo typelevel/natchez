@@ -66,6 +66,16 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       uri.resolve(s"/trace/$id")
     } .value
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Span.putErrorFields {
+      Resource.makeCase {
+        val p = tracer.extract(
+          Format.Builtin.HTTP_HEADERS,
+          new TextMapAdapter(kernel.toHeaders.asJava)
+        )
+        Sync[F].delay(tracer.buildSpan(name).asChildOf(p).asChildOf(span).start).map(JaegerSpan(tracer, _, prefix))
+      }(JaegerSpan.finish)
+    }
 }
 
 private[jaeger] object JaegerSpan {

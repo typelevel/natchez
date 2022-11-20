@@ -28,7 +28,7 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](otel: OTe
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (k, StringValue(v))                       => 
+      case (k, StringValue(v))                       =>
         val safeString = if (v == null) "null" else v
         Sync[F].delay(span.setAttribute(k, safeString))
       // all integer types are cast up to Long, since that's all OpenTelemetry lets us use
@@ -46,7 +46,7 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](otel: OTe
       case (k, NumberValue(n: BigInt))               => Sync[F].delay(span.setAttribute(k, n.toString))
       // and any other Number can fall back to a Double
       case (k, NumberValue(v))                       => Sync[F].delay(span.setAttribute(k, v.doubleValue()))
-      case (k, BooleanValue(v))                      => Sync[F].delay(span.setAttribute(k, v))    
+      case (k, BooleanValue(v))                      => Sync[F].delay(span.setAttribute(k, v))
     }
 
   override def kernel: F[Kernel] =
@@ -77,6 +77,12 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](otel: OTe
   //   (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
   //     uri.resolve(s"/trace/$id")
   //   }.value
+
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
+    Resource.makeCase(OpenTelemetrySpan.fromKernelWithSpan(otel, tracer, name, kernel, span, prefix))(
+      OpenTelemetrySpan.finish
+    ).widen
+  )
 }
 
 private[opentelemetry] object OpenTelemetrySpan {
@@ -128,6 +134,19 @@ private[opentelemetry] object OpenTelemetrySpan {
           .startSpan()
       )
       .map(OpenTelemetrySpan(otel, tracer, _, prefix))
+
+  def fromKernelWithSpan[F[_]: Sync](
+      sdk: OTel,
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel,
+      span: TSpan,
+      prefix: Option[URI]
+  ): F[OpenTelemetrySpan[F]] = Sync[F].delay {
+      val ctx = sdk.getPropagators.getTextMapPropagator
+        .extract(Context.current(), kernel, spanContextGetter)
+      tracer.spanBuilder(name).setParent(ctx).addLink(span.getSpanContext).startSpan
+    }.map(OpenTelemetrySpan(sdk, tracer, _, prefix))
 
   def fromKernel[F[_] : Sync](
                                otel: OTel,

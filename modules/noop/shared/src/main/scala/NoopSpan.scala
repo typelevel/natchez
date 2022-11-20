@@ -21,6 +21,9 @@ final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
   override def span(name: String): Resource[F, Span[F]] =
     Resource.eval(NoopSpan[F]().pure[F])
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Resource.eval(NoopSpan[F]().pure[F])
+
   // TODO
   def traceId: F[Option[String]] = none.pure[F]
 
