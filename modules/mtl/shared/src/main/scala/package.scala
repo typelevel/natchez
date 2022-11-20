@@ -8,9 +8,9 @@ import cats.mtl.Local
 import cats.effect.{Trace => _, _}
 
 package object mtl {
-  implicit def natchezMtlTraceForLocal[F[_]](
-    implicit ev: Local[F, Span[F]],
-             eb: MonadCancel[F, Throwable],
+  implicit def natchezMtlTraceForLocal[F[_]](implicit
+      ev: Local[F, Span[F]],
+      eb: MonadCancel[F, Throwable]
   ): Trace[F] =
     new LocalTrace(ev)
 }

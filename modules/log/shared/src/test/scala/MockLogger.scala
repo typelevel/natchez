@@ -24,11 +24,16 @@ object MockLogger {
         def info(message: => String): F[Unit] = ref.update(_ + s"$name: [info] $message\n")
         def debug(message: => String): F[Unit] = ref.update(_ + s"$name: [debug] $message\n")
         def trace(message: => String): F[Unit] = ref.update(_ + s"$name: [trace] $message\n")
-        def error(t: Throwable)(message: => String): F[Unit] = ref.update(_ + s"$name: [error] $message\n${t.getMessage}")
-        def warn(t: Throwable)(message: => String): F[Unit] = ref.update(_ + s"$name: [warn] $message\n${t.getMessage}")
-        def info(t: Throwable)(message: => String): F[Unit] = ref.update(_ + s"$name: [info] $message\n${t.getMessage}")
-        def debug(t: Throwable)(message: => String): F[Unit] = ref.update(_ + s"$name: [debug] $message\n${t.getMessage}")
-        def trace(t: Throwable)(message: => String): F[Unit] = ref.update(_ + s"$name: [trace] $message\n${t.getMessage}")
+        def error(t: Throwable)(message: => String): F[Unit] =
+          ref.update(_ + s"$name: [error] $message\n${t.getMessage}")
+        def warn(t: Throwable)(message: => String): F[Unit] =
+          ref.update(_ + s"$name: [warn] $message\n${t.getMessage}")
+        def info(t: Throwable)(message: => String): F[Unit] =
+          ref.update(_ + s"$name: [info] $message\n${t.getMessage}")
+        def debug(t: Throwable)(message: => String): F[Unit] =
+          ref.update(_ + s"$name: [debug] $message\n${t.getMessage}")
+        def trace(t: Throwable)(message: => String): F[Unit] =
+          ref.update(_ + s"$name: [trace] $message\n${t.getMessage}")
         def get: F[String] = ref.get
       }
     }

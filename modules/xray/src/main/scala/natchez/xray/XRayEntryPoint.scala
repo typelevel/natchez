@@ -15,10 +15,10 @@ import com.comcast.ip4s._
 import fs2.io.net.{Datagram, DatagramSocket}
 import scodec.bits.ByteVector
 
-final class XRayEntryPoint[F[_]: Concurrent: Clock: Random : XRayEnvironment](
+final class XRayEntryPoint[F[_]: Concurrent: Clock: Random: XRayEnvironment](
     socket: DatagramSocket[F],
     daemonAddress: SocketAddress[IpAddress],
-    useEnvironmentFallback: Boolean,
+    useEnvironmentFallback: Boolean
 ) extends EntryPoint[F] {
 
   def sendSegment(foo: JsonObject): F[Unit] = {
@@ -35,7 +35,10 @@ final class XRayEntryPoint[F[_]: Concurrent: Clock: Random : XRayEnvironment](
     make(XRaySpan.root(name, this))
 
   def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    make(OptionT(XRaySpan.fromKernel(name, kernel, this, useEnvironmentFallback)).getOrElseF(new NoSuchElementException().raiseError))
+    make(
+      OptionT(XRaySpan.fromKernel(name, kernel, this, useEnvironmentFallback))
+        .getOrElseF(new NoSuchElementException().raiseError)
+    )
 
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     make(XRaySpan.fromKernelOrElseRoot(name, kernel, this, useEnvironmentFallback))

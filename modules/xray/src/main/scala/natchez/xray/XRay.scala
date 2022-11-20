@@ -12,9 +12,8 @@ import fs2.io.net.Network
 
 object XRay {
 
-  def entryPoint[F[_] : Concurrent : Clock : Random : Network : XRayEnvironment](
-      daemonAddress: SocketAddress[IpAddress] =
-        SocketAddress(ip"127.0.0.1", port"2000"),
+  def entryPoint[F[_]: Concurrent: Clock: Random: Network: XRayEnvironment](
+      daemonAddress: SocketAddress[IpAddress] = SocketAddress(ip"127.0.0.1", port"2000"),
       useEnvironmentFallback: Boolean = true
   ): Resource[F, EntryPoint[F]] =
     Network[F]

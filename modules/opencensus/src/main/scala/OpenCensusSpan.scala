@@ -21,8 +21,8 @@ import scala.jdk.CollectionConverters._
 
 private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     tracer: Tracer,
-    span: io.opencensus.trace.Span)
-    extends Span[F] {
+    span: io.opencensus.trace.Span
+) extends Span[F] {
 
   import OpenCensusSpan._
 
@@ -46,9 +46,8 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Sync[F].delay(span.addAnnotation("event", map)).void
   }
 
-  override def log(event: String): F[Unit] = {
+  override def log(event: String): F[Unit] =
     Sync[F].delay(span.addAnnotation(event)).void
-  }
 
   override def kernel: F[Kernel] = Sync[F].delay {
     val headers: mutable.Map[String, String] = mutable.Map.empty[String, String]
@@ -58,11 +57,17 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
   }
 
   override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
-    Resource.makeCase(OpenCensusSpan.fromKernelWithSpan(tracer, name, kernel, span))(OpenCensusSpan.finish).widen
+    Resource
+      .makeCase(OpenCensusSpan.fromKernelWithSpan(tracer, name, kernel, span))(
+        OpenCensusSpan.finish
+      )
+      .widen
   )
 
   override def span(name: String): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen)
+    Span.putErrorFields(
+      Resource.makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen
+    )
 
   def traceId: F[Option[String]] =
     Sync[F].pure {
@@ -84,9 +89,7 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
 private[opencensus] object OpenCensusSpan {
   private val spanContextSetter = new Setter[mutable.Map[String, String]] {
-    override def put(carrier: mutable.Map[String, String],
-                     key: String,
-                     value: String): Unit = {
+    override def put(carrier: mutable.Map[String, String], key: String, value: String): Unit = {
       carrier.put(key, value)
       ()
     }
@@ -95,72 +98,82 @@ private[opencensus] object OpenCensusSpan {
   def finish[F[_]: Sync]: (OpenCensusSpan[F], ExitCase) => F[Unit] = { (outer, exitCase) =>
     for {
       // collect error details, if any
-      _  <- exitCase.some.collect {
-              case Errored(t: Fields) => t.fields.toList
-            }.traverse(outer.put)
-      _  <- Sync[F].delay {
-              exitCase match {
-                case Succeeded   => outer.span.setStatus(io.opencensus.trace.Status.OK)
-                case Canceled    => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
-                case Errored(ex) => outer.attachError(ex)
-              }
-            }
-      _  <- Sync[F].delay(outer.span.end())
+      _ <- exitCase.some
+        .collect { case Errored(t: Fields) =>
+          t.fields.toList
+        }
+        .traverse(outer.put)
+      _ <- Sync[F].delay {
+        exitCase match {
+          case Succeeded   => outer.span.setStatus(io.opencensus.trace.Status.OK)
+          case Canceled    => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
+          case Errored(ex) => outer.attachError(ex)
+        }
+      }
+      _ <- Sync[F].delay(outer.span.end())
     } yield ()
   }
 
   def child[F[_]: Sync](
-    parent: OpenCensusSpan[F],
-    name:   String
+      parent: OpenCensusSpan[F],
+      name: String
   ): F[OpenCensusSpan[F]] =
-    Sync[F].delay(
-      parent
-        .tracer
-        .spanBuilderWithExplicitParent(name, parent.span)
-        .startSpan()
-    ).map(OpenCensusSpan(parent.tracer, _))
+    Sync[F]
+      .delay(
+        parent.tracer
+          .spanBuilderWithExplicitParent(name, parent.span)
+          .startSpan()
+      )
+      .map(OpenCensusSpan(parent.tracer, _))
 
   def root[F[_]: Sync](
-    tracer:    Tracer,
-    name:      String,
-    sampler:   Sampler
+      tracer: Tracer,
+      name: String,
+      sampler: Sampler
   ): F[OpenCensusSpan[F]] =
-     Sync[F].delay(
-      tracer
-        .spanBuilder(name)
-        .setSampler(sampler)
-        .startSpan()
-      ).map(OpenCensusSpan(tracer, _))
+    Sync[F]
+      .delay(
+        tracer
+          .spanBuilder(name)
+          .setSampler(sampler)
+          .startSpan()
+      )
+      .map(OpenCensusSpan(tracer, _))
 
   def fromKernelWithSpan[F[_]: Sync](
       tracer: Tracer,
       name: String,
       kernel: Kernel,
       span: io.opencensus.trace.Span
-  ): F[OpenCensusSpan[F]] = Sync[F].delay {
+  ): F[OpenCensusSpan[F]] = Sync[F]
+    .delay {
       val ctx = Tracing.getPropagationComponent.getB3Format
         .extract(kernel, spanContextGetter)
-      tracer.spanBuilderWithRemoteParent(name, ctx)
+      tracer
+        .spanBuilderWithRemoteParent(name, ctx)
         .setParentLinks(List(span).asJava)
         .startSpan()
-    }.map(OpenCensusSpan(tracer, _))
+    }
+    .map(OpenCensusSpan(tracer, _))
 
   def fromKernel[F[_]: Sync](
-    tracer: Tracer,
-    name:   String,
-    kernel: Kernel
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel
   ): F[OpenCensusSpan[F]] =
-    Sync[F].delay {
-    val ctx = Tracing.getPropagationComponent.getB3Format
-      .extract(kernel, spanContextGetter)
-    tracer.spanBuilderWithRemoteParent(name, ctx).startSpan()
-  }.map(OpenCensusSpan(tracer, _))
+    Sync[F]
+      .delay {
+        val ctx = Tracing.getPropagationComponent.getB3Format
+          .extract(kernel, spanContextGetter)
+        tracer.spanBuilderWithRemoteParent(name, ctx).startSpan()
+      }
+      .map(OpenCensusSpan(tracer, _))
 
   def fromKernelOrElseRoot[F[_]](
-    tracer: Tracer,
-    name:   String,
-    kernel: Kernel,
-    sampler:   Sampler
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel,
+      sampler: Sampler
   )(implicit ev: Sync[F]): F[OpenCensusSpan[F]] =
     fromKernel(tracer, name, kernel).recoverWith {
       case _: SpanContextParseException =>
@@ -171,5 +184,6 @@ private[opencensus] object OpenCensusSpan {
         root(tracer, name, sampler) // means headers are incomplete or invalid
     }
 
-  private val spanContextGetter: Getter[Kernel] = (carrier: Kernel, key: String) => carrier.toHeaders(key)
+  private val spanContextGetter: Getter[Kernel] = (carrier: Kernel, key: String) =>
+    carrier.toHeaders(key)
 }

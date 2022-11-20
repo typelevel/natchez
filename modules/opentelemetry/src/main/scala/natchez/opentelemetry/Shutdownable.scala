@@ -14,7 +14,7 @@ trait Shutdownable[-T] {
 }
 object Shutdownable {
   def apply[T: Shutdownable]: Shutdownable[T] = implicitly
-  implicit val spanExporter: Shutdownable[SpanExporter]   = (t: SpanExporter) => t.shutdown()
+  implicit val spanExporter: Shutdownable[SpanExporter] = (t: SpanExporter) => t.shutdown()
   implicit val spanProcessor: Shutdownable[SpanProcessor] = (t: SpanProcessor) => t.shutdown()
-  implicit val tracer: Shutdownable[SdkTracerProvider]    = (t: SdkTracerProvider) => t.shutdown()
+  implicit val tracer: Shutdownable[SdkTracerProvider] = (t: SdkTracerProvider) => t.shutdown()
 }

@@ -5,10 +5,10 @@
 package natchez
 package lightstep
 
-import cats.effect.{ Resource, Sync }
+import cats.effect.{Resource, Sync}
 import cats.syntax.all._
 import io.opentracing.Tracer
-import io.opentracing.propagation.{ Format, TextMapAdapter }
+import io.opentracing.propagation.{Format, TextMapAdapter}
 
 import scala.jdk.CollectionConverters._
 
@@ -19,12 +19,15 @@ final class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F
       .map(LightstepSpan(tracer, _))
 
   override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Resource.make(
-      Sync[F].delay {
-        val p = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
-        tracer.buildSpan(name).asChildOf(p).start()
-      }
-    )(s => Sync[F].delay(s.finish())).map(LightstepSpan(tracer, _))
+    Resource
+      .make(
+        Sync[F].delay {
+          val p =
+            tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+          tracer.buildSpan(name).asChildOf(p).start()
+        }
+      )(s => Sync[F].delay(s.finish()))
+      .map(LightstepSpan(tracer, _))
 
   override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     continue(name, kernel).flatMap {

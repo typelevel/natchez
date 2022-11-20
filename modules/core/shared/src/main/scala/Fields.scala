@@ -4,10 +4,9 @@
 
 package natchez
 
-/**
- * Mixin trait for exceptions that provide trace data. This allows exception data to be recorded
- * for spans that fail.
- */
+/** Mixin trait for exceptions that provide trace data. This allows exception data to be recorded
+  * for spans that fail.
+  */
 trait Fields {
   def fields: Map[String, TraceValue]
 }

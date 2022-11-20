@@ -18,10 +18,10 @@ object Main extends IOApp {
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(5)))
-        _  <- Sort.qsort[F, Int](as)
-        u  <- Trace[F].traceUri
-        _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
-        _  <- Sync[F].delay(println("Done."))
+        _ <- Sort.qsort[F, Int](as)
+        u <- Trace[F].traceUri
+        _ <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
+        _ <- Sync[F].delay(println("Done."))
       } yield ()
     }
 
@@ -110,14 +110,15 @@ object Main extends IOApp {
   //   Log.entryPoint[F]("foo").pure[Resource[F, *]]
   // }
 
-  def run(args: List[String]): IO[ExitCode] = {
-    entryPoint[IO].use { ep =>
-      ep.root("this is the root span").use { span =>
-        Trace.ioTrace(span).flatMap(implicit t => runF[IO])
-      } *> IO.sleep(1.second) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
-    } as ExitCode.Success
-  }
+  def run(args: List[String]): IO[ExitCode] =
+    entryPoint[IO]
+      .use { ep =>
+        ep.root("this is the root span").use { span =>
+          Trace.ioTrace(span).flatMap(implicit t => runF[IO])
+        } *> IO.sleep(
+          1.second
+        ) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
+      }
+      .as(ExitCode.Success)
 
 }
-
-

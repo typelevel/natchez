@@ -21,9 +21,9 @@ import scala.jdk.CollectionConverters._
 import java.net.URI
 
 final case class DDSpan[F[_]: Sync](
-  tracer: ot.Tracer,
-  span:   ot.Span,
-  uriPrefix: Option[URI]
+    tracer: ot.Tracer,
+    span: ot.Span,
+    uriPrefix: Option[URI]
 ) extends Span[F] {
 
   def kernel: F[Kernel] =
@@ -39,34 +39,40 @@ final case class DDSpan[F[_]: Sync](
 
   def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (str, StringValue(value)) => Sync[F].delay(span.setTag(str, value))
-      case (str, NumberValue(value)) => Sync[F].delay(span.setTag(str, value))
+      case (str, StringValue(value))  => Sync[F].delay(span.setTag(str, value))
+      case (str, NumberValue(value))  => Sync[F].delay(span.setTag(str, value))
       case (str, BooleanValue(value)) => Sync[F].delay(span.setTag(str, value))
     }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
-    val map = fields.map {case (k, v) => k -> v.value }.toMap.asJava
+    val map = fields.map { case (k, v) => k -> v.value }.toMap.asJava
     Sync[F].delay(span.log(map)).void
   }
 
-  override def log(event: String): F[Unit] = {
+  override def log(event: String): F[Unit] =
     Sync[F].delay(span.log(event)).void
-  }
 
-  def span(name: String): Resource[F,Span[F]] =
-    Span.putErrorFields(Resource.makeCase(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
-      case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
-      case (span, _) => Sync[F].delay(span.finish())
-    }.map(DDSpan(tracer, _, uriPrefix)))
+  def span(name: String): Resource[F, Span[F]] =
+    Span.putErrorFields(
+      Resource
+        .makeCase(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
+          case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
+          case (span, _)                   => Sync[F].delay(span.finish())
+        }
+        .map(DDSpan(tracer, _, uriPrefix))
+    )
 
   def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
-    val parent = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
-    Span.putErrorFields(Resource.makeCase(
-      Sync[F].delay(tracer.buildSpan(name).asChildOf(parent).asChildOf(span).start)) {
-      case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
-      case (span, _) => Sync[F].delay(span.finish())
-    }.map(DDSpan(tracer, _, uriPrefix)))
+    val parent =
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+    Span.putErrorFields(
+      Resource
+        .makeCase(Sync[F].delay(tracer.buildSpan(name).asChildOf(parent).asChildOf(span).start)) {
+          case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
+          case (span, _)                   => Sync[F].delay(span.finish())
+        }
+        .map(DDSpan(tracer, _, uriPrefix))
+    )
   }
 
   def traceId: F[Option[String]] =
@@ -84,35 +90,34 @@ final case class DDSpan[F[_]: Sync](
   def traceUri: F[Option[URI]] =
     (Nested(uriPrefix.pure[F]), Nested(traceId), Nested(spanId)).mapN { (uri, traceId, spanId) =>
       uri.resolve(s"/apm/trace/$traceId?spanID=$spanId")
-    } .value
+    }.value
 
-  def attachError(err: Throwable): F[Unit] = {
-      put(
-        Tags.ERROR.getKey -> true,
-        DDTags.ERROR_MSG -> err.getMessage,
-        DDTags.ERROR_TYPE -> err.getClass.getSimpleName,
-        DDTags.ERROR_STACK -> err.getStackTrace.mkString
-      ) >> {
-        // Set error on root span
-        span match {
-          case ms: MutableSpan =>
-            Sync[F].delay {
-              val localRootSpan = ms.getLocalRootSpan
-              localRootSpan.setError(true)
-            }.void
-          case _ => Sync[F].unit
-        }
-      } >>
-        Sync[F].delay {
-          span.log(
-            Map(
-              Fields.EVENT -> "error",
-              Fields.ERROR_OBJECT -> err,
-              Fields.ERROR_KIND -> err.getClass.getSimpleName,
-              Fields.MESSAGE -> err.getMessage,
-              Fields.STACK -> err.getStackTrace.mkString
-            ).asJava
-          )
-        }.void
-  }
+  def attachError(err: Throwable): F[Unit] =
+    put(
+      Tags.ERROR.getKey -> true,
+      DDTags.ERROR_MSG -> err.getMessage,
+      DDTags.ERROR_TYPE -> err.getClass.getSimpleName,
+      DDTags.ERROR_STACK -> err.getStackTrace.mkString
+    ) >> {
+      // Set error on root span
+      span match {
+        case ms: MutableSpan =>
+          Sync[F].delay {
+            val localRootSpan = ms.getLocalRootSpan
+            localRootSpan.setError(true)
+          }.void
+        case _ => Sync[F].unit
+      }
+    } >>
+      Sync[F].delay {
+        span.log(
+          Map(
+            Fields.EVENT -> "error",
+            Fields.ERROR_OBJECT -> err,
+            Fields.ERROR_KIND -> err.getClass.getSimpleName,
+            Fields.MESSAGE -> err.getMessage,
+            Fields.STACK -> err.getStackTrace.mkString
+          ).asJava
+        )
+      }.void
 }
