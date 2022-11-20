@@ -139,7 +139,8 @@ lazy val opencensus = project
     name        := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.31.1"
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.31.1",
+      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
     )
   )
 

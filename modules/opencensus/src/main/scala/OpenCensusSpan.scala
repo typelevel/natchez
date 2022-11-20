@@ -17,7 +17,7 @@ import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 
 import scala.collection.mutable
 import java.net.URI
-import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.CollectionConverters._
 
 private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     tracer: Tracer,
