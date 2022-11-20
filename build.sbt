@@ -153,7 +153,8 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.5"
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.5",
+      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
     )
   )
 
