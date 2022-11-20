@@ -15,22 +15,16 @@ import java.net.URI
 /** A tracing effect, which always has a current span. */
 trait Trace[F[_]] {
 
-  /** Put a sequence of fields into the current span. */
+  /** Puts a sequence of fields into the current span. */
   def put(fields: (String, TraceValue)*): F[Unit]
 
-  /**
-   * log a sequence of key-value pairs at the current timestamp
-   */
+  /** Logs a sequence of fields on the current span. */
   def log(fields: (String, TraceValue)*): F[Unit]
 
-  /**
-   * log a single value at the current timestamp
-   */
+  /** Logs a single event on the current span. */
   def log(event: String): F[Unit]
 
-  /**
-   *  Add error information to the span from `err`
-   */
+  /** Adds error information to the current span. */
   def attachError(err: Throwable): F[Unit]
 
   /**
@@ -39,7 +33,7 @@ trait Trace[F[_]] {
    */
   def kernel: F[Kernel]
 
-  /** Creates a new span, and within it acquires and releases the spanR `r`. */
+  /** Creates a new span as a resource. */
   def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F]
 
   /** Create a new span, and within it run the continuation `k`. */
@@ -59,7 +53,6 @@ trait Trace[F[_]] {
    * example, so you can quickly find the associated trace.
    */
   def traceUri: F[Option[URI]]
-
 }
 
 object Trace {
@@ -71,45 +64,41 @@ object Trace {
     IOLocal(rootSpan).map { local =>
       new Trace[IO] {
 
-        def put(fields: (String, TraceValue)*): IO[Unit] =
+        override def put(fields: (String, TraceValue)*): IO[Unit] =
           local.get.flatMap(_.put(fields: _*))
 
-        def log(fields: (String, TraceValue)*): IO[Unit] =
-          local.get.flatMap(_.log(fields: _*))
-
-        def attachError(err: Throwable): IO[Unit] =
+        override def attachError(err: Throwable): IO[Unit] =
           local.get.flatMap(_.attachError(err))
 
-        def log(event: String): IO[Unit] =
+        override def log(fields: (String, TraceValue)*): IO[Unit] =
+          local.get.flatMap(_.log(fields: _*))
+
+        override def log(event: String): IO[Unit] =
           local.get.flatMap(_.log(event))
 
-        def kernel: IO[Kernel] =
+        override def kernel: IO[Kernel] =
           local.get.flatMap(_.kernel)
 
-        def spanR(name: String, kernel: Option[Kernel] = None): Resource[IO, IO ~> IO] =
+        override def spanR(name: String, kernel: Option[Kernel]): Resource[IO, IO ~> IO] =
           for {
             parent <- Resource.eval(local.get)
             child <- kernel.fold(parent.span(name))(parent.span(name, _))
           } yield new (IO ~> IO) {
             def apply[A](fa: IO[A]): IO[A] =
-              local.set(child).bracket(_ => fa)(_ => local.set(parent))
+              local.set(child).bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(parent))
           }
 
-        def span[A](name: String)(k: IO[A]): IO[A] =
+        override def span[A](name: String)(k: IO[A]): IO[A] =
           spanR(name).surround(k)
 
-        def traceId: IO[Option[String]] =
+        override def span[A](name: String, kernel: Kernel)(k: IO[A]): IO[A] =
+          spanR(name, Some(kernel)).surround(k)
+
+        override def traceId: IO[Option[String]] =
           local.get.flatMap(_.traceId)
 
-        def traceUri: IO[Option[URI]] =
+        override def traceUri: IO[Option[URI]] =
           local.get.flatMap(_.traceUri)
-
-        override def span[A](name: String, kernel: Kernel)(k: IO[A]): IO[A] =
-          local.get.flatMap { parent =>
-            parent.span(name, kernel).flatMap { child =>
-              Resource.make(local.set(child))(_ => local.set(parent))
-            }.use { _ => k }
-          }
       }
     }
 
@@ -123,19 +112,18 @@ object Trace {
     implicit def noop[F[_]: Applicative]: Trace[F] =
       new Trace[F] {
         final val void = Applicative[F].unit
-        val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-        def put(fields: (String, TraceValue)*): F[Unit] = void
-        def attachError(err: Throwable): F[Unit] = void
-        def log(fields: (String, TraceValue)*): F[Unit] = void
-        def log(event: String): F[Unit] = void
-        def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F] =
+        override val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
+        override def put(fields: (String, TraceValue)*): F[Unit] = void
+        override def attachError(err: Throwable): F[Unit] = void
+        override def log(fields: (String, TraceValue)*): F[Unit] = void
+        override def log(event: String): F[Unit] = void
+        override def spanR(name: String, kernel: Option[Kernel]): Resource[F, F ~> F] =
           Resource.pure(FunctionK.id)
-        def span[A](name: String)(k: F[A]): F[A] = k
-        def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] = k
-        def traceId: F[Option[String]] = none.pure[F]
-        def traceUri: F[Option[URI]] = none.pure[F]
+        override def span[A](name: String)(k: F[A]): F[A] = k
+        override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] = k
+        override def traceId: F[Option[String]] = none.pure[F]
+        override def traceUri: F[Option[URI]] = none.pure[F]
       }
-
   }
 
   /**
@@ -152,103 +140,102 @@ object Trace {
    */
   class KleisliTrace[F[_]](implicit ev: MonadCancel[F, Throwable]) extends Trace[Kleisli[F, Span[F], *]] {
 
-    def kernel: Kleisli[F, Span[F], Kernel] =
+    override def kernel: Kleisli[F, Span[F], Kernel] =
       Kleisli(_.kernel)
 
-    def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
+    override def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.put(fields: _*))
 
-    def attachError(err: Throwable): Kleisli[F, Span[F], Unit] =
+    override def attachError(err: Throwable): Kleisli[F, Span[F], Unit] =
       Kleisli(_.attachError(err))
 
-    def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit]  =
+    override def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit]  =
       Kleisli(_.log(fields: _*))
 
-    def log(event: String): Kleisli[F, Span[F], Unit]  =
+    override def log(event: String): Kleisli[F, Span[F], Unit]  =
       Kleisli(_.log(event))
 
-    def spanR(name: String, kernel: Option[Kernel] = None): Resource[Kleisli[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
+    override def spanR(name: String, kernel: Option[Kernel]): Resource[Kleisli[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
       Resource(Kleisli((span: Span[F]) => kernel.fold(span.span(name))(span.span(name, _)).allocated.map {
         case (child, release) =>
           new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
             def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-              fa.local(_ => child)
+              fa.local((_: Span[F]) => child).mapF(_.onError(child.attachError(_)))
           } -> Kleisli.liftF[F, Span[F], Unit](release)
       }))
 
-    def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
-      Kleisli(_.span(name).use(s => ev.onError(k.run(s)) { case err => s.attachError(err) }))
+    override def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
+      spanR(name).surround(k)
 
-    def span[A](name: String, kernel: Kernel)(k: ReaderT[F, Span[F], A]): Kleisli[F, Span[F], A] =
-      Kleisli(_.span(name, kernel).use(k.run))
+    override def span[A](name: String, kernel: Kernel)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
+      spanR(name, Some(kernel)).surround(k)
 
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, *]] =
       new Trace[Kleisli[F, E, *]] {
 
-        def kernel: Kleisli[F,E,Kernel] =
+        override def kernel: Kleisli[F,E,Kernel] =
           Kleisli(e => f(e).kernel)
 
-        def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
+        override def put(fields: (String, TraceValue)*): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).put(fields: _*))
 
-        def attachError(err: Throwable): Kleisli[F,E,Unit] =
+        override def attachError(err: Throwable): Kleisli[F,E,Unit] =
           Kleisli(e => f(e).attachError(err))
 
-        def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit]  =
+        override def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit]  =
           Kleisli(e => f(e).log(fields: _*))
 
-        def log(event: String): Kleisli[F, E, Unit]  =
+        override def log(event: String): Kleisli[F, E, Unit]  =
           Kleisli(e => f(e).log(event))
 
-        def spanR(name: String, kernel: Option[Kernel] = None): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
+        override def spanR(name: String, kernel: Option[Kernel]): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
           Resource(Kleisli((e: E) => kernel.fold(f(e).span(name))(f(e).span(name, _)).allocated.map {
             case (child, release) =>
               new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
                 def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
-                  fa.local(_ => g(e, child))
+                  fa.local((_: E) => g(e, child)).mapF(_.onError(child.attachError(_)))
               } -> Kleisli.liftF[F, E, Unit](release)
           }))
 
-        def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          Kleisli(e => f(e).span(name).use(s => ev.onError(k.run(g(e, s))){ case err => s.attachError(err) }))
+        override def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
+          spanR(name).surround(k)
 
-        def traceId: Kleisli[F,E,Option[String]] =
+        override def span[A](name: String, kernel: Kernel)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
+          spanR(name, Some(kernel)).surround(k)
+
+        override def traceId: Kleisli[F,E,Option[String]] =
           Kleisli(e => f(e).traceId)
 
-        def traceUri: Kleisli[F,E,Option[URI]] =
+        override def traceUri: Kleisli[F,E,Option[URI]] =
           Kleisli(e => f(e).traceUri)
-
-        def span[A](name: String, kernel: Kernel)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          Kleisli(e => f(e).span(name, kernel).use(s => k.run(g(e, s))))
       }
 
-    def traceId: Kleisli[F,Span[F],Option[String]] =
+    override def traceId: Kleisli[F,Span[F],Option[String]] =
       Kleisli(_.traceId)
 
-    def traceUri: Kleisli[F,Span[F],Option[URI]] =
+    override def traceUri: Kleisli[F,Span[F],Option[URI]] =
       Kleisli(_.traceUri)
   }
 
   implicit def liftKleisli[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
     new Trace[Kleisli[F, E, *]] {
 
-      def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
+      override def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.put(fields: _*))
 
-      override def attachError(err: Throwable): Kleisli[F, E, Unit]= {
+      override def attachError(err: Throwable): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.attachError(err))
-      }
 
-      def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
+      override def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.log(fields: _*))
 
-      def log(event: String): Kleisli[F, E, Unit] =
+      override def log(event: String): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.log(event))
 
-      def kernel: Kleisli[F, E, Kernel] =
+      override def kernel: Kleisli[F, E, Kernel] =
         Kleisli.liftF(trace.kernel)
 
-      def spanR(name: String, kernel: Option[Kernel]): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
+      override def spanR(name: String, kernel: Option[Kernel]): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
         Resource(
           Kleisli((e: E) =>
             trace.spanR(name, kernel).allocated.map { case (f, release) =>
@@ -258,37 +245,37 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
+      override def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
         Kleisli(e => trace.span[A](name)(k.run(e)))
 
-      def traceId: Kleisli[F, E, Option[String]] =
+      override def span[A](name: String, kernel: Kernel)(k: ReaderT[F, E, A]): ReaderT[F, E, A] =
+        Kleisli(e => trace.span[A](name, kernel)(k.run(e)))
+
+      override def traceId: Kleisli[F, E, Option[String]] =
         Kleisli.liftF(trace.traceId)
 
-      def traceUri: Kleisli[F, E, Option[URI]] =
+      override def traceUri: Kleisli[F, E, Option[URI]] =
         Kleisli.liftF(trace.traceUri)
-
-      def span[A](name: String, kernel: Kernel)(k: ReaderT[F, E, A]): ReaderT[F, E, A] =
-        Kleisli(e => trace.span[A](name, kernel)(k.run(e)))
     }
 
   implicit def liftStateT[F[_]: MonadCancelThrow, S](implicit trace: Trace[F]): Trace[StateT[F, S, *]] =
     new Trace[StateT[F, S, *]] {
-      def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
+      override def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
         StateT.liftF(trace.put(fields: _*))
 
       override def attachError(err: Throwable): StateT[F, S, Unit] =
         StateT.liftF(trace.attachError(err))
 
-      def log(fields: (String, TraceValue)*): StateT[F, S, Unit]  =
+      override def log(fields: (String, TraceValue)*): StateT[F, S, Unit]  =
         StateT.liftF(trace.log(fields: _*))
 
-      def log(event: String): StateT[F, S, Unit] =
+      override def log(event: String): StateT[F, S, Unit] =
         StateT.liftF(trace.log(event))
 
-      def kernel: StateT[F, S, Kernel] =
+      override def kernel: StateT[F, S, Kernel] =
         StateT.liftF(trace.kernel)
 
-      def spanR(name: String, kernel: Option[Kernel] = None): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
+      override def spanR(name: String, kernel: Option[Kernel]): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
         Resource(
           StateT.liftF(
             trace.spanR(name, kernel).allocated.map { case (f, release) =>
@@ -301,38 +288,38 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: StateT[F, S, A]): StateT[F, S, A] =
+      override def span[A](name: String)(k: StateT[F, S, A]): StateT[F, S, A] =
         StateT(s => trace.span[(S, A)](name)(k.run(s)))
-
-      def traceId: StateT[F, S, Option[String]] =
-        StateT.liftF(trace.traceId)
-
-      def traceUri: StateT[F, S, Option[URI]] =
-        StateT.liftF(trace.traceUri)
 
       override def span[A](name: String, kernel: Kernel)(k: StateT[F, S, A]): StateT[F, S, A] =
         StateT(s => trace.span[(S, A)](name, kernel)(k.run(s)))
+
+      override def traceId: StateT[F, S, Option[String]] =
+        StateT.liftF(trace.traceId)
+
+      override def traceUri: StateT[F, S, Option[URI]] =
+        StateT.liftF(trace.traceUri)
     }
 
   implicit def liftEitherT[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[EitherT[F, E, *]] =
     new Trace[EitherT[F, E, *]] {
 
-      def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
+      override def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.put(fields: _*))
 
       override def attachError(err: Throwable): EitherT[F, E, Unit] =
         EitherT.liftF(trace.attachError(err))
 
-      def log(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
+      override def log(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.log(fields: _*))
 
-      def log(event: String): EitherT[F, E, Unit] =
+      override def log(event: String): EitherT[F, E, Unit] =
         EitherT.liftF(trace.log(event))
 
-      def kernel: EitherT[F, E, Kernel] =
+      override def kernel: EitherT[F, E, Kernel] =
         EitherT.liftF(trace.kernel)
 
-      def spanR(name: String, kernel: Option[Kernel] = None): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
+      override def spanR(name: String, kernel: Option[Kernel]): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
         Resource(
           EitherT.liftF(
             trace.spanR(name, kernel).allocated.map { case (f, release) =>
@@ -345,38 +332,38 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: EitherT[F, E, A]): EitherT[F, E, A] =
+      override def span[A](name: String)(k: EitherT[F, E, A]): EitherT[F, E, A] =
         EitherT(trace.span(name)(k.value))
 
-      def traceId: EitherT[F, E, Option[String]] =
+      override def span[A](name: String, kernel: Kernel)(k: EitherT[F, E, A]): EitherT[F, E, A] =
+        EitherT(trace.span(name, kernel)(k.value))
+
+      override def traceId: EitherT[F, E, Option[String]] =
         EitherT.liftF(trace.traceId)
 
-      def traceUri: EitherT[F, E, Option[URI]] =
+      override def traceUri: EitherT[F, E, Option[URI]] =
         EitherT.liftF(trace.traceUri)
-
-      def span[A](name: String, kernel: Kernel)(k: EitherT[F, E, A]): EitherT[F, E, A] =
-        EitherT(trace.span(name, kernel)(k.value))
     }
 
   implicit def liftOptionT[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[OptionT[F, *]] =
     new Trace[OptionT[F, *]] {
 
-      def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
+      override def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.put(fields: _*))
 
       override def attachError(err: Throwable): OptionT[F, Unit] =
         OptionT.liftF(trace.attachError(err))
 
-      def log(fields: (String, TraceValue)*): OptionT[F, Unit] =
+      override def log(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.log(fields: _*))
 
-      def log(event: String): OptionT[F, Unit] =
+      override def log(event: String): OptionT[F, Unit] =
         OptionT.liftF(trace.log(event))
 
-      def kernel: OptionT[F, Kernel] =
+      override def kernel: OptionT[F, Kernel] =
         OptionT.liftF(trace.kernel)
 
-      def spanR(name: String, kernel: Option[Kernel] = None): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
+      override def spanR(name: String, kernel: Option[Kernel]): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
         Resource(
           OptionT.liftF(
             trace.spanR(name, kernel).allocated.map { case (f, release) =>
@@ -389,38 +376,38 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: OptionT[F, A]): OptionT[F, A] =
+      override def span[A](name: String)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name)(k.value))
-
-      def traceId: OptionT[F, Option[String]] =
-        OptionT.liftF(trace.traceId)
-
-      def traceUri: OptionT[F, Option[URI]] =
-        OptionT.liftF(trace.traceUri)
 
       override def span[A](name: String, kernel: Kernel)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name, kernel)(k.value))
+
+      override def traceId: OptionT[F, Option[String]] =
+        OptionT.liftF(trace.traceId)
+
+      override def traceUri: OptionT[F, Option[URI]] =
+        OptionT.liftF(trace.traceUri)
     }
 
   implicit def liftNested[F[_]: MonadCancelThrow, G[_]: Applicative](implicit trace: Trace[F], FG: MonadCancelThrow[Nested[F, G, *]]): Trace[Nested[F, G, *]] =
     new Trace[Nested[F, G, *]] {
 
-      def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
+      override def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.put(fields: _*).map(_.pure[G]).nested
 
       override def attachError(err: Throwable): Nested[F, G, Unit] =
         trace.attachError(err).map(_.pure[G]).nested
 
-      def log(fields: (String, TraceValue)*): Nested[F, G, Unit] =
+      override def log(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.log(fields: _*).map(_.pure[G]).nested
 
-      def log(event: String): Nested[F, G, Unit] =
+      override def log(event: String): Nested[F, G, Unit] =
         trace.log(event).map(_.pure[G]).nested
 
-      def kernel: Nested[F, G, Kernel] =
+      override def kernel: Nested[F, G, Kernel] =
         trace.kernel.map(_.pure[G]).nested
 
-      def spanR(name: String, kernel: Option[Kernel] = None): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
+      override def spanR(name: String, kernel: Option[Kernel]): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
         Resource(
           Nested(
             trace.spanR(name, kernel).allocated.map { case (f, release) => (
@@ -433,37 +420,37 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: Nested[F, G, A]): Nested[F, G, A] =
+      override def span[A](name: String)(k: Nested[F, G, A]): Nested[F, G, A] =
         trace.span(name)(k.value).nested
-
-      def traceId: Nested[F, G, Option[String]] =
-        trace.traceId.map(_.pure[G]).nested
-
-      def traceUri: Nested[F, G, Option[URI]] =
-        trace.traceUri.map(_.pure[G]).nested
 
       override def span[A](name: String, kernel: Kernel)(k: Nested[F, G, A]): Nested[F, G, A] =
         trace.span(name, kernel)(k.value).nested
+
+      override def traceId: Nested[F, G, Option[String]] =
+        trace.traceId.map(_.pure[G]).nested
+
+      override def traceUri: Nested[F, G, Option[URI]] =
+        trace.traceUri.map(_.pure[G]).nested
     }
 
   implicit def liftResource[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[Resource[F, *]] =
     new Trace[Resource[F, *]] {
-      def put(fields: (String, TraceValue)*): Resource[F, Unit] =
+      override def put(fields: (String, TraceValue)*): Resource[F, Unit] =
         Resource.eval(trace.put(fields: _*))
 
-      def kernel: Resource[F, Kernel] =
+      override def kernel: Resource[F, Kernel] =
         Resource.eval(trace.kernel)
 
-      def attachError(err: Throwable): Resource[F, Unit] =
+      override def attachError(err: Throwable): Resource[F, Unit] =
         Resource.eval(trace.attachError(err))
 
-      def log(event: String): Resource[F, Unit] =
+      override def log(event: String): Resource[F, Unit] =
         Resource.eval(trace.log(event))
 
-      def log(fields: (String, TraceValue)*): Resource[F, Unit] =
+      override def log(fields: (String, TraceValue)*): Resource[F, Unit] =
         Resource.eval(trace.log(fields: _*))
 
-       def spanR(name: String, kernel: Option[Kernel] = None): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
+       override def spanR(name: String, kernel: Option[Kernel]): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
         Resource(
           Resource.eval(
             trace.spanR(name, kernel).allocated.map { case (f, release) =>
@@ -476,46 +463,45 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: Resource[F, A]): Resource[F, A] =
+      override def span[A](name: String)(k: Resource[F, A]): Resource[F, A] =
         trace.spanR(name).flatMap { f =>
           Resource(f(k.allocated).map { case (a, release) =>
             a -> f(release)
           })
         }
 
-      def traceId: Resource[F, Option[String]] =
-        Resource.eval(trace.traceId)
-
-      def traceUri: Resource[F, Option[URI]] =
-        Resource.eval(trace.traceUri)
-
-      /** Create a new span and add current span and kernel to parents of new span */
-      def span[A](name: String, kernel: Kernel)(k: Resource[F, A]): Resource[F, A] =
+      override def span[A](name: String, kernel: Kernel)(k: Resource[F, A]): Resource[F, A] =
         trace.spanR(name, kernel.some).flatMap { f =>
           Resource(f(k.allocated).map { case (a, release) =>
             a -> f(release)
           })
         }
+
+      override def traceId: Resource[F, Option[String]] =
+        Resource.eval(trace.traceId)
+
+      override def traceUri: Resource[F, Option[URI]] =
+        Resource.eval(trace.traceUri)
     }
 
   implicit def liftStream[F[_]: MonadCancelThrow](implicit trace: Trace[F]): Trace[Stream[F, *]] =
     new Trace[Stream[F, *]] {
-      def put(fields: (String, TraceValue)*): Stream[F, Unit] =
+      override def put(fields: (String, TraceValue)*): Stream[F, Unit] =
         Stream.eval(trace.put(fields: _*))
 
-      def kernel: Stream[F, Kernel] =
+      override def kernel: Stream[F, Kernel] =
         Stream.eval(trace.kernel)
 
-      def attachError(err: Throwable): Stream[F, Unit] =
+      override def attachError(err: Throwable): Stream[F, Unit] =
         Stream.eval(trace.attachError(err))
 
-      def log(event: String): Stream[F, Unit] =
+      override def log(event: String): Stream[F, Unit] =
         Stream.eval(trace.log(event))
 
-      def log(fields: (String, TraceValue)*): Stream[F, Unit] =
+      override def log(fields: (String, TraceValue)*): Stream[F, Unit] =
         Stream.eval(trace.log(fields: _*))
 
-      def spanR(name: String, kernel: Option[Kernel] = None): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
+      override def spanR(name: String, kernel: Option[Kernel]): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
         Resource(
           Stream.eval(
             trace.spanR(name, kernel).allocated.map { case (f, release) =>
@@ -528,17 +514,16 @@ object Trace {
           )
         )
 
-      def span[A](name: String)(k: Stream[F, A]): Stream[F, A] =
+      override def span[A](name: String)(k: Stream[F, A]): Stream[F, A] =
         Stream.resource(trace.spanR(name)).flatMap(k.translate)
 
-      def traceId: Stream[F, Option[String]] =
+      override def span[A](name: String, kernel: Kernel)(k: Stream[F, A]): Stream[F, A] =
+        Stream.resource(trace.spanR(name, kernel.some)).flatMap(k.translate)
+
+      override def traceId: Stream[F, Option[String]] =
         Stream.eval(trace.traceId)
 
-      def traceUri: Stream[F, Option[URI]] =
+      override def traceUri: Stream[F, Option[URI]] =
         Stream.eval(trace.traceUri)
-
-      /** Create a new span and add current span and kernel to parents of new span */
-      def span[A](name: String, kernel: Kernel)(k: Stream[F, A]): Stream[F, A] =
-        Stream.resource(trace.spanR(name, kernel.some)).flatMap(k.translate)
     }
 }

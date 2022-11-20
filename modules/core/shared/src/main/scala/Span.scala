@@ -15,22 +15,16 @@ import java.net.URI
 /** An span that can be passed around and used to create child spans. */
 trait Span[F[_]] {
 
-  /** Put a sequence of fields into this span. */
+  /** Puts a sequence of fields into this span. */
   def put(fields: (String, TraceValue)*): F[Unit]
 
-  /**
-   *  log a sequence of key-value pairs at the current timestamp
-   */
+  /** Logs a sequence of fields on this span. */
   def log(fields: (String, TraceValue)*): F[Unit]
 
-  /**
-   * log a single value at the current timestamp
-   */
+  /** Logs a single event on this span. */
   def log(event: String): F[Unit]
 
-  /**
-   *  Add error information to the span from `err`
-   */
+  /** Adds error information to this span. */
   def attachError(err: Throwable): F[Unit]
 
   /**
