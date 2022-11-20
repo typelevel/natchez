@@ -27,7 +27,7 @@ trait Span[F[_]] {
   /** Resource that yields a child span with the given name. */
   def span(name: String): Resource[F, Span[F]]
 
-  /** Create resource with new span and add current span and kernel to parents of new span */
+  /** Resource that yields a child span of both this span and the given kernel. */
   def span(name: String, kernel: Kernel): Resource[F, Span[F]]
 
   /**
