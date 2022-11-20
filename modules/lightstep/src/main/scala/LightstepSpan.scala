@@ -36,38 +36,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  override def log(fields: (String, TraceValue)*): F[Unit] = {
-    val map = fields.map {case (k, v) => k -> v.value }.toMap.asJava
-    Sync[F].delay(span.log(map)).void
-  }
-
-  override def log(event: String): F[Unit] = {
-    Sync[F].delay(span.log(event)).void
-  }
-
-  override def span(name: String): Resource[F,Span[F]] =
-    Span.putErrorFields(
-      Resource
-        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
-        .map(LightstepSpan(tracer, _))
-    )
-
-  def traceId: F[Option[String]] =
-    Sync[F].pure {
-      val rawId = span.context.toTraceId
-      if (rawId.nonEmpty) rawId.some else none
-    }
-
-  def spanId: F[Option[String]] =
-    Sync[F].pure {
-      val rawId = span.context.toSpanId
-      if (rawId.nonEmpty) rawId.some else none
-    }
-
-  // TODO
-  def traceUri: F[Option[URI]] = none.pure[F]
-
-  def attachError(err: Throwable): F[Unit] = {
+  override def attachError(err: Throwable): F[Unit] = {
     put(
       Tags.ERROR.getKey -> true
     ) >>
@@ -84,4 +53,41 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
       }.void
   }
 
+  override def log(event: String): F[Unit] =
+    Sync[F].delay(span.log(event)).void
+
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    val map = fields.map {case (k, v) => k -> v.value }.toMap.asJava
+    Sync[F].delay(span.log(map)).void
+  }
+
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
+    val p = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+    Span.putErrorFields(Resource
+      .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(p).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
+      .map(LightstepSpan(tracer, _))
+    )
+  }
+
+  override def span(name: String): Resource[F,Span[F]] =
+    Span.putErrorFields(
+      Resource
+        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s => Sync[F].delay(s.finish()))
+        .map(LightstepSpan(tracer, _))
+    )
+
+  override def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toSpanId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  override def traceId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toTraceId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  // TODO
+  def traceUri: F[Option[URI]] = none.pure[F]
 }

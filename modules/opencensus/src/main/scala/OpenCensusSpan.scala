@@ -57,6 +57,10 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Kernel(headers.toMap)
   }
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
+    Resource.makeCase(OpenCensusSpan.fromKernelWithSpan(tracer, name, kernel, span))(OpenCensusSpan.finish).widen
+  )
+
   override def span(name: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen)
 
@@ -74,14 +78,8 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
   def traceUri: F[Option[URI]] = none.pure[F]
 
-  override def attachError(err: Throwable): F[Unit] = {
-    put(
-      ("error.msg", err.getMessage),
-      ("error.stack", err.getStackTrace.mkString("\n"))
-    ) >>
-    Sync[F].delay(span.setStatus(io.opencensus.trace.Status.INTERNAL.withDescription(err.getMessage)))
-  }
-
+  override def attachError(err: Throwable): F[Unit] =
+    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
 }
 
 private[opencensus] object OpenCensusSpan {
@@ -134,6 +132,19 @@ private[opencensus] object OpenCensusSpan {
         .startSpan()
       ).map(OpenCensusSpan(tracer, _))
 
+  def fromKernelWithSpan[F[_]: Sync](
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel,
+      span: io.opencensus.trace.Span
+  ): F[OpenCensusSpan[F]] = Sync[F].delay {
+      val ctx = Tracing.getPropagationComponent.getB3Format
+        .extract(kernel, spanContextGetter)
+      tracer.spanBuilderWithRemoteParent(name, ctx)
+        .setParentLinks(List(span).asJava)
+        .startSpan()
+    }.map(OpenCensusSpan(tracer, _))
+
   def fromKernel[F[_]: Sync](
     tracer: Tracer,
     name:   String,
@@ -160,8 +171,5 @@ private[opencensus] object OpenCensusSpan {
         root(tracer, name, sampler) // means headers are incomplete or invalid
     }
 
-  private val spanContextGetter: Getter[Kernel] = new Getter[Kernel] {
-    override def get(carrier: Kernel, key: String): String =
-      carrier.toHeaders(key)
-  }
+  private val spanContextGetter: Getter[Kernel] = (carrier: Kernel, key: String) => carrier.toHeaders(key)
 }

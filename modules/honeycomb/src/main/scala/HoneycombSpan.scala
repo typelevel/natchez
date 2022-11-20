@@ -49,6 +49,9 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def span(label: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen)
 
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Span.putErrorFields(Resource.makeCase(HoneycombSpan.fromKernel(client, name, kernel))(HoneycombSpan.finish[F]).widen)
+
   def traceId: F[Option[String]] =
     traceUUID.toString.some.pure[F]
 

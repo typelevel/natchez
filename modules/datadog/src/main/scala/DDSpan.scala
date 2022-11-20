@@ -20,7 +20,7 @@ import _root_.datadog.trace.api.interceptor.MutableSpan
 import scala.jdk.CollectionConverters._
 import java.net.URI
 
-private[datadog] final case class DDSpan[F[_]: Sync](
+final case class DDSpan[F[_]: Sync](
   tracer: ot.Tracer,
   span:   ot.Span,
   uriPrefix: Option[URI]
@@ -59,6 +59,15 @@ private[datadog] final case class DDSpan[F[_]: Sync](
       case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
       case (span, _) => Sync[F].delay(span.finish())
     }.map(DDSpan(tracer, _, uriPrefix)))
+
+  def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
+    val parent = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+    Span.putErrorFields(Resource.makeCase(
+      Sync[F].delay(tracer.buildSpan(name).asChildOf(parent).asChildOf(span).start)) {
+      case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
+      case (span, _) => Sync[F].delay(span.finish())
+    }.map(DDSpan(tracer, _, uriPrefix)))
+  }
 
   def traceId: F[Option[String]] =
     Sync[F].pure {

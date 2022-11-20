@@ -45,7 +45,7 @@ This approach might make sense if you're using a concrete effect type with no "r
 A nicer way to pass the current span around is to use the `Trace` constraint, which ensures that there is always a current span. With this strategy you never have see `Span` reference at all, but instead use the `Trace` instance directly.
 
 ```scala mdoc
-def wibble[F[_]: Trace: Monad](name: String, age: Int, parent: Span[F]): F[Unit] =
+def wibble[F[_]: Trace: Monad](name: String, age: Int): F[Unit] =
   Trace[F].span("wibble") {
     for {
       _ <- Trace[F].put("name" -> name, "age" -> age)

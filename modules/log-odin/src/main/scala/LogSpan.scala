@@ -4,7 +4,7 @@
 
 package natchez.logodin
 
-import cats.effect.Ref
+import cats.Applicative
 import cats.effect._
 import cats.effect.Resource.ExitCase
 import cats.effect.Resource.ExitCase._
@@ -59,8 +59,18 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   def putAny(fields: (String, Json)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
 
+  def attachError(err: Throwable): F[Unit] =
+    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+
+  def log(event: String): F[Unit] = Applicative[F].unit
+
+  def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
+
   def span(label: String): Resource[F, Span[F]] =
     Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen
+
+  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    Resource.makeCase(LogSpan.fromKernel(service, name, kernel))(LogSpan.finish[F]).widen
 
   def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
@@ -89,7 +99,7 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
           exitCase match {
             case Succeeded           => List("exit.case" -> "completed".asJson)
             case Canceled            => List("exit.case" -> "canceled".asJson)
-            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.map(_.asJson))
+            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map(_.fmap(_.asJson))
             case Errored(ex)         => exitFields(ex)
           }
         } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)

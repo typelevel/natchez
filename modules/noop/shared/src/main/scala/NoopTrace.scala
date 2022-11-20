@@ -5,7 +5,10 @@
 package natchez
 package noop
 
+import cats.~>
 import cats.Applicative
+import cats.arrow.FunctionK
+import cats.effect.Resource
 import cats.syntax.all._
 import java.net.URI
 
@@ -23,7 +26,13 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
   override def log(event: String): F[Unit] = Applicative[F].unit
 
+  override def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F] =
+    Resource.pure(FunctionK.id)
+
   override def span[A](name: String)(k: F[A]): F[A] =
+    k
+
+  override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
     k
 
   def traceId: F[Option[String]] =
@@ -31,5 +40,4 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
   def traceUri: F[Option[URI]] =
     none.pure[F]
-
 }

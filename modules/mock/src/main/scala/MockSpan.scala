@@ -6,14 +6,14 @@ package natchez
 package mock
 
 import scala.jdk.CollectionConverters._
-import cats.effect.{Resource, Sync}
-import cats.implicits._
-import io.opentracing.log.Fields
-import io.{opentracing => ot}
-import io.opentracing.propagation.{Format, TextMapAdapter}
-import io.opentracing.tag.Tags
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 
+import cats.effect.{ Resource, Sync }
+import cats.syntax.all._
+import io.opentracing.log.Fields
+import io.{ opentracing => ot }
+import io.opentracing.propagation.{ Format, TextMapAdapter }
+import io.opentracing.tag.Tags
+import natchez.TraceValue.{ BooleanValue, NumberValue, StringValue }
 import java.net.URI
 
 final case class MockSpan[F[_] : Sync](
@@ -73,6 +73,13 @@ final case class MockSpan[F[_] : Sync](
         Sync[F].delay(s.finish())
       }
       .map(MockSpan(tracer, _))
+
+  def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
+    val parent = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+    Resource.make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).asChildOf(parent).start)){ s =>
+        Sync[F].delay(s.finish())
+      }.map(MockSpan(tracer, _))
+  }
 
   def traceId: F[Option[String]] =
     span.context.toTraceId.some.pure[F]

@@ -6,8 +6,10 @@ package natchez
 
 package mtl
 
+import cats.~>
 import cats.mtl.Local
-import cats.effect._
+import cats.effect.MonadCancel
+import cats.effect.Resource
 import cats.syntax.all._
 import java.net.URI
 
@@ -15,32 +17,45 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
   implicit ev: MonadCancel[F, Throwable]
 ) extends Trace[F] {
 
-    def kernel: F[Kernel] =
+    override def kernel: F[Kernel] =
       local.ask.flatMap(_.kernel)
 
-    def put(fields: (String, TraceValue)*): F[Unit] =
+    override def put(fields: (String, TraceValue)*): F[Unit] =
       local.ask.flatMap(_.put(fields: _*))
 
-    override def attachError(err: Throwable): F[Unit] = {
+    override def attachError(err: Throwable): F[Unit] =
       local.ask.flatMap(_.attachError(err))
-    }
 
-    def log(fields: (String, TraceValue)*): F[Unit] =
+    override def log(fields: (String, TraceValue)*): F[Unit] =
       local.ask.flatMap(_.log(fields: _*))
 
-    def log(event: String): F[Unit] =
+    override def log(event: String): F[Unit] =
       local.ask.flatMap(_.log(event))
 
-    def span[A](name: String)(k: F[A]): F[A] =
+    override def spanR(name: String, kernel: Option[Kernel]): Resource[F, F ~> F] =
+      Resource(local.ask.flatMap(t => kernel.map(t.span(name, _)).getOrElse(t.span(name)).allocated.map {
+        case (child, release) =>
+          new (F ~> F) {
+            def apply[A](fa: F[A]): F[A] =
+              local.scope(fa)(child)
+          } -> release
+      }))
+
+    override def span[A](name: String)(k: F[A]): F[A] =
       local.ask.flatMap { span =>
         span.span(name).use { s =>
          ev.onError(local.scope(k)(s)){ case err => s.attachError(err) }
         }
       }
 
-    def traceId: F[Option[String]] =
+    override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
+      local.ask.flatMap { span =>
+        span.span(name, kernel).use(local.scope(k))
+      }
+
+    override def traceId: F[Option[String]] =
       local.ask.flatMap(_.traceId)
 
-    def traceUri: F[Option[URI]] =
+    override def traceUri: F[Option[URI]] =
       local.ask.flatMap(_.traceUri)
 }
