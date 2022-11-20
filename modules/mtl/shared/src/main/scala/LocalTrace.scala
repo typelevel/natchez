@@ -23,8 +23,8 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
     def put(fields: (String, TraceValue)*): F[Unit] =
       local.ask.flatMap(_.put(fields: _*))
 
-    def spanR(name: String): Resource[F, F ~> F] =
-      Resource(local.ask.flatMap(_.span(name).allocated.map {
+    def spanR(name: String, kernel: Option[Kernel]): Resource[F, F ~> F] =
+      Resource(local.ask.flatMap(t => kernel.map(t.span(name, _)).getOrElse(t.span(name)).allocated.map {
         case (child, release) =>
           new (F ~> F) {
             def apply[A](fa: F[A]): F[A] =
@@ -37,14 +37,14 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(
         span.span(name).use(local.scope(k))
       }
 
+    override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
+      local.ask.flatMap { span =>
+        span.span(name, kernel).use(local.scope(k))
+      }
+
     def traceId: F[Option[String]] =
       local.ask.flatMap(_.traceId)
 
     def traceUri: F[Option[URI]] =
       local.ask.flatMap(_.traceUri)
-
-  override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
-    local.ask.flatMap { span =>
-      span.span(name, kernel).use(local.scope(k))
-    }
 }

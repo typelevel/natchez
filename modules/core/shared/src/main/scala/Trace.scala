@@ -101,11 +101,10 @@ object Trace {
         final val void = ().pure[F]
         val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         def put(fields: (String, TraceValue)*): F[Unit] = void
-        def spanR(name: String): Resource[F, F ~> F] =
-          Resource.pure(FunctionK.id)
-        def spanR(name: String, kernel: Kernel): Resource[F, F ~> F] =
+        def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F] =
           Resource.pure(FunctionK.id)
         def span[A](name: String)(k: F[A]): F[A] = k
+        def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] = k
         def traceId: F[Option[String]] = none.pure[F]
         def traceUri: F[Option[URI]] = none.pure[F]
       }
@@ -144,6 +143,9 @@ object Trace {
     def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F,Span[F],A] =
       Kleisli(_.span(name).use(k.run))
 
+    def span[A](name: String, kernel: Kernel)(k: ReaderT[F, Span[F], A]): Kleisli[F, Span[F], A] =
+      Kleisli(_.span(name, kernel).use(k.run))
+
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, *]] =
       new Trace[Kleisli[F, E, *]] {
 
@@ -180,9 +182,6 @@ object Trace {
 
     def traceUri: Kleisli[F,Span[F],Option[URI]] =
       Kleisli(_.traceUri)
-
-    def span[A](name: String, kernel: Kernel)(k: ReaderT[F, Span[F], A]): ReaderT[F, Span[F], A] =
-      Kleisli(_.span(name, kernel))
   }
 
   implicit def liftKleisli[F[_]: MonadCancelThrow, E](implicit trace: Trace[F]): Trace[Kleisli[F, E, *]] =
