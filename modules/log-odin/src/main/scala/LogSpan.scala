@@ -21,14 +21,14 @@ import io.odin.Logger
 import java.net.URI
 
 private[logodin] final case class LogSpan[F[_]: Sync: Logger](
-  service:   String,
-  name:      String,
-  sid:       UUID,
-  parent:    Option[Either[UUID, LogSpan[F]]],
-  tid:       UUID,
-  timestamp: Instant,
-  fields:    Ref[F, Map[String, Json]],
-  children:  Ref[F, List[JsonObject]]
+    service: String,
+    name: String,
+    sid: UUID,
+    parent: Option[Either[UUID, LogSpan[F]]],
+    tid: UUID,
+    timestamp: Instant,
+    fields: Ref[F, Map[String, Json]],
+    children: Ref[F, List[JsonObject]]
 ) extends Span[F] {
   import LogSpan._
 
@@ -48,13 +48,15 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
     fields.get.map(_.get(key))
 
   def kernel: F[Kernel] =
-    Kernel(Map(
-      Headers.TraceId -> tid.toString,
-      Headers.SpanId  -> sid.toString
-    )).pure[F]
+    Kernel(
+      Map(
+        Headers.TraceId -> tid.toString,
+        Headers.SpanId -> sid.toString
+      )
+    ).pure[F]
 
   def put(fields: (String, TraceValue)*): F[Unit] =
-    putAny(fields.map { case (k, v) => (k -> v.asJson) }: _*)
+    putAny(fields.map { case (k, v) => k -> v.asJson }: _*)
 
   def putAny(fields: (String, Json)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
@@ -74,27 +76,26 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
 
   def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
-
       // Assemble our JSON object such that the Natchez fields always come first, in the same
       // order, followed by error fields (if any), followed by span fields.
 
       def exitFields(ex: Throwable): List[(String, Json)] =
         List(
-          "exit.case"             -> "error".asJson,
-          "exit.error.class"      -> ex.getClass.getName.asJson,
-          "exit.error.message"    -> ex.getMessage.asJson,
-          "exit.error.stackTrace" -> ex.getStackTrace.map(_.toString).asJson,
+          "exit.case" -> "error".asJson,
+          "exit.error.class" -> ex.getClass.getName.asJson,
+          "exit.error.message" -> ex.getMessage.asJson,
+          "exit.error.stackTrace" -> ex.getStackTrace.map(_.toString).asJson
         )
 
       val fields: List[(String, Json)] =
         List(
-          "name"            -> name.asJson,
-          "service"         -> service.asJson,
-          "timestamp"       -> timestamp.asJson,
-          "duration_ms"     -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
-          "trace.span_id"   -> sid.asJson,
+          "name" -> name.asJson,
+          "service" -> service.asJson,
+          "timestamp" -> timestamp.asJson,
+          "duration_ms" -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
+          "trace.span_id" -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
-          "trace.trace_id"  -> tid.asJson,
+          "trace.trace_id" -> tid.asJson
         ) ++ {
           exitCase match {
             case Succeeded           => List("exit.case" -> "completed".asJson)
@@ -129,8 +130,8 @@ private[logodin] object LogSpan {
     }
 
   object Headers {
-    val TraceId       = "X-Natchez-Trace-Id"
-    val SpanId        = "X-Natchez-Parent-Span-Id"
+    val TraceId = "X-Natchez-Trace-Id"
+    val SpanId = "X-Natchez-Parent-Span-Id"
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =
@@ -141,86 +142,85 @@ private[logodin] object LogSpan {
 
   def finish[F[_]: Sync: Logger]: (LogSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
-      n  <- now
-      j  <- span.json(n, exitCase)
-      _  <- span.parent match {
-        case None |
-             Some(Left(_))  => Logger[F].info(Json.fromJsonObject(j).spaces2)
-        case Some(Right(s)) => s.children.update(j :: _)
+      n <- now
+      j <- span.json(n, exitCase)
+      _ <- span.parent match {
+        case None | Some(Left(_)) => Logger[F].info(Json.fromJsonObject(j).spaces2)
+        case Some(Right(s))       => s.children.update(j :: _)
       }
     } yield ()
   }
 
   def child[F[_]: Sync: Logger](
-    parent: LogSpan[F],
-    name:   String
+      parent: LogSpan[F],
+      name: String
   ): F[LogSpan[F]] =
     for {
-      spanId    <- uuid[F]
+      spanId <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, Json])
-      children  <- Ref[F].of(List.empty[JsonObject])
+      fields <- Ref[F].of(Map.empty[String, Json])
+      children <- Ref[F].of(List.empty[JsonObject])
     } yield LogSpan(
-      service   = parent.service,
-      name      = name,
-      sid       = spanId,
-      parent    = Some(Right(parent)),
-      tid       = parent.tid,
+      service = parent.service,
+      name = name,
+      sid = spanId,
+      parent = Some(Right(parent)),
+      tid = parent.tid,
       timestamp = timestamp,
-      fields    = fields,
-      children  = children
+      fields = fields,
+      children = children
     )
 
   def root[F[_]: Sync: Logger](
-    service: String,
-    name:    String
+      service: String,
+      name: String
   ): F[LogSpan[F]] =
     for {
-      spanId    <- uuid[F]
-      traceId   <- uuid[F]
+      spanId <- uuid[F]
+      traceId <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, Json])
-      children  <- Ref[F].of(List.empty[JsonObject])
+      fields <- Ref[F].of(Map.empty[String, Json])
+      children <- Ref[F].of(List.empty[JsonObject])
     } yield LogSpan(
-      service   = service,
-      name      = name,
-      sid       = spanId,
-      parent    = None,
-      tid       = traceId,
+      service = service,
+      name = name,
+      sid = spanId,
+      parent = None,
+      tid = traceId,
       timestamp = timestamp,
-      fields    = fields,
-      children  = children
+      fields = fields,
+      children = children
     )
 
   def fromKernel[F[_]: Sync: Logger](
-    service: String,
-    name:    String,
-    kernel:  Kernel
+      service: String,
+      name: String,
+      kernel: Kernel
   ): F[LogSpan[F]] =
     for {
-      traceId  <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
+      traceId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
       parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
-      spanId    <- uuid[F]
+      spanId <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, Json])
-      children  <- Ref[F].of(List.empty[JsonObject])
+      fields <- Ref[F].of(Map.empty[String, Json])
+      children <- Ref[F].of(List.empty[JsonObject])
     } yield LogSpan(
-      service   = service,
-      name      = name,
-      sid       = spanId,
-      parent    = Some(Left(parentId)),
-      tid       = traceId,
+      service = service,
+      name = name,
+      sid = spanId,
+      parent = Some(Left(parentId)),
+      tid = traceId,
       timestamp = timestamp,
-      fields    = fields,
-      children  = children
+      fields = fields,
+      children = children
     )
 
   def fromKernelOrElseRoot[F[_]: Sync: Logger](
-    service: String,
-    name:    String,
-    kernel:  Kernel
+      service: String,
+      name: String,
+      kernel: Kernel
   ): F[LogSpan[F]] =
-    fromKernel(service, name, kernel).recoverWith {
-      case _: NoSuchElementException => root(service, name)
+    fromKernel(service, name, kernel).recoverWith { case _: NoSuchElementException =>
+      root(service, name)
     }
 }

@@ -25,7 +25,8 @@ class OpenTelemetryExample extends IOApp {
       exporter <- OpenTelemetry.lift(
         "OtlpGrpcSpanExporter",
         Sync[F].delay {
-          OtlpGrpcSpanExporter.builder()
+          OtlpGrpcSpanExporter
+            .builder()
             .setEndpoint("http://localhost:4317")
             .build()
         }
@@ -39,7 +40,8 @@ class OpenTelemetryExample extends IOApp {
       tracer <- OpenTelemetry.lift(
         "Tracer",
         Sync[F].delay {
-          SdkTracerProvider.builder()
+          SdkTracerProvider
+            .builder()
             .setResource(
               OtelResource.create(
                 Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenTelemetryExample")
@@ -56,8 +58,8 @@ class OpenTelemetryExample extends IOApp {
             .setPropagators(
               ContextPropagators.create(W3CTraceContextPropagator.getInstance())
             )
-        }
-      )}
+        })
+      }
     } yield ep
 
   override def run(args: List[String]): IO[ExitCode] =
@@ -69,14 +71,20 @@ class OpenTelemetryExample extends IOApp {
     }
 
   def program[F[_]: Async: Trace]: F[Unit] =
-    Trace[F].traceId.flatTap(tid => Sync[F].delay { println(s"did some work with traceid of $tid") }) *>
-      Trace[F].span("outer span") {
-        Trace[F].put("foo" -> "bar") *>
-          (Trace[F].span("first thing") {
-            Temporal[F].sleep(2.seconds)
-          },
-            Trace[F].span("second thing") {
-              Temporal[F].sleep(2.seconds)
-            }).tupled
-      }.void
+    Trace[F].traceId.flatTap(tid =>
+      Sync[F].delay(println(s"did some work with traceid of $tid"))
+    ) *>
+      Trace[F]
+        .span("outer span") {
+          Trace[F].put("foo" -> "bar") *>
+            (
+              Trace[F].span("first thing") {
+                Temporal[F].sleep(2.seconds)
+              },
+              Trace[F].span("second thing") {
+                Temporal[F].sleep(2.seconds)
+              }
+            ).tupled
+        }
+        .void
 }

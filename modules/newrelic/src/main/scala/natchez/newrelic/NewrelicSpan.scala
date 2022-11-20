@@ -35,7 +35,7 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
       Kernel(
         Map(
           Headers.TraceId -> traceIdS,
-          Headers.SpanId  -> id
+          Headers.SpanId -> id
         )
       )
 
@@ -49,14 +49,16 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
     }
 
   override def attachError(err: Throwable): F[Unit] =
-     put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
 
   override def log(fields: (String, TraceValue)*): F[Unit] = Sync[F].unit
 
   override def log(event: String): F[Unit] = Sync[F].unit
 
   override def span(name: String, kernel: Kernel): Resource[F, natchez.Span[F]] =
-    Resource.make(NewrelicSpan.fromKernel(service, name, kernel)(sender))(NewrelicSpan.finish[F]).widen
+    Resource
+      .make(NewrelicSpan.fromKernel(service, name, kernel)(sender))(NewrelicSpan.finish[F])
+      .widen
 
   override def span(name: String): Resource[F, natchez.Span[F]] =
     Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
@@ -71,7 +73,7 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
 object NewrelicSpan {
   object Headers {
     val TraceId = "X-Natchez-Trace-Id"
-    val SpanId  = "X-Natchez-Parent-Span-Id"
+    val SpanId = "X-Natchez-Parent-Span-Id"
   }
 
   def fromKernel[F[_]: Sync](
@@ -80,12 +82,12 @@ object NewrelicSpan {
       kernel: Kernel
   )(sender: SpanBatchSender): F[NewrelicSpan[F]] =
     for {
-      traceId    <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.TraceId))
-      parentId   <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.SpanId))
-      spanId     <- Sync[F].delay(UUID.randomUUID.toString)
-      timestamp  <- Sync[F].delay(System.currentTimeMillis())
+      traceId <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.TraceId))
+      parentId <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.SpanId))
+      spanId <- Sync[F].delay(UUID.randomUUID.toString)
+      timestamp <- Sync[F].delay(System.currentTimeMillis())
       attributes <- Ref[F].of(new Attributes())
-      children   <- Ref[F].of(List.empty[Span])
+      children <- Ref[F].of(List.empty[Span])
     } yield NewrelicSpan(
       service = service,
       name = name,
@@ -100,10 +102,10 @@ object NewrelicSpan {
 
   def root[F[_]: Sync](service: String, name: String, sender: SpanBatchSender): F[NewrelicSpan[F]] =
     for {
-      spanId     <- Sync[F].delay(UUID.randomUUID().toString)
-      traceId    <- Sync[F].delay(UUID.randomUUID().toString)
-      startTime  <- Sync[F].delay(System.currentTimeMillis())
-      children   <- Ref[F].of(List.empty[Span])
+      spanId <- Sync[F].delay(UUID.randomUUID().toString)
+      traceId <- Sync[F].delay(UUID.randomUUID().toString)
+      startTime <- Sync[F].delay(System.currentTimeMillis())
+      children <- Ref[F].of(List.empty[Span])
       attributes <- Ref[F].of(new Attributes())
     } yield NewrelicSpan[F](
       spanId,
@@ -119,9 +121,9 @@ object NewrelicSpan {
 
   def child[F[_]: Sync](name: String, parent: NewrelicSpan[F]): F[NewrelicSpan[F]] =
     for {
-      spanId     <- Sync[F].delay(UUID.randomUUID().toString)
-      startTime  <- Sync[F].delay(System.currentTimeMillis())
-      children   <- Ref[F].of(List.empty[Span])
+      spanId <- Sync[F].delay(UUID.randomUUID().toString)
+      startTime <- Sync[F].delay(System.currentTimeMillis())
+      children <- Ref[F].of(List.empty[Span])
       attributes <- Ref[F].of(new Attributes())
     } yield NewrelicSpan[F](
       spanId,
@@ -139,8 +141,8 @@ object NewrelicSpan {
     nrs.parent match {
       case Some(parent) =>
         for {
-          attributes  <- nrs.attributes.get
-          finish      <- Sync[F].delay(System.currentTimeMillis())
+          attributes <- nrs.attributes.get
+          finish <- Sync[F].delay(System.currentTimeMillis())
           curChildren <- nrs.children.get
           curSpan = Span
             .builder(nrs.id)
@@ -158,8 +160,8 @@ object NewrelicSpan {
         } yield ()
       case None =>
         for {
-          attributes  <- nrs.attributes.get
-          finish      <- Sync[F].delay(System.currentTimeMillis())
+          attributes <- nrs.attributes.get
+          finish <- Sync[F].delay(System.currentTimeMillis())
           curChildren <- nrs.children.get
           curSpan = Span
             .builder(nrs.id)

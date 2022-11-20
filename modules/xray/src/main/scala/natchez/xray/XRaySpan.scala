@@ -46,7 +46,7 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   def kernel: F[Kernel] =
     Kernel(Map(XRaySpan.Header -> header)).pure[F]
 
-  def attachError(err: Throwable): F[Unit] = 
+  def attachError(err: Throwable): F[Unit] =
     put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
 
   def log(event: String): F[Unit] = Applicative[F].unit
@@ -130,11 +130,13 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
     encodeHeader(xrayTraceId, Some(segmentId), sampled)
 
   override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Resource.makeCase(kernel.toHeaders
-      .get(Header)
-      .flatMap(parseHeader)
-      .traverse(XRaySpan.fromHeader(name, _, entry))
-      .map(_.getOrElse(this)))(XRaySpan.finish[F](_, entry, _))
+    Resource.makeCase(
+      kernel.toHeaders
+        .get(Header)
+        .flatMap(parseHeader)
+        .traverse(XRaySpan.fromHeader(name, _, entry))
+        .map(_.getOrElse(this))
+    )(XRaySpan.finish[F](_, entry, _))
 }
 
 private[xray] object XRaySpan {
@@ -192,9 +194,7 @@ private[xray] object XRaySpan {
 
     foo
       .get("Root")
-      .map(traceId =>
-        XRayHeader(traceId, foo.get("Parent"), foo.get("Sampled").contains("1"))
-      )
+      .map(traceId => XRayHeader(traceId, foo.get("Parent"), foo.get("Sampled").contains("1")))
   }
 
   private def randomHexString[F[_]: Functor: Random](bytes: Int): F[String] =
@@ -235,30 +235,31 @@ private[xray] object XRaySpan {
         )
       }
 
-  def fromKernel[F[_] : Concurrent : Clock : Random : XRayEnvironment](
+  def fromKernel[F[_]: Concurrent: Clock: Random: XRayEnvironment](
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F],
-      useEnvironmentFallback: Boolean,
+      useEnvironmentFallback: Boolean
   ): F[Option[XRaySpan[F]]] =
-    OptionT.fromOption[F](kernel.toHeaders.get(Header))
+    OptionT
+      .fromOption[F](kernel.toHeaders.get(Header))
       .subflatMap(parseHeader)
       .semiflatMap(fromHeader(name, _, entry))
       .orElse {
-        OptionT.whenF(useEnvironmentFallback) {
-          XRayEnvironment[F]
-            .kernelFromEnvironment
-            .flatMap(XRaySpan.fromKernel(name, _, entry, useEnvironmentFallback = false))
-        }
+        OptionT
+          .whenF(useEnvironmentFallback) {
+            XRayEnvironment[F].kernelFromEnvironment
+              .flatMap(XRaySpan.fromKernel(name, _, entry, useEnvironmentFallback = false))
+          }
           .flattenOption
       }
       .value
 
-  def fromKernelOrElseRoot[F[_] : Concurrent : Clock : Random : XRayEnvironment](
+  def fromKernelOrElseRoot[F[_]: Concurrent: Clock: Random: XRayEnvironment](
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F],
-      useEnvironmentFallback: Boolean,
+      useEnvironmentFallback: Boolean
   ): F[XRaySpan[F]] =
     OptionT(fromKernel(name, kernel, entry, useEnvironmentFallback))
       .getOrElseF(root(name, entry))

@@ -13,17 +13,16 @@ import scala.util.Random
 import scala.concurrent.duration._
 import java.net.URI
 
-
 object GlobalTracerMain extends IOApp {
 
   def runF[F[_]: Async: Trace: Parallel]: F[Unit] =
     Trace[F].span("Sort some stuff!") {
       for {
         as <- Sync[F].delay(List.fill(10)(Random.nextInt(1000)))
-        _  <- Sort.qsort[F, Int](as)
-        u  <- Trace[F].traceUri
-        _  <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
-        _  <- Sync[F].delay(println("Done."))
+        _ <- Sort.qsort[F, Int](as)
+        u <- Trace[F].traceUri
+        _ <- u.traverse(uri => Sync[F].delay(println(s"View this trace at $uri")))
+        _ <- Sync[F].delay(println("Done."))
       } yield ()
     }
 
@@ -44,17 +43,21 @@ object GlobalTracerMain extends IOApp {
 
   }
 
-  def run(args: List[String]): IO[ExitCode] = {
+  def run(args: List[String]): IO[ExitCode] =
     globalTracerEntryPoint[IO].flatMap {
-      case None => IO.delay {
-        println("No tracer registered to the global tracer.  Is your agent attached with tracing enabled?")
-      } as ExitCode.Error
+      case None =>
+        IO.delay {
+          println(
+            "No tracer registered to the global tracer.  Is your agent attached with tracing enabled?"
+          )
+        }.as(ExitCode.Error)
       case Some(ep) =>
-        ep.root("this is the root span")
+        (ep
+          .root("this is the root span")
           .use(span => runF[Kleisli[IO, Span[IO], *]].run(span)) *>
-          IO.sleep(1.second) as ExitCode.Success // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
+          IO.sleep(1.second)).as(
+          ExitCode.Success
+        ) // Turns out Tracer.close() in Jaeger doesn't block. Annoying. Maybe fix in there?
     }
-  }
-
 
 }

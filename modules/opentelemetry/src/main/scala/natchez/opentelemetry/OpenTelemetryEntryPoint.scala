@@ -12,15 +12,24 @@ import io.opentelemetry.api.trace.Tracer
 
 import java.net.URI
 
-final case class OpenTelemetryEntryPoint[F[_] : Sync](sdk: OTel, tracer: Tracer, prefix: Option[URI]) extends EntryPoint[F] {
+final case class OpenTelemetryEntryPoint[F[_]: Sync](sdk: OTel, tracer: Tracer, prefix: Option[URI])
+    extends EntryPoint[F] {
   override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Resource.makeCase(OpenTelemetrySpan.fromKernel(sdk, tracer, prefix, name, kernel))(OpenTelemetrySpan.finish).widen
+    Resource
+      .makeCase(OpenTelemetrySpan.fromKernel(sdk, tracer, prefix, name, kernel))(
+        OpenTelemetrySpan.finish
+      )
+      .widen
 
   override def root(name: String): Resource[F, Span[F]] =
-    Resource.makeCase(OpenTelemetrySpan.root(sdk, tracer, prefix, name))(OpenTelemetrySpan.finish).widen
+    Resource
+      .makeCase(OpenTelemetrySpan.root(sdk, tracer, prefix, name))(OpenTelemetrySpan.finish)
+      .widen
 
   override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     Resource
-      .makeCase(OpenTelemetrySpan.fromKernelOrElseRoot(sdk, tracer, prefix, name, kernel))(OpenTelemetrySpan.finish)
+      .makeCase(OpenTelemetrySpan.fromKernelOrElseRoot(sdk, tracer, prefix, name, kernel))(
+        OpenTelemetrySpan.finish
+      )
       .widen
 }

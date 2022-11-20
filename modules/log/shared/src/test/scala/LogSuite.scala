@@ -19,24 +19,25 @@ class LogSuite extends CatsEffectSuite {
       Json.fromJsonNumber,
       Json.fromString,
       values => Json.fromValues(values.map(filter)),
-      obj => Json.fromJsonObject(
-        obj
-          .remove("timestamp")
-          .remove("duration_ms")
-          .remove("trace.span_id")
-          .remove("trace.parent_id")
-          .remove("trace.trace_id")
-          .mapValues(filter)
-      )
+      obj =>
+        Json.fromJsonObject(
+          obj
+            .remove("timestamp")
+            .remove("duration_ms")
+            .remove("trace.span_id")
+            .remove("trace.parent_id")
+            .remove("trace.trace_id")
+            .mapValues(filter)
+        )
     )
 
   test("log formatter should log things") {
     MockLogger.newInstance[IO]("test").flatMap { implicit log =>
       Log.entryPoint[IO]("service", filter(_).spaces2).root("root span").use { root =>
         root.put("foo" -> 1, "bar" -> true) *>
-        root.span("child").use { child =>
-          child.put("baz" -> "qux")
-        }
+          root.span("child").use { child =>
+            child.put("baz" -> "qux")
+          }
       } *> log.get.assertEquals {
         """|test: [info] {
            |  "name" : "root span",

@@ -16,13 +16,13 @@ import natchez._
 import java.net.URI
 
 private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
-  client:    HoneyClient,
-  name:      String,
-  spanUUID:  UUID,
-  parentId:  Option[UUID],
-  traceUUID: UUID,
-  timestamp: Instant,
-  fields:    Ref[F, Map[String, TraceValue]]
+    client: HoneyClient,
+    name: String,
+    spanUUID: UUID,
+    parentId: Option[UUID],
+    traceUUID: UUID,
+    timestamp: Instant,
+    fields: Ref[F, Map[String, TraceValue]]
 ) extends Span[F] {
   import HoneycombSpan._
 
@@ -30,27 +30,33 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
     fields.get.map(_.get(key))
 
   def kernel: F[Kernel] =
-    Kernel(Map(
-      Headers.TraceId -> traceUUID.toString,
-      Headers.SpanId  -> spanUUID.toString
-    )).pure[F]
+    Kernel(
+      Map(
+        Headers.TraceId -> traceUUID.toString,
+        Headers.SpanId -> spanUUID.toString
+      )
+    ).pure[F]
 
   def put(fields: (String, TraceValue)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
 
-  override def log(fields: (String, TraceValue)*): F[Unit] = {
+  override def log(fields: (String, TraceValue)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
-  }
 
-  override def log(event: String): F[Unit] = {
+  override def log(event: String): F[Unit] =
     log("event" -> TraceValue.StringValue(event))
-  }
 
   def span(label: String): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen)
+    Span.putErrorFields(
+      Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen
+    )
 
   override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(HoneycombSpan.fromKernel(client, name, kernel))(HoneycombSpan.finish[F]).widen)
+    Span.putErrorFields(
+      Resource
+        .makeCase(HoneycombSpan.fromKernel(client, name, kernel))(HoneycombSpan.finish[F])
+        .widen
+    )
 
   def traceId: F[Option[String]] =
     traceUUID.toString.some.pure[F]
@@ -61,17 +67,20 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def traceUri: F[Option[URI]] =
     none.pure[F] // TODO
 
-  override def attachError(err: Throwable): F[Unit] = {
-    put("exit.case" -> "error", "exit.error.class" -> err.getClass.getName,"exit.error.message" -> err.getMessage)
-  }
+  override def attachError(err: Throwable): F[Unit] =
+    put(
+      "exit.case" -> "error",
+      "exit.error.class" -> err.getClass.getName,
+      "exit.error.message" -> err.getMessage
+    )
 
 }
 
 private[honeycomb] object HoneycombSpan {
 
   object Headers {
-    val TraceId       = "X-Natchez-Trace-Id"
-    val SpanId        = "X-Natchez-Parent-Span-Id"
+    val TraceId = "X-Natchez-Trace-Id"
+    val SpanId = "X-Natchez-Parent-Span-Id"
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =
@@ -82,92 +91,92 @@ private[honeycomb] object HoneycombSpan {
 
   def finish[F[_]: Sync]: (HoneycombSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
-      n  <- now
+      n <- now
       fs <- span.fields.get
-      e  <- Sync[F].delay {
-              val e = span.client.createEvent()
-              e.setTimestamp(span.timestamp.toEpochMilli)             // timestamp
-              fs.foreach { case (k, v) => e.addField(k, v.value) }    // user fields
-              span.parentId.foreach(e.addField("trace.parent_id", _)) // parent trace
-              e.addField("name",           span.name)                 // and other trace fields
-              e.addField("trace.span_id",  span.spanUUID)
-              e.addField("trace.trace_id", span.traceUUID)
-              e.addField("duration_ms",    n.toEpochMilli - span.timestamp.toEpochMilli)
-              exitCase match {
-                case Succeeded   => e.addField("exit.case", "completed")
-                case Canceled    => e.addField("exit.case", "canceled")
-                case Errored(ex) => span.attachError(ex)
-              }
-              e
-            }
-      _  <- Sync[F].delay(e.send())
+      e <- Sync[F].delay {
+        val e = span.client.createEvent()
+        e.setTimestamp(span.timestamp.toEpochMilli) // timestamp
+        fs.foreach { case (k, v) => e.addField(k, v.value) } // user fields
+        span.parentId.foreach(e.addField("trace.parent_id", _)) // parent trace
+        e.addField("name", span.name) // and other trace fields
+        e.addField("trace.span_id", span.spanUUID)
+        e.addField("trace.trace_id", span.traceUUID)
+        e.addField("duration_ms", n.toEpochMilli - span.timestamp.toEpochMilli)
+        exitCase match {
+          case Succeeded   => e.addField("exit.case", "completed")
+          case Canceled    => e.addField("exit.case", "canceled")
+          case Errored(ex) => span.attachError(ex)
+        }
+        e
+      }
+      _ <- Sync[F].delay(e.send())
     } yield ()
   }
 
   def child[F[_]: Sync](
-    parent: HoneycombSpan[F],
-    name:   String
+      parent: HoneycombSpan[F],
+      name: String
   ): F[HoneycombSpan[F]] =
     for {
-      spanUUID  <- uuid[F]
+      spanUUID <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, TraceValue])
+      fields <- Ref[F].of(Map.empty[String, TraceValue])
     } yield HoneycombSpan(
-      client    = parent.client,
-      name      = name,
-      spanUUID  = spanUUID,
-      parentId  = Some(parent.spanUUID),
+      client = parent.client,
+      name = name,
+      spanUUID = spanUUID,
+      parentId = Some(parent.spanUUID),
       traceUUID = parent.traceUUID,
       timestamp = timestamp,
-      fields    = fields
+      fields = fields
     )
 
   def root[F[_]: Sync](
-    client:    HoneyClient,
-    name:      String
+      client: HoneyClient,
+      name: String
   ): F[HoneycombSpan[F]] =
     for {
-      spanUUID  <- uuid[F]
+      spanUUID <- uuid[F]
       traceUUID <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, TraceValue])
+      fields <- Ref[F].of(Map.empty[String, TraceValue])
     } yield HoneycombSpan(
-      client    = client,
-      name      = name,
-      spanUUID  = spanUUID,
-      parentId  = None,
+      client = client,
+      name = name,
+      spanUUID = spanUUID,
+      parentId = None,
       traceUUID = traceUUID,
       timestamp = timestamp,
-      fields    = fields
+      fields = fields
     )
 
   def fromKernel[F[_]](
-    client: HoneyClient,
-    name:   String,
-    kernel: Kernel
+      client: HoneyClient,
+      name: String,
+      kernel: Kernel
   )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
     for {
       traceUUID <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId  <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
-      spanUUID  <- uuid[F]
+      parentId <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      spanUUID <- uuid[F]
       timestamp <- now[F]
-      fields    <- Ref[F].of(Map.empty[String, TraceValue])
+      fields <- Ref[F].of(Map.empty[String, TraceValue])
     } yield HoneycombSpan(
-      client    = client,
-      name      = name,
-      spanUUID  = spanUUID,
-      parentId  = Some(parentId),
+      client = client,
+      name = name,
+      spanUUID = spanUUID,
+      parentId = Some(parentId),
       traceUUID = traceUUID,
       timestamp = timestamp,
-      fields    = fields
+      fields = fields
     )
 
   def fromKernelOrElseRoot[F[_]](
-    client: HoneyClient,
-    name:   String,
-    kernel: Kernel
+      client: HoneyClient,
+      name: String,
+      kernel: Kernel
   )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
-    fromKernel(client, name, kernel).recoverWith {
-      case _: NoSuchElementException => root(client, name)
+    fromKernel(client, name, kernel).recoverWith { case _: NoSuchElementException =>
+      root(client, name)
     }
 }

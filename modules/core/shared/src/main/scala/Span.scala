@@ -27,10 +27,9 @@ trait Span[F[_]] {
   /** Adds error information to this span. */
   def attachError(err: Throwable): F[Unit]
 
-  /**
-   * The kernel for this span, which can be sent as headers to remote systems, which can then
-   * continue this trace by constructing spans that are children of this one.
-   */
+  /** The kernel for this span, which can be sent as headers to remote systems, which can then
+    * continue this trace by constructing spans that are children of this one.
+    */
   def kernel: F[Kernel]
 
   /** Resource that yields a child span with the given name. */
@@ -39,27 +38,24 @@ trait Span[F[_]] {
   /** Resource that yields a child span of both this span and the given kernel. */
   def span(name: String, kernel: Kernel): Resource[F, Span[F]]
 
-  /**
-   * A unique ID for the trace of this span, if available.
-   * This can be useful to include in error messages for example, so you can quickly find the associated trace.
-   */
+  /** A unique ID for the trace of this span, if available.
+    * This can be useful to include in error messages for example, so you can quickly find the associated trace.
+    */
   def traceId: F[Option[String]]
 
-  /**
-   * A unique ID for this span, if available. This can be useful to include in error messages for
-   * example, so you can quickly find the associated trace.
-   */
+  /** A unique ID for this span, if available. This can be useful to include in error messages for
+    * example, so you can quickly find the associated trace.
+    */
   def spanId: F[Option[String]]
 
-  /**
-   * A unique URI for this trace, if available. This can be useful to include in error messages for
-   * example, so you can quickly find the associated trace.
-   */
+  /** A unique URI for this trace, if available. This can be useful to include in error messages for
+    * example, so you can quickly find the associated trace.
+    */
   def traceUri: F[Option[URI]]
 
   /** Converts this `Span[F]` to a `Span[G]` using a `F ~> G`. */
-  def mapK[G[_]](f: F ~> G)(
-      implicit F: MonadCancel[F, _],
+  def mapK[G[_]](f: F ~> G)(implicit
+      F: MonadCancel[F, _],
       G: MonadCancel[G, _]
   ): Span[G] = {
     val outer = this
@@ -100,22 +96,24 @@ trait Span[F[_]] {
 }
 
 object Span {
-  /**
-   * Ensure that Fields mixin data is added to a span when an error is raised.
-   */
-  def putErrorFields[F[_]: Applicative](span: Resource[F, Span[F]]): Resource[F, Span[F]] =
-    span.flatMap(span => Resource.makeCase(span.pure[F])((_, exit) => exit match {
-      case ExitCase.Errored(f: Fields) => span.put(f.fields.toList: _*)
-      case _ => Applicative[F].unit
-    }))
 
-  /**
-    * A no-op `Span` implementation which ignores all child span creation.
+  /** Ensure that Fields mixin data is added to a span when an error is raised.
+    */
+  def putErrorFields[F[_]: Applicative](span: Resource[F, Span[F]]): Resource[F, Span[F]] =
+    span.flatMap(span =>
+      Resource.makeCase(span.pure[F])((_, exit) =>
+        exit match {
+          case ExitCase.Errored(f: Fields) => span.put(f.fields.toList: _*)
+          case _                           => Applicative[F].unit
+        }
+      )
+    )
+
+  /** A no-op `Span` implementation which ignores all child span creation.
     */
   def noop[F[_]: Applicative]: Span[F] = new NoopSpan
 
-  /**
-    * A `Span` implementation which creates a new root span using the supplied `EntryPoint`
+  /** A `Span` implementation which creates a new root span using the supplied `EntryPoint`
     * for each requested child span.
     */
   def makeRoots[F[_]: Applicative](ep: EntryPoint[F]): Span[F] = new RootsSpan(ep)
@@ -138,7 +136,8 @@ object Span {
 
   private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
     def span(name: String): Resource[F, Span[F]] = ep.root(name)
-    override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = ep.continueOrElseRoot(name, kernel)
+    override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+      ep.continueOrElseRoot(name, kernel)
   }
 
   private def resolve[F[_]](span: Span[F]): Kleisli[F, Span[F], *] ~> F =
@@ -146,13 +145,13 @@ object Span {
       def apply[A](k: Kleisli[F, Span[F], A]) = k(span)
     }
 
-  /**
-    * Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by ignoring all span creation.
+  /** Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by ignoring all span creation.
     */
   def dropTracing[F[_]: Applicative]: Kleisli[F, Span[F], *] ~> F = resolve(noop)
 
-  /**
-    * Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by creating a new root span for each direct child span.
+  /** Resolves a `Kleisli[F, Span[F], A]` to a `F[A]` by creating a new root span for each direct child span.
     */
-  def rootTracing[F[_]: Applicative](ep: EntryPoint[F]): Kleisli[F, Span[F], *] ~> F = resolve(makeRoots(ep))
+  def rootTracing[F[_]: Applicative](ep: EntryPoint[F]): Kleisli[F, Span[F], *] ~> F = resolve(
+    makeRoots(ep)
+  )
 }

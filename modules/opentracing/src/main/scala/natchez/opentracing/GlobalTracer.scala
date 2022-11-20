@@ -7,20 +7,19 @@ package opentracing
 
 import cats.effect.Sync
 import cats.syntax.all._
-import io.opentracing.util.{ GlobalTracer => GT }
+import io.opentracing.util.{GlobalTracer => GT}
 import io.{opentracing => ot}
 
 object GlobalTracer {
 
   def hasRegisteredTracer[F[_]: Sync]: F[Boolean] = Sync[F].delay(GT.isRegistered())
 
-  def fetch[F[_]: Sync]: F[Option[ot.Tracer]] = 
+  def fetch[F[_]: Sync]: F[Option[ot.Tracer]] =
     hasRegisteredTracer[F].flatMap {
-      case true => Sync[F].delay(Some(GT.get()))
+      case true  => Sync[F].delay(Some(GT.get()))
       case false => Sync[F].pure(None)
     }
 
-  def registerTracer[F[_]: Sync](tracer: ot.Tracer): F[Boolean] = Sync[F].delay(GT.registerIfAbsent(tracer))
+  def registerTracer[F[_]: Sync](tracer: ot.Tracer): F[Boolean] =
+    Sync[F].delay(GT.registerIfAbsent(tracer))
 }
- 
-

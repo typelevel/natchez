@@ -17,7 +17,8 @@ object NewRelic {
       def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
         Resource
           .make(NewrelicSpan.fromKernel[F](system, name, kernel)(sender))(s =>
-            NewrelicSpan.finish[F](s))
+            NewrelicSpan.finish[F](s)
+          )
           .widen
 
       def root(name: String): Resource[F, Span[F]] =
@@ -26,8 +27,8 @@ object NewRelic {
           .widen
 
       def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-        continue(name, kernel).recoverWith {
-          case _: NoSuchElementException => root(name)
+        continue(name, kernel).recoverWith { case _: NoSuchElementException =>
+          root(name)
         }
 
     }

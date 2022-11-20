@@ -15,18 +15,20 @@ import natchez.opentracing.GlobalTracer
 
 object DDTracer {
   def entryPoint[F[_]: Sync](
-    buildFunc: DDTracerBuilder => F[NativeDDTracer],
-    uriPrefix: Option[URI] = None
+      buildFunc: DDTracerBuilder => F[NativeDDTracer],
+      uriPrefix: Option[URI] = None
   ): Resource[F, EntryPoint[F]] = {
-    val createAndRegister = 
-      Sync[F].delay(NativeDDTracer.builder())
+    val createAndRegister =
+      Sync[F]
+        .delay(NativeDDTracer.builder())
         .flatMap(buildFunc)
         .flatTap(GlobalTracer.registerTracer[F])
 
-    Resource.make(createAndRegister)(t => Sync[F].delay(t.close()))
-        .map(new DDEntryPoint[F](_, uriPrefix))
+    Resource
+      .make(createAndRegister)(t => Sync[F].delay(t.close()))
+      .map(new DDEntryPoint[F](_, uriPrefix))
   }
 
-  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] = 
+  def globalTracerEntryPoint[F[_]: Sync](uriPrefix: Option[URI]): F[Option[EntryPoint[F]]] =
     GlobalTracer.fetch.map(_.map(new DDEntryPoint[F](_, uriPrefix)))
 }

@@ -16,24 +16,27 @@ import java.net.URI
 object OpenTelemetry {
   private final val instrumentationName = "natchez.opentelemetry"
 
-  def entryPointFor[F[_] : Sync](otel: OTel): F[OpenTelemetryEntryPoint[F]] =
-    Sync[F].delay(otel.getTracer("natchez")).map(t => 
-      OpenTelemetryEntryPoint(otel, t, None)
-    )
+  def entryPointFor[F[_]: Sync](otel: OTel): F[OpenTelemetryEntryPoint[F]] =
+    Sync[F].delay(otel.getTracer("natchez")).map(t => OpenTelemetryEntryPoint(otel, t, None))
 
-  def entryPointFor[F[_] : Sync](otel: OTel, tracer: Tracer, prefix: Option[URI]): OpenTelemetryEntryPoint[F] =
+  def entryPointFor[F[_]: Sync](
+      otel: OTel,
+      tracer: Tracer,
+      prefix: Option[URI]
+  ): OpenTelemetryEntryPoint[F] =
     OpenTelemetryEntryPoint(otel, tracer, prefix)
 
-  def entryPoint[F[_] : Sync](uriPrefix: Option[URI] = None, globallyRegister: Boolean = false)(
-    configure: OpenTelemetrySdkBuilder => Resource[F, OpenTelemetrySdkBuilder]
+  def entryPoint[F[_]: Sync](uriPrefix: Option[URI] = None, globallyRegister: Boolean = false)(
+      configure: OpenTelemetrySdkBuilder => Resource[F, OpenTelemetrySdkBuilder]
   ): Resource[F, EntryPoint[F]] = {
     val register: OpenTelemetrySdkBuilder => Resource[F, (OpenTelemetrySdk, Tracer)] = { b =>
       Resource.make(
         Sync[F].delay {
-          val sdk = if (globallyRegister)
-            b.buildAndRegisterGlobal()
-          else
-            b.build()
+          val sdk =
+            if (globallyRegister)
+              b.buildAndRegisterGlobal()
+            else
+              b.build()
           val tracer = sdk.getTracer(instrumentationName)
           (sdk, tracer)
         }
@@ -44,7 +47,8 @@ object OpenTelemetry {
         }
       }
     }
-    Resource.eval(Sync[F].delay { OpenTelemetrySdk.builder() })
+    Resource
+      .eval(Sync[F].delay(OpenTelemetrySdk.builder()))
       .flatMap(configure)
       .flatMap(register)
       .map { case (sdk, tracer) =>
@@ -62,7 +66,8 @@ object OpenTelemetry {
   // We need a name so the failure error can contain something useful
   def lift[F[_]: Async, T: Shutdownable](name: String, create: F[T]): Resource[F, T] =
     Resource.make(create) { t =>
-      Sync[F].delay { Shutdownable[T].shutdown(t) }
+      Sync[F]
+        .delay(Shutdownable[T].shutdown(t))
         .flatMap(Utils.asyncFromCompletableResultCode(s"$name cleanup", _))
     }
 }

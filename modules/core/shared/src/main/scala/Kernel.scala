@@ -4,9 +4,8 @@
 
 package natchez
 
-/**
- * An opaque hunk of data that we can hand off to another system (in the form of HTTP headers),
- * which can then create new spans as children of this one. By this mechanism we allow our trace
- * to span remote calls.
- */
+/** An opaque hunk of data that we can hand off to another system (in the form of HTTP headers),
+  * which can then create new spans as children of this one. By this mechanism we allow our trace
+  * to span remote calls.
+  */
 final case class Kernel(toHeaders: Map[String, String])
