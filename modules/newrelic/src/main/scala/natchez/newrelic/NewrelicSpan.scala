@@ -30,7 +30,7 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
     sender: SpanBatchSender
 ) extends natchez.Span[F] {
 
-  def kernel: F[Kernel] =
+  override def kernel: F[Kernel] =
     Sync[F].delay {
       Kernel(
         Map(
@@ -41,24 +41,31 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
 
     }
 
-  def put(fields: (String, TraceValue)*): F[Unit] =
+  override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v))  => attributes.update(att => att.put(k, v))
       case (k, NumberValue(v))  => attributes.update(att => att.put(k, v))
       case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v))
     }
 
-  def span(name: String): Resource[F, natchez.Span[F]] =
-    Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
+  override def attachError(err: Throwable): F[Unit] =
+     put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
 
-  def traceId: F[Option[String]] = traceIdS.some.pure[F]
+  override def log(fields: (String, TraceValue)*): F[Unit] = Sync[F].unit
 
-  def spanId: F[Option[String]] = id.some.pure[F]
-
-  def traceUri: F[Option[URI]] = none[URI].pure[F]
+  override def log(event: String): F[Unit] = Sync[F].unit
 
   override def span(name: String, kernel: Kernel): Resource[F, natchez.Span[F]] =
     Resource.make(NewrelicSpan.fromKernel(service, name, kernel)(sender))(NewrelicSpan.finish[F]).widen
+
+  override def span(name: String): Resource[F, natchez.Span[F]] =
+    Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
+
+  override def spanId: F[Option[String]] = id.some.pure[F]
+
+  override def traceId: F[Option[String]] = traceIdS.some.pure[F]
+
+  override def traceUri: F[Option[URI]] = none[URI].pure[F]
 }
 
 object NewrelicSpan {

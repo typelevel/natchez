@@ -153,8 +153,8 @@ lazy val lightstep = project
     name           := "natchez-lightstep",
     description    := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
+      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.5",
       "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.lightstep.tracer"    % "lightstep-tracer-jre"    % "0.30.5"
     )
   )
 
@@ -197,7 +197,6 @@ lazy val opentracing = project
     name        := "natchez-opentracing",
     description := "Base OpenTracing Utilities for Natchez",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "io.opentracing" % "opentracing-api" % "0.33.0" % "provided",
       "io.opentracing" % "opentracing-util" % "0.33.0" % "provided"
     )
@@ -332,8 +331,7 @@ lazy val mock = project
     name        := "natchez-mock",
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
-      "io.opentracing" % "opentracing-mock" % "0.33.0",
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion
+      "io.opentracing" % "opentracing-mock" % "0.33.0"
     ))
 
 

@@ -5,14 +5,16 @@
 package natchez
 package jaeger
 
-import io.{ opentracing => ot }
+import io.{opentracing => ot}
 import cats.data.Nested
 import cats.effect.Sync
 import cats.effect.Resource
 import cats.effect.Resource.ExitCase
 import cats.syntax.all._
+import io.opentracing.log.Fields
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapAdapter
+import io.opentracing.tag.Tags
 
 import scala.jdk.CollectionConverters._
 import java.net.URI
@@ -24,7 +26,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
 ) extends Span[F] {
   import TraceValue._
 
-  def kernel: F[Kernel] =
+  override def kernel: F[Kernel] =
     Sync[F].delay {
       val m = new java.util.HashMap[String, String]
       tracer.inject(
@@ -35,36 +37,45 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       Kernel(m.asScala.toMap)
     }
 
-  def put(fields: (String, TraceValue)*): F[Unit] =
+  override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
       case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  def span(name: String): Resource[F,Span[F]] =
+  override def attachError(err: Throwable): F[Unit] = {
+    put(
+      Tags.ERROR.getKey -> true
+    ) >>
+    Sync[F].delay {
+      span.log(
+        Map(
+          Fields.EVENT -> "error",
+          Fields.ERROR_OBJECT -> err,
+          Fields.ERROR_KIND -> err.getClass.getSimpleName,
+          Fields.MESSAGE -> err.getMessage,
+          Fields.STACK -> err.getStackTrace.mkString
+        ).asJava
+      )
+    }.void
+  }
+
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    val map = fields.map {case (k, v) => k -> v.value }.toMap.asJava
+    Sync[F].delay(span.log(map)).void
+  }
+
+  override def log(event: String): F[Unit] = {
+    Sync[F].delay(span.log(event)).void
+  }
+
+  override def span(name: String): Resource[F,Span[F]] =
     Span.putErrorFields {
       Resource.makeCase(
         Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start).map(JaegerSpan(tracer, _, prefix))
       )(JaegerSpan.finish)
     }
-
-  def traceId: F[Option[String]] =
-    Sync[F].pure {
-      val rawId = span.context.toTraceId
-      if (rawId.nonEmpty) rawId.some else none
-    }
-
-  def spanId: F[Option[String]] =
-    Sync[F].pure {
-      val rawId = span.context.toSpanId
-      if (rawId.nonEmpty) rawId.some else none
-    }
-
-  def traceUri: F[Option[URI]] =
-    (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
-      uri.resolve(s"/trace/$id")
-    } .value
 
   override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
     Span.putErrorFields {
@@ -76,6 +87,23 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
         Sync[F].delay(tracer.buildSpan(name).asChildOf(p).asChildOf(span).start).map(JaegerSpan(tracer, _, prefix))
       }(JaegerSpan.finish)
     }
+
+  override def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toSpanId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  override def traceId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.context.toTraceId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  override def traceUri: F[Option[URI]] =
+    (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
+      uri.resolve(s"/trace/$id")
+    } .value
 }
 
 private[jaeger] object JaegerSpan {

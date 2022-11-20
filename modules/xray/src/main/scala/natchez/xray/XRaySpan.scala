@@ -46,6 +46,13 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   def kernel: F[Kernel] =
     Kernel(Map(XRaySpan.Header -> header)).pure[F]
 
+  def attachError(err: Throwable): F[Unit] = 
+    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+
+  def log(event: String): F[Unit] = Applicative[F].unit
+
+  def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
+
   def span(name: String): Resource[F, Span[F]] =
     Resource.makeCase(XRaySpan.child(this, name))(
       XRaySpan.finish[F](_, entry, _)

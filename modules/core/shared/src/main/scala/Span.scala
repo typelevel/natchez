@@ -15,8 +15,17 @@ import java.net.URI
 /** An span that can be passed around and used to create child spans. */
 trait Span[F[_]] {
 
-  /** Put a sequence of fields into this span. */
+  /** Puts a sequence of fields into this span. */
   def put(fields: (String, TraceValue)*): F[Unit]
+
+  /** Logs a sequence of fields on this span. */
+  def log(fields: (String, TraceValue)*): F[Unit]
+
+  /** Logs a single event on this span. */
+  def log(event: String): F[Unit]
+
+  /** Adds error information to this span. */
+  def attachError(err: Throwable): F[Unit]
 
   /**
    * The kernel for this span, which can be sent as headers to remote systems, which can then
@@ -61,14 +70,23 @@ trait Span[F[_]] {
 
       override def kernel: G[Kernel] = f(outer.kernel)
 
+      override def attachError(err: Throwable) =
+        f(outer.attachError(err))
+
+      override def log(event: String) =
+        f(outer.log(event))
+
+      override def log(fields: (String, TraceValue)*) =
+        f(outer.log(fields: _*))
+
       override def span(name: String): Resource[G, Span[G]] = outer
         .span(name)
         .map(_.mapK(f))
         .mapK(f)
 
-      override def traceId: G[Option[String]] = f(outer.traceId)
-
       override def spanId: G[Option[String]] = f(outer.spanId)
+
+      override def traceId: G[Option[String]] = f(outer.traceId)
 
       override def traceUri: G[Option[URI]] = f(outer.traceUri)
 
@@ -103,11 +121,14 @@ object Span {
   def makeRoots[F[_]: Applicative](ep: EntryPoint[F]): Span[F] = new RootsSpan(ep)
 
   private abstract class EphemeralSpan[F[_]: Applicative] extends Span[F] {
-    def put(fields: (String, TraceValue)*): F[Unit] = ().pure[F]
-    def kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-    def traceId: F[Option[String]] = (None: Option[String]).pure[F]
-    def spanId: F[Option[String]] = (None: Option[String]).pure[F]
-    def traceUri: F[Option[URI]] = (None: Option[URI]).pure[F]
+    override def put(fields: (String, TraceValue)*): F[Unit] = ().pure[F]
+    override def kernel: F[Kernel] = Kernel(Map.empty).pure[F]
+    override def attachError(err: Throwable) = ().pure[F]
+    override def log(event: String) = ().pure[F]
+    override def log(fields: (String, TraceValue)*) = ().pure[F]
+    override def spanId: F[Option[String]] = (None: Option[String]).pure[F]
+    override def traceId: F[Option[String]] = (None: Option[String]).pure[F]
+    override def traceUri: F[Option[URI]] = (None: Option[URI]).pure[F]
   }
 
   private class NoopSpan[F[_]: Applicative] extends EphemeralSpan[F] {

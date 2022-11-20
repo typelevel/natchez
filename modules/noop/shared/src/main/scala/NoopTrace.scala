@@ -17,8 +17,14 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
   override def put(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit
 
+  def attachError(err: Throwable): F[Unit] = Applicative[F].unit
+
   override def kernel: F[Kernel] =
     Applicative[F].pure(Kernel(Map.empty))
+
+  override def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
+
+  override def log(event: String): F[Unit] = Applicative[F].unit
 
   override def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F] =
     Resource.pure(FunctionK.id)

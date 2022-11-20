@@ -26,22 +26,29 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
   import OpenCensusSpan._
 
+  private def traceToAttribute(value: TraceValue): AttributeValue = value match {
+    case StringValue(v) =>
+      val safeString = if (v == null) "null" else v
+      AttributeValue.stringAttributeValue(safeString)
+    case NumberValue(v) =>
+      AttributeValue.doubleAttributeValue(v.doubleValue())
+    case BooleanValue(v) =>
+      AttributeValue.booleanAttributeValue(v)
+  }
+
   override def put(fields: (String, TraceValue)*): F[Unit] =
-    fields.toList.traverse_ {
-      case (k, StringValue(v)) =>
-        val safeString =
-          if (v == null) "null" else v
-        Sync[F].delay(
-          span.putAttribute(k, AttributeValue.stringAttributeValue(safeString)))
-      case (k, NumberValue(v)) =>
-        Sync[F].delay(
-          span.putAttribute(
-            k,
-            AttributeValue.doubleAttributeValue(v.doubleValue())))
-      case (k, BooleanValue(v)) =>
-        Sync[F].delay(
-          span.putAttribute(k, AttributeValue.booleanAttributeValue(v)))
+    fields.toList.traverse_ { case (key, value) =>
+      Sync[F].delay(span.putAttribute(key, traceToAttribute(value)))
     }
+
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    val map = fields.map { case (k, v) => k -> traceToAttribute(v) }.toMap.asJava
+    Sync[F].delay(span.addAnnotation("event", map)).void
+  }
+
+  override def log(event: String): F[Unit] = {
+    Sync[F].delay(span.addAnnotation(event)).void
+  }
 
   override def kernel: F[Kernel] = Sync[F].delay {
     val headers: mutable.Map[String, String] = mutable.Map.empty[String, String]
@@ -71,6 +78,8 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
   def traceUri: F[Option[URI]] = none.pure[F]
 
+  override def attachError(err: Throwable): F[Unit] =
+    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
 }
 
 private[opencensus] object OpenCensusSpan {
@@ -93,12 +102,7 @@ private[opencensus] object OpenCensusSpan {
               exitCase match {
                 case Succeeded   => outer.span.setStatus(io.opencensus.trace.Status.OK)
                 case Canceled    => outer.span.setStatus(io.opencensus.trace.Status.CANCELLED)
-                case Errored(ex) =>
-                  outer.put(
-                    ("error.msg", ex.getMessage),
-                    ("error.stack", ex.getStackTrace.mkString("\n"))
-                  )
-                  outer.span.setStatus(io.opencensus.trace.Status.INTERNAL.withDescription(ex.getMessage))
+                case Errored(ex) => outer.attachError(ex)
               }
             }
       _  <- Sync[F].delay(outer.span.end())

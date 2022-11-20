@@ -6,6 +6,7 @@ package natchez
 package opentelemetry
 
 
+import cats.data.Nested
 import cats.effect.{Resource, Sync}
 import cats.effect.kernel.Resource.ExitCase
 import cats.effect.kernel.Resource.ExitCase.{Canceled, Errored, Succeeded}
@@ -21,33 +22,40 @@ import TraceValue.{BooleanValue, NumberValue, StringValue}
 
 import java.net.URI
 import scala.collection.mutable
+import io.opentelemetry.api.common.Attributes
 
 private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](otel: OTel, tracer: Tracer, span: TSpan, prefix: Option[URI]) extends Span[F] {
 
   import OpenTelemetrySpan._
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
-    fields.toList.traverse_ {
+    Sync[F].delay(span.setAllAttributes(fieldsToAttributes(fields: _*))).void
+
+  private def fieldsToAttributes(fields: (String, TraceValue)*): Attributes = {
+    val bldr = Attributes.builder()
+    fields.foreach {
       case (k, StringValue(v))                       =>
         val safeString = if (v == null) "null" else v
-        Sync[F].delay(span.setAttribute(k, safeString))
+        bldr.put(k, safeString)
       // all integer types are cast up to Long, since that's all OpenTelemetry lets us use
-      case (k, NumberValue(n: java.lang.Byte))       => Sync[F].delay(span.setAttribute(k, n.toLong))
-      case (k, NumberValue(n: java.lang.Short))      => Sync[F].delay(span.setAttribute(k, n.toLong))
-      case (k, NumberValue(n: java.lang.Integer))    => Sync[F].delay(span.setAttribute(k, n.toLong))
-      case (k, NumberValue(n: java.lang.Long))       => Sync[F].delay(span.setAttribute(k, n))
+      case (k, NumberValue(n: java.lang.Byte))       => bldr.put(k, n.toLong)
+      case (k, NumberValue(n: java.lang.Short))      => bldr.put(k, n.toLong)
+      case (k, NumberValue(n: java.lang.Integer))    => bldr.put(k, n.toLong)
+      case (k, NumberValue(n: java.lang.Long))       => bldr.put(k, n)
       // and all float types are changed to Double
-      case (k, NumberValue(n: java.lang.Float))      => Sync[F].delay(span.setAttribute(k, n.toDouble))
-      case (k, NumberValue(n: java.lang.Double))     => Sync[F].delay(span.setAttribute(k, n))
+      case (k, NumberValue(n: java.lang.Float))      => bldr.put(k, n.toDouble)
+      case (k, NumberValue(n: java.lang.Double))     => bldr.put(k, n)
       // anything which could be too big to put in a Long is converted to a String
-      case (k, NumberValue(n: java.math.BigDecimal)) => Sync[F].delay(span.setAttribute(k, n.toString))
-      case (k, NumberValue(n: java.math.BigInteger)) => Sync[F].delay(span.setAttribute(k, n.toString))
-      case (k, NumberValue(n: BigDecimal))           => Sync[F].delay(span.setAttribute(k, n.toString))
-      case (k, NumberValue(n: BigInt))               => Sync[F].delay(span.setAttribute(k, n.toString))
+      case (k, NumberValue(n: java.math.BigDecimal)) => bldr.put(k, n.toString)
+      case (k, NumberValue(n: java.math.BigInteger)) => bldr.put(k, n.toString)
+      case (k, NumberValue(n: BigDecimal))           => bldr.put(k, n.toString)
+      case (k, NumberValue(n: BigInt))               => bldr.put(k, n.toString)
       // and any other Number can fall back to a Double
-      case (k, NumberValue(v))                       => Sync[F].delay(span.setAttribute(k, v.doubleValue()))
-      case (k, BooleanValue(v))                      => Sync[F].delay(span.setAttribute(k, v))
+      case (k, NumberValue(v))                       => bldr.put(k, v.doubleValue())
+      case (k, BooleanValue(v))                      => bldr.put(k, v)
     }
+    bldr.build()
+  }
 
   override def kernel: F[Kernel] =
     Sync[F].delay {
@@ -56,33 +64,41 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_] : Sync](otel: OTe
       Kernel(headers.toMap)
     }
 
-  override def span(name: String): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(OpenTelemetrySpan.child(this, name))(OpenTelemetrySpan.finish).widen)
+  override def attachError(err: Throwable): F[Unit] =
+    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName) *>
+      Sync[F].delay(span.recordException(err)).void
 
-  def traceId: F[Option[String]] =
-    Sync[F].pure {
-      val rawId = span.getSpanContext.getTraceId
-      if (rawId.nonEmpty) rawId.some else none
-    }
+  override def log(fields: (String, TraceValue)*): F[Unit] =
+    Sync[F].delay(span.addEvent("event", fieldsToAttributes(fields: _*))).void
 
-  def spanId: F[Option[String]] =
-    Sync[F].pure {
-      val rawId = span.getSpanContext.getSpanId
-      if (rawId.nonEmpty) rawId.some else none
-    }
-
-  def traceUri: F[Option[URI]] = none[URI].pure[F]
-  // TODO
-  // override def traceUri: F[Option[URI]] =
-  //   (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
-  //     uri.resolve(s"/trace/$id")
-  //   }.value
+  override def log(event: String): F[Unit] =
+    Sync[F].delay(span.addEvent(event)).void
 
   override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
     Resource.makeCase(OpenTelemetrySpan.fromKernelWithSpan(otel, tracer, name, kernel, span, prefix))(
       OpenTelemetrySpan.finish
     ).widen
   )
+
+  override def span(name: String): Resource[F, Span[F]] =
+    Span.putErrorFields(Resource.makeCase(OpenTelemetrySpan.child(this, name))(OpenTelemetrySpan.finish).widen)
+
+  override def spanId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.getSpanContext.getSpanId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  override def traceId: F[Option[String]] =
+    Sync[F].pure {
+      val rawId = span.getSpanContext.getTraceId
+      if (rawId.nonEmpty) rawId.some else none
+    }
+
+  override def traceUri: F[Option[URI]] =
+    (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
+      uri.resolve(s"/trace/$id")
+    }.value
 }
 
 private[opentelemetry] object OpenTelemetrySpan {

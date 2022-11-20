@@ -10,6 +10,7 @@ import cats.effect.std.UUIDGen
 import cats.effect.Resource.ExitCase
 import cats.effect.Resource.ExitCase._
 import cats.syntax.all._
+
 import java.time.Instant
 import java.util.UUID
 import natchez._
@@ -19,6 +20,7 @@ import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
 import org.typelevel.log4cats.Logger
+
 import java.net.URI
 
 private[log] final case class LogSpan[F[_]: Sync: Logger](
@@ -51,22 +53,30 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   def putAny(fields: (String, Json)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
 
+  override def log(fields: (String, TraceValue)*): F[Unit] = {
+    put(fields: _*)
+  }
+
+  override def log(event: String): F[Unit] =
+   log("event" -> TraceValue.StringValue(event))
+
   def span(label: String): Resource[F, Span[F]] =
     Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finishChild[F]).widen)
 
-  def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
+  def attachError(err: Throwable): F[Unit] = {
+    putAny(
+      "exit.case"             -> "error".asJson,
+      "exit.error.class"      -> err.getClass.getName.asJson,
+      "exit.error.message"    -> err.getMessage.asJson,
+      "exit.error.stackTrace" -> err.getStackTrace.map(_.toString).asJson,
+    )
+  }
+
+  def json(finish: Instant): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
 
       // Assemble our JSON object such that the Natchez fields always come first, in the same
       // order, followed by error fields (if any), followed by span fields.
-
-      def exitFields(ex: Throwable): List[(String, Json)] =
-        List(
-          "exit.case"             -> "error".asJson,
-          "exit.error.class"      -> ex.getClass.getName.asJson,
-          "exit.error.message"    -> ex.getMessage.asJson,
-          "exit.error.stackTrace" -> ex.getStackTrace.map(_.toString).asJson,
-        )
 
       val fields: List[(String, Json)] =
         List(
@@ -77,14 +87,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "trace.span_id"   -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
           "trace.trace_id"  -> traceUUID.asJson,
-        ) ++ {
-          exitCase match {
-            case Succeeded           => List("exit.case" -> "succeeded".asJson)
-            case Canceled            => List("exit.case" -> "canceled".asJson)
-            case Errored(ex: Fields) => exitFields(ex) ++ ex.fields.toList.map { case (k, v) => (k, v.asJson) }
-            case Errored(ex)         => exitFields(ex)
-          }
-        } ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
+        ) ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
 
       JsonObject.fromIterable(fields)
 
@@ -136,7 +139,13 @@ private[log] object LogSpan {
   def finish[F[_]: Sync: Logger](format: Json => String): (LogSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
     for {
       n  <- now
-      j  <- span.json(n, exitCase)
+      _ <- exitCase match {
+        case Succeeded           => span.put("exit.case" -> "succeeded")
+        case Canceled            => span.put("exit.case" -> "canceled")
+        case Errored(ex: Fields) => span.attachError(ex) >> span.putAny(ex.fields.toList.map { case (k, v) => (k, v.asJson) }: _*)
+        case Errored(ex)         => span.attachError(ex)
+      }
+      j  <- span.json(n)
       _  <- span.parent match {
               case None |
                    Some(Left(_))  => Logger[F].info(format(Json.fromJsonObject(j)))
