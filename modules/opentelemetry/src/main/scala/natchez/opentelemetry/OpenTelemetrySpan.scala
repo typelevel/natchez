@@ -214,7 +214,7 @@ private[opentelemetry] object OpenTelemetrySpan {
     override def keys(carrier: Kernel): lang.Iterable[String] = carrier.toHeaders.keys.asJava
 
     override def get(carrier: Kernel, key: String): String =
-      carrier.toHeaders(key)
+      carrier.toHeaders.getOrElse(key, null)
   }
 
   private val spanContextSetter = new TextMapSetter[mutable.Map[String, String]] {
