@@ -88,10 +88,10 @@ object Trace {
           }
 
         override def span[A](name: String)(k: IO[A]): IO[A] =
-          spanR(name).surround(k)
+          spanR(name).use(_(k))
 
         override def span[A](name: String, kernel: Kernel)(k: IO[A]): IO[A] =
-          spanR(name, Some(kernel)).surround(k)
+          spanR(name, Some(kernel)).use(_(k))
 
         override def traceId: IO[Option[String]] =
           local.get.flatMap(_.traceId)
@@ -168,12 +168,12 @@ object Trace {
       )
 
     override def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-      spanR(name).surround(k)
+      spanR(name).use(_(k))
 
     override def span[A](name: String, kernel: Kernel)(
         k: Kleisli[F, Span[F], A]
     ): Kleisli[F, Span[F], A] =
-      spanR(name, Some(kernel)).surround(k)
+      spanR(name, Some(kernel)).use(_(k))
 
     def lens[E](f: E => Span[F], g: (E, Span[F]) => E): Trace[Kleisli[F, E, *]] =
       new Trace[Kleisli[F, E, *]] {
@@ -211,10 +211,10 @@ object Trace {
           )
 
         override def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          spanR(name).surround(k)
+          spanR(name).use(_(k))
 
         override def span[A](name: String, kernel: Kernel)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          spanR(name, Some(kernel)).surround(k)
+          spanR(name, Some(kernel)).use(_(k))
 
         override def traceId: Kleisli[F, E, Option[String]] =
           Kleisli(e => f(e).traceId)
