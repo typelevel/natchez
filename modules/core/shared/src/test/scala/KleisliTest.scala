@@ -18,15 +18,18 @@ class KleisliTest extends CatsEffectSuite {
     InMemory.EntryPoint.create.flatMap { ep =>
       val traced = ep.root("root").use(prg[Kleisli[IO, Span[IO], *]].run)
       traced *> ep.ref.get.map { history =>
-        assertEquals(history.toList, List(
-          (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()))),
-          (Lineage.Root, NatchezCommand.CreateSpan("parent", None)),
-          (Lineage.Root / "parent", NatchezCommand.CreateSpan("child", None)),
-          (Lineage.Root / "parent" / "child", NatchezCommand.Put(List("answer" -> 42))),
-          (Lineage.Root / "parent", NatchezCommand.ReleaseSpan("child")),
-          (Lineage.Root, NatchezCommand.ReleaseSpan("parent")),
-          (Lineage.Root, NatchezCommand.ReleaseRootSpan("root")),
-        ))
+        assertEquals(
+          history.toList,
+          List(
+            (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()))),
+            (Lineage.Root, NatchezCommand.CreateSpan("parent", None)),
+            (Lineage.Root / "parent", NatchezCommand.CreateSpan("child", None)),
+            (Lineage.Root / "parent" / "child", NatchezCommand.Put(List("answer" -> 42))),
+            (Lineage.Root / "parent", NatchezCommand.ReleaseSpan("child")),
+            (Lineage.Root, NatchezCommand.ReleaseSpan("parent")),
+            (Lineage.Root, NatchezCommand.ReleaseRootSpan("root"))
+          )
+        )
       }
     }
   }

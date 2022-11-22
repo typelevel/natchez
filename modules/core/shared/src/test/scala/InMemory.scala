@@ -7,14 +7,14 @@ package natchez
 import java.net.URI
 
 import cats.data.Chain
-import cats.effect.{ IO, Ref, Resource }
+import cats.effect.{IO, Ref, Resource}
 
 object InMemory {
 
   class Span(
-    lineage : Lineage,
-    k       : Kernel,
-    ref     : Ref[IO, Chain[(Lineage, NatchezCommand)]]
+      lineage: Lineage,
+      k: Kernel,
+      ref: Ref[IO, Chain[(Lineage, NatchezCommand)]]
   ) extends natchez.Span[IO] {
 
     def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
@@ -62,7 +62,8 @@ object InMemory {
       ref.update(_.append(lineage -> NatchezCommand.AskTraceUri)).as(None)
   }
 
-  class EntryPoint(val ref: Ref[IO, Chain[(Lineage, NatchezCommand)]]) extends natchez.EntryPoint[IO] {
+  class EntryPoint(val ref: Ref[IO, Chain[(Lineage, NatchezCommand)]])
+      extends natchez.EntryPoint[IO] {
 
     def root(name: String): Resource[IO, Span] =
       newSpan(name, Kernel(Map.empty))
@@ -93,26 +94,25 @@ object InMemory {
     def /(name: String): Lineage.Child = Lineage.Child(name, this)
   }
   object Lineage {
-    case object Root                                      extends Lineage
+    case object Root extends Lineage
     final case class Child(name: String, parent: Lineage) extends Lineage
   }
 
   sealed trait NatchezCommand
   object NatchezCommand {
-    case class AskKernel(kernel: Kernel)                        extends NatchezCommand
-    case object AskSpanId                                       extends NatchezCommand
-    case object AskTraceId                                      extends NatchezCommand
-    case object AskTraceUri                                     extends NatchezCommand
-    case class Put(fields: List[(String, natchez.TraceValue)])  extends NatchezCommand
+    case class AskKernel(kernel: Kernel) extends NatchezCommand
+    case object AskSpanId extends NatchezCommand
+    case object AskTraceId extends NatchezCommand
+    case object AskTraceUri extends NatchezCommand
+    case class Put(fields: List[(String, natchez.TraceValue)]) extends NatchezCommand
     case class CreateSpan(name: String, kernel: Option[Kernel]) extends NatchezCommand
-    case class ReleaseSpan(name: String)                        extends NatchezCommand
-    case class AttachError(err: Throwable)                      extends NatchezCommand
-    case class LogEvent(event: String)                          extends NatchezCommand
-    case class LogFields(fields: List[(String, TraceValue)])    extends NatchezCommand
+    case class ReleaseSpan(name: String) extends NatchezCommand
+    case class AttachError(err: Throwable) extends NatchezCommand
+    case class LogEvent(event: String) extends NatchezCommand
+    case class LogFields(fields: List[(String, TraceValue)]) extends NatchezCommand
     // entry point
-    case class CreateRootSpan(name: String, kernel: Kernel)     extends NatchezCommand
-    case class ReleaseRootSpan(name: String)                    extends NatchezCommand
+    case class CreateRootSpan(name: String, kernel: Kernel) extends NatchezCommand
+    case class ReleaseRootSpan(name: String) extends NatchezCommand
   }
 
 }
-
