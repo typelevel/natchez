@@ -35,8 +35,9 @@ trait Span[F[_]] {
   /** Resource that yields a child span with the given name. */
   def span(name: String): Resource[F, Span[F]]
 
+  // TODO
   /** Resource that yields a child span of both this span and the given kernel. */
-  def span(name: String, kernel: Kernel): Resource[F, Span[F]]
+  def span(name: String, options: Span.Options): Resource[F, Span[F]]
 
   /** A unique ID for the trace of this span, if available.
     * This can be useful to include in error messages for example, so you can quickly find the associated trace.
@@ -86,9 +87,8 @@ trait Span[F[_]] {
 
       override def traceUri: G[Option[URI]] = f(outer.traceUri)
 
-      /** Create resource with new span and add current span and kernel to parents of new span */
-      override def span(name: String, kernel: Kernel): Resource[G, Span[G]] = outer
-        .span(name, kernel)
+      override def span(name: String, options: Span.Options): Resource[G, Span[G]] = outer
+        .span(name, options)
         .map(_.mapK(f))
         .mapK(f)
     }
@@ -96,6 +96,24 @@ trait Span[F[_]] {
 }
 
 object Span {
+
+  trait Default[F[_]] extends Span[F] {
+    protected implicit val applciativeInstance: Applicative[F]
+    protected val spanCreationPolicy: Options.SpanCreationPolicy
+
+    def span(name: String): Resource[F, Span[F]] = 
+      span(name, Options.Defaults)
+
+    def span(name: String, options: Options): Resource[F, Span[F]] = {
+      spanCreationPolicy match {
+        case Options.SpanCreationPolicy.Suppress => Resource.pure(Span.noop[F])
+        case Options.SpanCreationPolicy.Coalesce => Resource.pure(this)
+        case Options.SpanCreationPolicy.Default => createSpan(name, options)
+      }
+    }
+
+    def createSpan(name: String, options: Options): Resource[F, Span[F]]
+  }
 
   /** Ensure that Fields mixin data is added to a span when an error is raised.
     */
@@ -131,13 +149,13 @@ object Span {
 
   private class NoopSpan[F[_]: Applicative] extends EphemeralSpan[F] {
     def span(name: String): Resource[F, Span[F]] = Resource.pure(this)
-    override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Resource.pure(this)
+    override def span(name: String, options: Span.Options): Resource[F, Span[F]] = Resource.pure(this)
   }
 
   private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
     def span(name: String): Resource[F, Span[F]] = ep.root(name)
-    override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
-      ep.continueOrElseRoot(name, kernel)
+    override def span(name: String, options: Span.Options): Resource[F, Span[F]] =
+      options.parentKernel.fold(ep.root(name))(ep.continueOrElseRoot(name, _))
   }
 
   private def resolve[F[_]](span: Span[F]): Kleisli[F, Span[F], *] ~> F =
@@ -154,4 +172,31 @@ object Span {
   def rootTracing[F[_]: Applicative](ep: EntryPoint[F]): Kleisli[F, Span[F], *] ~> F = resolve(
     makeRoots(ep)
   )
+
+  sealed trait Options {
+    def parentKernel: Option[Kernel]
+    def spanCreationPolicy: Options.SpanCreationPolicy
+
+    def withParentKernel(kernel: Kernel): Options
+    def withoutParentKernel: Options
+    def withSpanCreationPolicy(p: Options.SpanCreationPolicy): Options
+  }
+
+  object Options {
+    sealed trait SpanCreationPolicy
+    object SpanCreationPolicy {
+      case object Default extends SpanCreationPolicy
+      case object Suppress extends SpanCreationPolicy
+      case object Coalesce extends SpanCreationPolicy
+    }
+
+    private case class OptionsImpl(parentKernel: Option[Kernel], spanCreationPolicy: SpanCreationPolicy) extends Options {
+      def withParentKernel(kernel: Kernel): Options = OptionsImpl(Some(kernel), spanCreationPolicy)
+      def withoutParentKernel: Options = OptionsImpl(None, spanCreationPolicy)
+      def withSpanCreationPolicy(p: SpanCreationPolicy): Options = OptionsImpl(parentKernel, p)
+    }
+    val Defaults: Options = OptionsImpl(None, SpanCreationPolicy.Default)
+    val Suppress: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Suppress)
+    val Coalesce: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Coalesce)
+  }
 }

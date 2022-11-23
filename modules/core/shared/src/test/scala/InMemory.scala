@@ -9,13 +9,18 @@ import java.net.URI
 import cats.data.Chain
 import cats.effect.{IO, Ref, Resource}
 
+import natchez.Span.Options
+import cats.Applicative
+
 object InMemory {
 
   class Span(
       lineage: Lineage,
       k: Kernel,
-      ref: Ref[IO, Chain[(Lineage, NatchezCommand)]]
-  ) extends natchez.Span[IO] {
+      ref: Ref[IO, Chain[(Lineage, NatchezCommand)]],
+      val spanCreationPolicy: Options.SpanCreationPolicy
+  ) extends natchez.Span.Default[IO] {
+    protected val applciativeInstance: Applicative[IO] = implicitly
 
     def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.Put(fields.toList)))
@@ -32,20 +37,10 @@ object InMemory {
     def kernel: IO[Kernel] =
       ref.update(_.append(lineage -> NatchezCommand.AskKernel(k))).as(k)
 
-    def span(name: String): Resource[IO, natchez.Span[IO]] = {
+    def createSpan(name: String, options: Options): Resource[IO, natchez.Span[IO]] = {
       val acquire = ref
-        .update(_.append(lineage -> NatchezCommand.CreateSpan(name, None)))
-        .as(new Span(lineage / name, k, ref))
-
-      val release = ref.update(_.append(lineage -> NatchezCommand.ReleaseSpan(name)))
-
-      Resource.make(acquire)(_ => release)
-    }
-
-    def span(name: String, kernel: Kernel): Resource[IO, natchez.Span[IO]] = {
-      val acquire = ref
-        .update(_.append(lineage -> NatchezCommand.CreateSpan(name, Some(kernel))))
-        .as(new Span(lineage / name, k, ref))
+        .update(_.append(lineage -> NatchezCommand.CreateSpan(name, options.parentKernel)))
+        .as(new Span(lineage / name, k, ref, options.spanCreationPolicy))
 
       val release = ref.update(_.append(lineage -> NatchezCommand.ReleaseSpan(name)))
 
@@ -77,7 +72,7 @@ object InMemory {
     private def newSpan(name: String, kernel: Kernel): Resource[IO, Span] = {
       val acquire = ref
         .update(_.append(Lineage.Root -> NatchezCommand.CreateRootSpan(name, kernel)))
-        .as(new Span(Lineage.Root, kernel, ref))
+        .as(new Span(Lineage.Root, kernel, ref, Options.SpanCreationPolicy.Default))
 
       val release = ref.update(_.append(Lineage.Root -> NatchezCommand.ReleaseRootSpan(name)))
 
