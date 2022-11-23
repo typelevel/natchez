@@ -101,16 +101,15 @@ object Span {
     protected implicit val applciativeInstance: Applicative[F]
     protected val spanCreationPolicy: Options.SpanCreationPolicy
 
-    def span(name: String): Resource[F, Span[F]] = 
+    def span(name: String): Resource[F, Span[F]] =
       span(name, Options.Defaults)
 
-    def span(name: String, options: Options): Resource[F, Span[F]] = {
+    def span(name: String, options: Options): Resource[F, Span[F]] =
       spanCreationPolicy match {
         case Options.SpanCreationPolicy.Suppress => Resource.pure(Span.noop[F])
         case Options.SpanCreationPolicy.Coalesce => Resource.pure(this)
-        case Options.SpanCreationPolicy.Default => createSpan(name, options)
+        case Options.SpanCreationPolicy.Default  => createSpan(name, options)
       }
-    }
 
     def createSpan(name: String, options: Options): Resource[F, Span[F]]
   }
@@ -149,7 +148,8 @@ object Span {
 
   private class NoopSpan[F[_]: Applicative] extends EphemeralSpan[F] {
     def span(name: String): Resource[F, Span[F]] = Resource.pure(this)
-    override def span(name: String, options: Span.Options): Resource[F, Span[F]] = Resource.pure(this)
+    override def span(name: String, options: Span.Options): Resource[F, Span[F]] =
+      Resource.pure(this)
   }
 
   private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
@@ -190,7 +190,10 @@ object Span {
       case object Coalesce extends SpanCreationPolicy
     }
 
-    private case class OptionsImpl(parentKernel: Option[Kernel], spanCreationPolicy: SpanCreationPolicy) extends Options {
+    private case class OptionsImpl(
+        parentKernel: Option[Kernel],
+        spanCreationPolicy: SpanCreationPolicy
+    ) extends Options {
       def withParentKernel(kernel: Kernel): Options = OptionsImpl(Some(kernel), spanCreationPolicy)
       def withoutParentKernel: Options = OptionsImpl(None, spanCreationPolicy)
       def withSpanCreationPolicy(p: SpanCreationPolicy): Options = OptionsImpl(parentKernel, p)
