@@ -162,8 +162,17 @@ object Span {
     makeRoots(ep)
   )
 
+  /** Options for creating a new span. */
   sealed trait Options {
+
+    /** Optional parent kernel for the child span, in addition to the parent span.
+      *
+      * Some backends do not support multiple parents, in which case the
+      * parent span is preferred and this parent kernel is ignored.
+      */
     def parentKernel: Option[Kernel]
+
+    /** Specifies how additional span creation requests are handled on the new span. */
     def spanCreationPolicy: Options.SpanCreationPolicy
 
     def withParentKernel(kernel: Kernel): Options
@@ -174,8 +183,14 @@ object Span {
   object Options {
     sealed trait SpanCreationPolicy
     object SpanCreationPolicy {
+
+      /** Span creation behaves normally. */
       case object Default extends SpanCreationPolicy
+
+      /** Requests for span creation are ignored and any information provided to the returned span are also ignored. */
       case object Suppress extends SpanCreationPolicy
+
+      /** Requests for span creation are ignored but information provided to the returned span are attached to the original span. */
       case object Coalesce extends SpanCreationPolicy
     }
 
@@ -187,8 +202,11 @@ object Span {
       def withoutParentKernel: Options = OptionsImpl(None, spanCreationPolicy)
       def withSpanCreationPolicy(p: SpanCreationPolicy): Options = OptionsImpl(parentKernel, p)
     }
+
     val Defaults: Options = OptionsImpl(None, SpanCreationPolicy.Default)
     val Suppress: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Suppress)
     val Coalesce: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Coalesce)
+
+    def parentKernel(kernel: Kernel): Options = Defaults.withParentKernel(kernel)
   }
 }
