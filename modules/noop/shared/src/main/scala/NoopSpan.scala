@@ -27,9 +27,6 @@ final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
   override def kernel: F[Kernel] =
     Applicative[F].pure(Kernel(Map.empty))
 
-  override def span(name: String): Resource[F, Span[F]] =
-    Resource.eval(NoopSpan[F]().pure[F])
-
   override def span(name: String, options: Span.Options): Resource[F, Span[F]] =
     Resource.eval(NoopSpan[F]().pure[F])
 

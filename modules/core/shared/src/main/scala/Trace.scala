@@ -35,10 +35,6 @@ trait Trace[F[_]] {
   /** Creates a new span as a resource. */
   def spanR(name: String, options: Span.Options = Span.Options.Defaults): Resource[F, F ~> F]
 
-  // TODO delete?
-  /** Create a new span, and within it run the continuation `k`. */
-  def span[A](name: String)(k: F[A]): F[A] = span(name, Span.Options.Defaults)(k)
-
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String, options: Span.Options = Span.Options.Defaults)(k: F[A]): F[A]
 
@@ -88,9 +84,6 @@ object Trace {
                 .bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(parent))
           }
 
-        override def span[A](name: String)(k: IO[A]): IO[A] =
-          spanR(name).use(_(k))
-
         override def span[A](name: String, options: Span.Options)(k: IO[A]): IO[A] =
           spanR(name, options).use(_(k))
 
@@ -118,7 +111,6 @@ object Trace {
         override def log(event: String): F[Unit] = void
         override def spanR(name: String, options: Span.Options): Resource[F, F ~> F] =
           Resource.pure(FunctionK.id)
-        override def span[A](name: String)(k: F[A]): F[A] = k
         override def span[A](name: String, options: Span.Options)(k: F[A]): F[A] = k
         override def traceId: F[Option[String]] = none.pure[F]
         override def traceUri: F[Option[URI]] = none.pure[F]
@@ -168,9 +160,6 @@ object Trace {
         )
       )
 
-    override def span[A](name: String)(k: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-      spanR(name).use(_(k))
-
     override def span[A](name: String, options: Span.Options)(
         k: Kleisli[F, Span[F], A]
     ): Kleisli[F, Span[F], A] =
@@ -209,9 +198,6 @@ object Trace {
               }
             )
           )
-
-        override def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-          spanR(name).use(_(k))
 
         override def span[A](name: String, options: Span.Options)(
             k: Kleisli[F, E, A]
@@ -265,9 +251,6 @@ object Trace {
           )
         )
 
-      override def span[A](name: String)(k: Kleisli[F, E, A]): Kleisli[F, E, A] =
-        Kleisli(e => trace.span[A](name)(k.run(e)))
-
       override def span[A](name: String, options: Span.Options)(
           k: ReaderT[F, E, A]
       ): ReaderT[F, E, A] =
@@ -314,9 +297,6 @@ object Trace {
             }
           )
         )
-
-      override def span[A](name: String)(k: StateT[F, S, A]): StateT[F, S, A] =
-        StateT(s => trace.span[(S, A)](name)(k.run(s)))
 
       override def span[A](name: String, options: Span.Options)(
           k: StateT[F, S, A]
@@ -366,9 +346,6 @@ object Trace {
           )
         )
 
-      override def span[A](name: String)(k: EitherT[F, E, A]): EitherT[F, E, A] =
-        EitherT(trace.span(name)(k.value))
-
       override def span[A](name: String, options: Span.Options)(
           k: EitherT[F, E, A]
       ): EitherT[F, E, A] =
@@ -414,9 +391,6 @@ object Trace {
             }
           )
         )
-
-      override def span[A](name: String)(k: OptionT[F, A]): OptionT[F, A] =
-        OptionT(trace.span(name)(k.value))
 
       override def span[A](name: String, options: Span.Options)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name, options)(k.value))
@@ -467,9 +441,6 @@ object Trace {
           )
         )
 
-      override def span[A](name: String)(k: Nested[F, G, A]): Nested[F, G, A] =
-        trace.span(name)(k.value).nested
-
       override def span[A](name: String, options: Span.Options)(
           k: Nested[F, G, A]
       ): Nested[F, G, A] =
@@ -517,13 +488,6 @@ object Trace {
           )
         )
 
-      override def span[A](name: String)(k: Resource[F, A]): Resource[F, A] =
-        trace.spanR(name).flatMap { f =>
-          Resource(f(k.allocated).map { case (a, release) =>
-            a -> f(release)
-          })
-        }
-
       override def span[A](name: String, options: Span.Options)(k: Resource[F, A]): Resource[F, A] =
         trace.spanR(name, options).flatMap { f =>
           Resource(f(k.allocated).map { case (a, release) =>
@@ -570,9 +534,6 @@ object Trace {
             }
           )
         )
-
-      override def span[A](name: String)(k: Stream[F, A]): Stream[F, A] =
-        Stream.resource(trace.spanR(name)).flatMap(k.translate)
 
       override def span[A](name: String, options: Span.Options)(k: Stream[F, A]): Stream[F, A] =
         Stream.resource(trace.spanR(name, options)).flatMap(k.translate)

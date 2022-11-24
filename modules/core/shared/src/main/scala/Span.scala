@@ -32,12 +32,8 @@ trait Span[F[_]] {
     */
   def kernel: F[Kernel]
 
-  /** Resource that yields a child span with the given name. */
-  def span(name: String): Resource[F, Span[F]]
-
-  // TODO
-  /** Resource that yields a child span of both this span and the given kernel. */
-  def span(name: String, options: Span.Options): Resource[F, Span[F]]
+  /** Resource that yields a child span of this span. */
+  def span(name: String, options: Span.Options = Span.Options.Defaults): Resource[F, Span[F]]
 
   /** A unique ID for the trace of this span, if available.
     * This can be useful to include in error messages for example, so you can quickly find the associated trace.
@@ -76,8 +72,8 @@ trait Span[F[_]] {
       override def log(fields: (String, TraceValue)*) =
         f(outer.log(fields: _*))
 
-      override def span(name: String): Resource[G, Span[G]] = outer
-        .span(name)
+      override def span(name: String, options: Span.Options): Resource[G, Span[G]] = outer
+        .span(name, options)
         .map(_.mapK(f))
         .mapK(f)
 
@@ -86,11 +82,6 @@ trait Span[F[_]] {
       override def traceId: G[Option[String]] = f(outer.traceId)
 
       override def traceUri: G[Option[URI]] = f(outer.traceUri)
-
-      override def span(name: String, options: Span.Options): Resource[G, Span[G]] = outer
-        .span(name, options)
-        .map(_.mapK(f))
-        .mapK(f)
     }
   }
 }
@@ -147,13 +138,11 @@ object Span {
   }
 
   private class NoopSpan[F[_]: Applicative] extends EphemeralSpan[F] {
-    def span(name: String): Resource[F, Span[F]] = Resource.pure(this)
     override def span(name: String, options: Span.Options): Resource[F, Span[F]] =
       Resource.pure(this)
   }
 
   private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
-    def span(name: String): Resource[F, Span[F]] = ep.root(name)
     override def span(name: String, options: Span.Options): Resource[F, Span[F]] =
       options.parentKernel.fold(ep.root(name))(ep.continueOrElseRoot(name, _))
   }
