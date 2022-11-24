@@ -83,16 +83,19 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.addEvent(event)).void
 
-  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = Span.putErrorFields(
-    Resource
-      .makeCase(options.parentKernel match {
-        case None => OpenTelemetrySpan.child(this, name, options.spanCreationPolicy)
-        case Some(k) => OpenTelemetrySpan.fromKernelWithSpan(otel, tracer, name, k, span, prefix, options.spanCreationPolicy)
-      })(
-        OpenTelemetrySpan.finish
-      )
-      .widen
-  )
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
+    Span.putErrorFields(
+      Resource
+        .makeCase(options.parentKernel match {
+          case None => OpenTelemetrySpan.child(this, name, options.spanCreationPolicy)
+          case Some(k) =>
+            OpenTelemetrySpan
+              .fromKernelWithSpan(otel, tracer, name, k, span, prefix, options.spanCreationPolicy)
+        })(
+          OpenTelemetrySpan.finish
+        )
+        .widen
+    )
 
   override def spanId: F[Option[String]] =
     Sync[F].pure {

@@ -70,7 +70,9 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
 
   def makeSpan(label: String, options: Span.Options): Resource[F, Span[F]] =
-    Resource.makeCase(LogSpan.child(this, label, options.spanCreationPolicy))(LogSpan.finish[F]).widen
+    Resource
+      .makeCase(LogSpan.child(this, label, options.spanCreationPolicy))(LogSpan.finish[F])
+      .widen
 
   def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>

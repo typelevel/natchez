@@ -57,16 +57,18 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Kernel(headers.toMap)
   }
 
-  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = Span.putErrorFields(
-    Resource
-      .makeCase(options.parentKernel match {
-        case None => OpenCensusSpan.child(this, name, options.spanCreationPolicy)
-        case Some(k) => OpenCensusSpan.fromKernelWithSpan(tracer, name, k, span, options.spanCreationPolicy)
-      })(
-        OpenCensusSpan.finish
-      )
-      .widen
-  )
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
+    Span.putErrorFields(
+      Resource
+        .makeCase(options.parentKernel match {
+          case None => OpenCensusSpan.child(this, name, options.spanCreationPolicy)
+          case Some(k) =>
+            OpenCensusSpan.fromKernelWithSpan(tracer, name, k, span, options.spanCreationPolicy)
+        })(
+          OpenCensusSpan.finish
+        )
+        .widen
+    )
 
   def traceId: F[Option[String]] =
     Sync[F].pure {

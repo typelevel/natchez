@@ -57,7 +57,9 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
   override def log(event: String): F[Unit] = Sync[F].unit
 
   override def makeSpan(name: String, options: natchez.Span.Options): Resource[F, natchez.Span[F]] =
-    Resource.make(NewrelicSpan.child(name, this, options.spanCreationPolicy))(NewrelicSpan.finish[F]).widen
+    Resource
+      .make(NewrelicSpan.child(name, this, options.spanCreationPolicy))(NewrelicSpan.finish[F])
+      .widen
 
   override def spanId: F[Option[String]] = id.some.pure[F]
 
@@ -117,7 +119,11 @@ object NewrelicSpan {
       spanCreationPolicy = natchez.Span.Options.SpanCreationPolicy.Default
     )
 
-  def child[F[_]: Sync](name: String, parent: NewrelicSpan[F], spanCreationPolicy: natchez.Span.Options.SpanCreationPolicy): F[NewrelicSpan[F]] =
+  def child[F[_]: Sync](
+      name: String,
+      parent: NewrelicSpan[F],
+      spanCreationPolicy: natchez.Span.Options.SpanCreationPolicy
+  ): F[NewrelicSpan[F]] =
     for {
       spanId <- Sync[F].delay(UUID.randomUUID().toString)
       startTime <- Sync[F].delay(System.currentTimeMillis())

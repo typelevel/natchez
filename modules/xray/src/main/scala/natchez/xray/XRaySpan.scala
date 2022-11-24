@@ -55,8 +55,9 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
 
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
-    Resource.makeCase(XRaySpan.child(this, name, options.spanCreationPolicy))(XRaySpan.finish[F](_, entry, _))
-
+    Resource.makeCase(XRaySpan.child(this, name, options.spanCreationPolicy))(
+      XRaySpan.finish[F](_, entry, _)
+    )
 
   def traceId: F[Option[String]] = xrayTraceId.some.pure[F]
 

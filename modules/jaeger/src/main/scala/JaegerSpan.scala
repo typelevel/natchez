@@ -72,10 +72,12 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields {
       Resource.makeCase {
-        val p = options.parentKernel.map(k => tracer.extract(
-          Format.Builtin.HTTP_HEADERS,
-          new TextMapAdapter(k.toHeaders.asJava)
-        ))
+        val p = options.parentKernel.map(k =>
+          tracer.extract(
+            Format.Builtin.HTTP_HEADERS,
+            new TextMapAdapter(k.toHeaders.asJava)
+          )
+        )
         Sync[F]
           .delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start)
           .map(JaegerSpan(tracer, _, prefix, options.spanCreationPolicy))

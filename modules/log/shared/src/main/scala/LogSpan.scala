@@ -64,7 +64,9 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     log("event" -> TraceValue.StringValue(event))
 
   def makeSpan(label: String, options: Span.Options): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label, options))(LogSpan.finishChild[F]).widen)
+    Span.putErrorFields(
+      Resource.makeCase(LogSpan.child(this, label, options))(LogSpan.finishChild[F]).widen
+    )
 
   def attachError(err: Throwable): F[Unit] =
     putAny(

@@ -55,10 +55,13 @@ final case class DDSpan[F[_]: Sync](
 
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
     val parent = options.parentKernel.map(k =>
-        tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava)))
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava))
+    )
     Span.putErrorFields(
       Resource
-        .makeCase(Sync[F].delay(tracer.buildSpan(name).asChildOf(parent.orNull).asChildOf(span).start)) {
+        .makeCase(
+          Sync[F].delay(tracer.buildSpan(name).asChildOf(parent.orNull).asChildOf(span).start)
+        ) {
           case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
           case (span, _)                   => Sync[F].delay(span.finish())
         }

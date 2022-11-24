@@ -50,7 +50,9 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields(
       Resource
-        .makeCase(HoneycombSpan.child(this, name, options.spanCreationPolicy))(HoneycombSpan.finish[F])
+        .makeCase(HoneycombSpan.child(this, name, options.spanCreationPolicy))(
+          HoneycombSpan.finish[F]
+        )
         .widen
     )
 

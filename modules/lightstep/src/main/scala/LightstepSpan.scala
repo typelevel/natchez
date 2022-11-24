@@ -62,11 +62,13 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
   }
 
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
-    val p = options.parentKernel.map(k => tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava)))
+    val p = options.parentKernel.map(k =>
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava))
+    )
     Span.putErrorFields(
       Resource
-        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start()))(s =>
-          Sync[F].delay(s.finish())
+        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start()))(
+          s => Sync[F].delay(s.finish())
         )
         .map(LightstepSpan(tracer, _, options.spanCreationPolicy))
     )
