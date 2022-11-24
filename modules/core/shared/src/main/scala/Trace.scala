@@ -101,6 +101,10 @@ object Trace {
       }
     }
 
+  /** A `Trace` instance that uses `IOLocal` internally. Span creation delegates to the supplied entry point. */
+  def ioTraceForEntryPoint(ep: EntryPoint[IO]): IO[Trace[IO]] =
+    ioTrace(Span.makeRoots(ep))
+
   object Implicits {
 
     /** A no-op `Trace` implementation is freely available for any applicative effect. This lets us add
