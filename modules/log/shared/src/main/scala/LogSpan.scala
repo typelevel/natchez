@@ -28,11 +28,13 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     name: String,
     sid: UUID,
     parent: Option[Either[UUID, LogSpan[F]]],
+    parentKernel: Option[Kernel],
     traceUUID: UUID,
     timestamp: Instant,
     fields: Ref[F, Map[String, Json]],
-    children: Ref[F, List[JsonObject]]
-) extends Span[F] {
+    children: Ref[F, List[JsonObject]],
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
   import LogSpan._
 
   def parentId: Option[UUID] =
@@ -61,8 +63,10 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   override def log(event: String): F[Unit] =
     log("event" -> TraceValue.StringValue(event))
 
-  def span(label: String): Resource[F, Span[F]] =
-    Span.putErrorFields(Resource.makeCase(LogSpan.child(this, label))(LogSpan.finishChild[F]).widen)
+  def makeSpan(label: String, options: Span.Options): Resource[F, Span[F]] =
+    Span.putErrorFields(
+      Resource.makeCase(LogSpan.child(this, label, options))(LogSpan.finishChild[F]).widen
+    )
 
   def attachError(err: Throwable): F[Unit] =
     putAny(
@@ -99,12 +103,6 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     sid.toString.some.pure[F]
 
   def traceUri: F[Option[URI]] = none.pure[F]
-
-  def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Span.putErrorFields(
-      Resource.makeCase(LogSpan.fromKernel(service, name, kernel))(LogSpan.finishChild[F]).widen
-    )
-
 }
 
 private[log] object LogSpan {
@@ -163,7 +161,8 @@ private[log] object LogSpan {
 
   def child[F[_]: Sync: Logger](
       parent: LogSpan[F],
-      name: String
+      name: String,
+      options: Span.Options
   ): F[LogSpan[F]] =
     for {
       spanId <- uuid[F]
@@ -175,10 +174,12 @@ private[log] object LogSpan {
       name = name,
       sid = spanId,
       parent = Some(Right(parent)),
+      parentKernel = options.parentKernel,
       traceUUID = parent.traceUUID,
       timestamp = timestamp,
       fields = fields,
-      children = children
+      children = children,
+      spanCreationPolicy = options.spanCreationPolicy
     )
 
   def root[F[_]: Sync: Logger](
@@ -196,10 +197,12 @@ private[log] object LogSpan {
       name = name,
       sid = spanId,
       parent = None,
+      parentKernel = None,
       traceUUID = traceUUID,
       timestamp = timestamp,
       fields = fields,
-      children = children
+      children = children,
+      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
     )
 
   def fromKernel[F[_]: Sync: Logger](
@@ -219,10 +222,12 @@ private[log] object LogSpan {
       name = name,
       sid = spanId,
       parent = Some(Left(parentId)),
+      parentKernel = None,
       traceUUID = traceUUID,
       timestamp = timestamp,
       fields = fields,
-      children = children
+      children = children,
+      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
     )
 
   def fromKernelOrElseRoot[F[_]: Sync: Logger](

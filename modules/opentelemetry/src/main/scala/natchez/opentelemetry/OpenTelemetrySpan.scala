@@ -27,8 +27,9 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
     otel: OTel,
     tracer: Tracer,
     span: TSpan,
-    prefix: Option[URI]
-) extends Span[F] {
+    prefix: Option[URI],
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
 
   import OpenTelemetrySpan._
 
@@ -82,17 +83,18 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.addEvent(event)).void
 
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
-    Resource
-      .makeCase(OpenTelemetrySpan.fromKernelWithSpan(otel, tracer, name, kernel, span, prefix))(
-        OpenTelemetrySpan.finish
-      )
-      .widen
-  )
-
-  override def span(name: String): Resource[F, Span[F]] =
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields(
-      Resource.makeCase(OpenTelemetrySpan.child(this, name))(OpenTelemetrySpan.finish).widen
+      Resource
+        .makeCase(options.parentKernel match {
+          case None => OpenTelemetrySpan.child(this, name, options.spanCreationPolicy)
+          case Some(k) =>
+            OpenTelemetrySpan
+              .fromKernelWithSpan(otel, tracer, name, k, span, prefix, options.spanCreationPolicy)
+        })(
+          OpenTelemetrySpan.finish
+        )
+        .widen
     )
 
   override def spanId: F[Option[String]] =
@@ -138,7 +140,8 @@ private[opentelemetry] object OpenTelemetrySpan {
 
   def child[F[_]: Sync](
       parent: OpenTelemetrySpan[F],
-      name: String
+      name: String,
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[OpenTelemetrySpan[F]] =
     Sync[F]
       .delay(
@@ -147,7 +150,7 @@ private[opentelemetry] object OpenTelemetrySpan {
           .setParent(Context.current().`with`(parent.span))
           .startSpan()
       )
-      .map(OpenTelemetrySpan(parent.otel, parent.tracer, _, parent.prefix))
+      .map(OpenTelemetrySpan(parent.otel, parent.tracer, _, parent.prefix, spanCreationPolicy))
 
   def root[F[_]: Sync](
       otel: OTel,
@@ -161,7 +164,7 @@ private[opentelemetry] object OpenTelemetrySpan {
           .spanBuilder(name)
           .startSpan()
       )
-      .map(OpenTelemetrySpan(otel, tracer, _, prefix))
+      .map(OpenTelemetrySpan(otel, tracer, _, prefix, Span.Options.SpanCreationPolicy.Default))
 
   def fromKernelWithSpan[F[_]: Sync](
       sdk: OTel,
@@ -169,14 +172,15 @@ private[opentelemetry] object OpenTelemetrySpan {
       name: String,
       kernel: Kernel,
       span: TSpan,
-      prefix: Option[URI]
+      prefix: Option[URI],
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[OpenTelemetrySpan[F]] = Sync[F]
     .delay {
       val ctx = sdk.getPropagators.getTextMapPropagator
         .extract(Context.current(), kernel, spanContextGetter)
       tracer.spanBuilder(name).setParent(ctx).addLink(span.getSpanContext).startSpan
     }
-    .map(OpenTelemetrySpan(sdk, tracer, _, prefix))
+    .map(OpenTelemetrySpan(sdk, tracer, _, prefix, spanCreationPolicy))
 
   def fromKernel[F[_]: Sync](
       otel: OTel,
@@ -191,7 +195,7 @@ private[opentelemetry] object OpenTelemetrySpan {
           .extract(Context.current(), kernel, spanContextGetter)
         tracer.spanBuilder(name).setParent(ctx).startSpan()
       }
-      .map(OpenTelemetrySpan(otel, tracer, _, prefix))
+      .map(OpenTelemetrySpan(otel, tracer, _, prefix, Span.Options.SpanCreationPolicy.Default))
 
   def fromKernelOrElseRoot[F[_]](
       otel: OTel,

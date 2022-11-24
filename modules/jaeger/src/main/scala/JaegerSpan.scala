@@ -22,8 +22,9 @@ import java.net.URI
 private[jaeger] final case class JaegerSpan[F[_]: Sync](
     tracer: ot.Tracer,
     span: ot.Span,
-    prefix: Option[URI]
-) extends Span[F] {
+    prefix: Option[URI],
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
   import TraceValue._
 
   override def kernel: F[Kernel] =
@@ -68,25 +69,18 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.log(event)).void
 
-  override def span(name: String): Resource[F, Span[F]] =
-    Span.putErrorFields {
-      Resource.makeCase(
-        Sync[F]
-          .delay(tracer.buildSpan(name).asChildOf(span).start)
-          .map(JaegerSpan(tracer, _, prefix))
-      )(JaegerSpan.finish)
-    }
-
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields {
       Resource.makeCase {
-        val p = tracer.extract(
-          Format.Builtin.HTTP_HEADERS,
-          new TextMapAdapter(kernel.toHeaders.asJava)
+        val p = options.parentKernel.map(k =>
+          tracer.extract(
+            Format.Builtin.HTTP_HEADERS,
+            new TextMapAdapter(k.toHeaders.asJava)
+          )
         )
         Sync[F]
-          .delay(tracer.buildSpan(name).asChildOf(p).asChildOf(span).start)
-          .map(JaegerSpan(tracer, _, prefix))
+          .delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start)
+          .map(JaegerSpan(tracer, _, prefix, options.spanCreationPolicy))
       }(JaegerSpan.finish)
     }
 

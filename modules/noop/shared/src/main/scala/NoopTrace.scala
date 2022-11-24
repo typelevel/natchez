@@ -26,13 +26,10 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
 
   override def log(event: String): F[Unit] = Applicative[F].unit
 
-  override def spanR(name: String, kernel: Option[Kernel] = None): Resource[F, F ~> F] =
+  override def spanR(name: String, options: Span.Options): Resource[F, F ~> F] =
     Resource.pure(FunctionK.id)
 
-  override def span[A](name: String)(k: F[A]): F[A] =
-    k
-
-  override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
+  override def span[A](name: String, options: Span.Options)(k: F[A]): F[A] =
     k
 
   def traceId: F[Option[String]] =

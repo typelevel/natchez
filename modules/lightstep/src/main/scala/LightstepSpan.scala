@@ -17,8 +17,9 @@ import java.net.URI
 
 private[lightstep] final case class LightstepSpan[F[_]: Sync](
     tracer: ot.Tracer,
-    span: ot.Span
-) extends Span[F] {
+    span: ot.Span,
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
 
   import TraceValue._
 
@@ -60,25 +61,18 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
     Sync[F].delay(span.log(map)).void
   }
 
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
-    val p = tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
+    val p = options.parentKernel.map(k =>
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava))
+    )
     Span.putErrorFields(
       Resource
-        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(p).asChildOf(span).start()))(s =>
-          Sync[F].delay(s.finish())
+        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start()))(
+          s => Sync[F].delay(s.finish())
         )
-        .map(LightstepSpan(tracer, _))
+        .map(LightstepSpan(tracer, _, options.spanCreationPolicy))
     )
   }
-
-  override def span(name: String): Resource[F, Span[F]] =
-    Span.putErrorFields(
-      Resource
-        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start()))(s =>
-          Sync[F].delay(s.finish())
-        )
-        .map(LightstepSpan(tracer, _))
-    )
 
   override def spanId: F[Option[String]] =
     Sync[F].pure {

@@ -27,8 +27,9 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
     attributes: Ref[F, Attributes],
     children: Ref[F, List[Span]],
     parent: Option[Either[String, NewrelicSpan[F]]],
-    sender: SpanBatchSender
-) extends natchez.Span[F] {
+    sender: SpanBatchSender,
+    spanCreationPolicy: natchez.Span.Options.SpanCreationPolicy
+) extends natchez.Span.Default[F] {
 
   override def kernel: F[Kernel] =
     Sync[F].delay {
@@ -55,13 +56,10 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
 
   override def log(event: String): F[Unit] = Sync[F].unit
 
-  override def span(name: String, kernel: Kernel): Resource[F, natchez.Span[F]] =
+  override def makeSpan(name: String, options: natchez.Span.Options): Resource[F, natchez.Span[F]] =
     Resource
-      .make(NewrelicSpan.fromKernel(service, name, kernel)(sender))(NewrelicSpan.finish[F])
+      .make(NewrelicSpan.child(name, this, options.spanCreationPolicy))(NewrelicSpan.finish[F])
       .widen
-
-  override def span(name: String): Resource[F, natchez.Span[F]] =
-    Resource.make(NewrelicSpan.child(name, this))(NewrelicSpan.finish[F]).widen
 
   override def spanId: F[Option[String]] = id.some.pure[F]
 
@@ -97,7 +95,8 @@ object NewrelicSpan {
       startTime = timestamp,
       attributes = attributes,
       children = children,
-      sender = sender
+      sender = sender,
+      spanCreationPolicy = natchez.Span.Options.SpanCreationPolicy.Default
     )
 
   def root[F[_]: Sync](service: String, name: String, sender: SpanBatchSender): F[NewrelicSpan[F]] =
@@ -116,10 +115,15 @@ object NewrelicSpan {
       attributes,
       children,
       None,
-      sender
+      sender,
+      spanCreationPolicy = natchez.Span.Options.SpanCreationPolicy.Default
     )
 
-  def child[F[_]: Sync](name: String, parent: NewrelicSpan[F]): F[NewrelicSpan[F]] =
+  def child[F[_]: Sync](
+      name: String,
+      parent: NewrelicSpan[F],
+      spanCreationPolicy: natchez.Span.Options.SpanCreationPolicy
+  ): F[NewrelicSpan[F]] =
     for {
       spanId <- Sync[F].delay(UUID.randomUUID().toString)
       startTime <- Sync[F].delay(System.currentTimeMillis())
@@ -134,7 +138,8 @@ object NewrelicSpan {
       attributes,
       children,
       Some(Right(parent)),
-      parent.sender
+      parent.sender,
+      spanCreationPolicy = spanCreationPolicy
     )
 
   def finish[F[_]: Sync](nrs: NewrelicSpan[F]): F[Unit] =

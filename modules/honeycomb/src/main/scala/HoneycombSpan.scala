@@ -22,8 +22,9 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
     parentId: Option[UUID],
     traceUUID: UUID,
     timestamp: Instant,
-    fields: Ref[F, Map[String, TraceValue]]
-) extends Span[F] {
+    fields: Ref[F, Map[String, TraceValue]],
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
   import HoneycombSpan._
 
   def get(key: String): F[Option[TraceValue]] =
@@ -46,15 +47,12 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   override def log(event: String): F[Unit] =
     log("event" -> TraceValue.StringValue(event))
 
-  def span(label: String): Resource[F, Span[F]] =
-    Span.putErrorFields(
-      Resource.makeCase(HoneycombSpan.child(this, label))(HoneycombSpan.finish[F]).widen
-    )
-
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields(
       Resource
-        .makeCase(HoneycombSpan.fromKernel(client, name, kernel))(HoneycombSpan.finish[F])
+        .makeCase(HoneycombSpan.child(this, name, options.spanCreationPolicy))(
+          HoneycombSpan.finish[F]
+        )
         .widen
     )
 
@@ -115,7 +113,8 @@ private[honeycomb] object HoneycombSpan {
 
   def child[F[_]: Sync](
       parent: HoneycombSpan[F],
-      name: String
+      name: String,
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[HoneycombSpan[F]] =
     for {
       spanUUID <- uuid[F]
@@ -128,7 +127,8 @@ private[honeycomb] object HoneycombSpan {
       parentId = Some(parent.spanUUID),
       traceUUID = parent.traceUUID,
       timestamp = timestamp,
-      fields = fields
+      fields = fields,
+      spanCreationPolicy = spanCreationPolicy
     )
 
   def root[F[_]: Sync](
@@ -147,7 +147,8 @@ private[honeycomb] object HoneycombSpan {
       parentId = None,
       traceUUID = traceUUID,
       timestamp = timestamp,
-      fields = fields
+      fields = fields,
+      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
     )
 
   def fromKernel[F[_]](
@@ -168,7 +169,8 @@ private[honeycomb] object HoneycombSpan {
       parentId = Some(parentId),
       traceUUID = traceUUID,
       timestamp = timestamp,
-      fields = fields
+      fields = fields,
+      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
     )
 
   def fromKernelOrElseRoot[F[_]](
