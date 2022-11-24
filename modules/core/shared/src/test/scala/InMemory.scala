@@ -10,7 +10,6 @@ import cats.data.{Chain, Kleisli}
 import cats.effect.{IO, Ref, Resource}
 
 import natchez.Span.Options
-import cats.Applicative
 import munit.CatsEffectSuite
 
 object InMemory {
@@ -21,7 +20,6 @@ object InMemory {
       ref: Ref[IO, Chain[(Lineage, NatchezCommand)]],
       val spanCreationPolicy: Options.SpanCreationPolicy
   ) extends natchez.Span.Default[IO] {
-    protected val applciativeInstance: Applicative[IO] = implicitly
 
     def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.Put(fields.toList)))
@@ -38,7 +36,7 @@ object InMemory {
     def kernel: IO[Kernel] =
       ref.update(_.append(lineage -> NatchezCommand.AskKernel(k))).as(k)
 
-    def createSpan(name: String, options: Options): Resource[IO, natchez.Span[IO]] = {
+    def makeSpan(name: String, options: Options): Resource[IO, natchez.Span[IO]] = {
       val acquire = ref
         .update(_.append(lineage -> NatchezCommand.CreateSpan(name, options.parentKernel)))
         .as(new Span(lineage / name, k, ref, options.spanCreationPolicy))

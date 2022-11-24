@@ -18,7 +18,7 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
   override def root(name: String): Resource[F, Span[F]] =
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).start()))(s => Sync[F].delay(s.finish()))
-      .map(DDSpan(tracer, _, uriPrefix))
+      .map(DDSpan(tracer, _, uriPrefix, Span.Options.SpanCreationPolicy.Default))
 
   override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
     Resource
@@ -31,7 +31,7 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
           tracer.buildSpan(name).asChildOf(spanContext).start()
         }
       )(s => Sync[F].delay(s.finish()))
-      .map(DDSpan(tracer, _, uriPrefix))
+      .map(DDSpan(tracer, _, uriPrefix, Span.Options.SpanCreationPolicy.Default))
 
   override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     continue(name, kernel).flatMap {

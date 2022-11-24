@@ -32,10 +32,10 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
   override def log(event: String): F[Unit] =
     local.ask.flatMap(_.log(event))
 
-  override def spanR(name: String, kernel: Option[Kernel]): Resource[F, F ~> F] =
+  override def spanR(name: String, options: Span.Options): Resource[F, F ~> F] =
     Resource(
       local.ask.flatMap(t =>
-        kernel.map(t.span(name, _)).getOrElse(t.span(name)).allocated.map { case (child, release) =>
+        t.span(name, options).allocated.map { case (child, release) =>
           new (F ~> F) {
             def apply[A](fa: F[A]): F[A] =
               local.scope(fa)(child)
@@ -44,16 +44,11 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
       )
     )
 
-  override def span[A](name: String)(k: F[A]): F[A] =
+  override def span[A](name: String, options: Span.Options)(k: F[A]): F[A] =
     local.ask.flatMap { span =>
-      span.span(name).use { s =>
-        ev.onError(local.scope(k)(s)) { case err => s.attachError(err) }
+      span.span(name, options).use { s =>
+        local.scope(k)(s).onError { case err => s.attachError(err) }
       }
-    }
-
-  override def span[A](name: String, kernel: Kernel)(k: F[A]): F[A] =
-    local.ask.flatMap { span =>
-      span.span(name, kernel).use(local.scope(k))
     }
 
   override def traceId: F[Option[String]] =

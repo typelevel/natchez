@@ -21,8 +21,9 @@ import scala.jdk.CollectionConverters._
 
 private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     tracer: Tracer,
-    span: io.opencensus.trace.Span
-) extends Span[F] {
+    span: io.opencensus.trace.Span,
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
 
   import OpenCensusSpan._
 
@@ -56,18 +57,16 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Kernel(headers.toMap)
   }
 
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] = Span.putErrorFields(
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = Span.putErrorFields(
     Resource
-      .makeCase(OpenCensusSpan.fromKernelWithSpan(tracer, name, kernel, span))(
+      .makeCase(options.parentKernel match {
+        case None => OpenCensusSpan.child(this, name, options.spanCreationPolicy)
+        case Some(k) => OpenCensusSpan.fromKernelWithSpan(tracer, name, k, span, options.spanCreationPolicy)
+      })(
         OpenCensusSpan.finish
       )
       .widen
   )
-
-  override def span(name: String): Resource[F, Span[F]] =
-    Span.putErrorFields(
-      Resource.makeCase(OpenCensusSpan.child(this, name))(OpenCensusSpan.finish).widen
-    )
 
   def traceId: F[Option[String]] =
     Sync[F].pure {
@@ -116,7 +115,8 @@ private[opencensus] object OpenCensusSpan {
 
   def child[F[_]: Sync](
       parent: OpenCensusSpan[F],
-      name: String
+      name: String,
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[OpenCensusSpan[F]] =
     Sync[F]
       .delay(
@@ -124,7 +124,7 @@ private[opencensus] object OpenCensusSpan {
           .spanBuilderWithExplicitParent(name, parent.span)
           .startSpan()
       )
-      .map(OpenCensusSpan(parent.tracer, _))
+      .map(OpenCensusSpan(parent.tracer, _, spanCreationPolicy))
 
   def root[F[_]: Sync](
       tracer: Tracer,
@@ -138,13 +138,14 @@ private[opencensus] object OpenCensusSpan {
           .setSampler(sampler)
           .startSpan()
       )
-      .map(OpenCensusSpan(tracer, _))
+      .map(OpenCensusSpan(tracer, _, Span.Options.SpanCreationPolicy.Default))
 
   def fromKernelWithSpan[F[_]: Sync](
       tracer: Tracer,
       name: String,
       kernel: Kernel,
-      span: io.opencensus.trace.Span
+      span: io.opencensus.trace.Span,
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[OpenCensusSpan[F]] = Sync[F]
     .delay {
       val ctx = Tracing.getPropagationComponent.getB3Format
@@ -154,7 +155,7 @@ private[opencensus] object OpenCensusSpan {
         .setParentLinks(List(span).asJava)
         .startSpan()
     }
-    .map(OpenCensusSpan(tracer, _))
+    .map(OpenCensusSpan(tracer, _, spanCreationPolicy))
 
   def fromKernel[F[_]: Sync](
       tracer: Tracer,
@@ -167,7 +168,7 @@ private[opencensus] object OpenCensusSpan {
           .extract(kernel, spanContextGetter)
         tracer.spanBuilderWithRemoteParent(name, ctx).startSpan()
       }
-      .map(OpenCensusSpan(tracer, _))
+      .map(OpenCensusSpan(tracer, _, Span.Options.SpanCreationPolicy.Default))
 
   def fromKernelOrElseRoot[F[_]](
       tracer: Tracer,

@@ -28,8 +28,9 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
     tid: UUID,
     timestamp: Instant,
     fields: Ref[F, Map[String, Json]],
-    children: Ref[F, List[JsonObject]]
-) extends Span[F] {
+    children: Ref[F, List[JsonObject]],
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
   import LogSpan._
 
   def spanId: F[Option[String]] =
@@ -68,11 +69,8 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
 
   def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
 
-  def span(label: String): Resource[F, Span[F]] =
-    Resource.makeCase(LogSpan.child(this, label))(LogSpan.finish[F]).widen
-
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Resource.makeCase(LogSpan.fromKernel(service, name, kernel))(LogSpan.finish[F]).widen
+  def makeSpan(label: String, options: Span.Options): Resource[F, Span[F]] =
+    Resource.makeCase(LogSpan.child(this, label, options.spanCreationPolicy))(LogSpan.finish[F]).widen
 
   def json(finish: Instant, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
@@ -153,7 +151,8 @@ private[logodin] object LogSpan {
 
   def child[F[_]: Sync: Logger](
       parent: LogSpan[F],
-      name: String
+      name: String,
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[LogSpan[F]] =
     for {
       spanId <- uuid[F]
@@ -168,7 +167,8 @@ private[logodin] object LogSpan {
       tid = parent.tid,
       timestamp = timestamp,
       fields = fields,
-      children = children
+      children = children,
+      spanCreationPolicy = spanCreationPolicy
     )
 
   def root[F[_]: Sync: Logger](
@@ -189,7 +189,8 @@ private[logodin] object LogSpan {
       tid = traceId,
       timestamp = timestamp,
       fields = fields,
-      children = children
+      children = children,
+      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
     )
 
   def fromKernel[F[_]: Sync: Logger](
@@ -212,7 +213,8 @@ private[logodin] object LogSpan {
       tid = traceId,
       timestamp = timestamp,
       fields = fields,
-      children = children
+      children = children,
+      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
     )
 
   def fromKernelOrElseRoot[F[_]: Sync: Logger](

@@ -34,8 +34,9 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
     startTime: FiniteDuration,
     fields: Ref[F, Map[String, Json]],
     children: Ref[F, List[JsonObject]],
-    sampled: Boolean
-) extends Span[F] {
+    sampled: Boolean,
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
   import XRaySpan._
 
   def put(fields: (String, TraceValue)*): F[Unit] = {
@@ -53,10 +54,9 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
 
   def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
 
-  def span(name: String): Resource[F, Span[F]] =
-    Resource.makeCase(XRaySpan.child(this, name))(
-      XRaySpan.finish[F](_, entry, _)
-    )
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
+    Resource.makeCase(XRaySpan.child(this, name, options.spanCreationPolicy))(XRaySpan.finish[F](_, entry, _))
+
 
   def traceId: F[Option[String]] = xrayTraceId.some.pure[F]
 
@@ -128,15 +128,6 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
 
   private def header: String =
     encodeHeader(xrayTraceId, Some(segmentId), sampled)
-
-  override def span(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    Resource.makeCase(
-      kernel.toHeaders
-        .get(Header)
-        .flatMap(parseHeader)
-        .traverse(XRaySpan.fromHeader(name, _, entry))
-        .map(_.getOrElse(this))
-    )(XRaySpan.finish[F](_, entry, _))
 }
 
 private[xray] object XRaySpan {
@@ -231,7 +222,8 @@ private[xray] object XRaySpan {
           fields = fields,
           children = children,
           parent = header.parentId.map(_.asLeft),
-          sampled = header.sampled
+          sampled = header.sampled,
+          spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
         )
       }
 
@@ -285,13 +277,15 @@ private[xray] object XRaySpan {
           fields = fields,
           children = children,
           parent = None,
-          sampled = true
+          sampled = true,
+          spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
         )
       }
 
   def child[F[_]: Concurrent: Clock: Random](
       parent: XRaySpan[F],
-      name: String
+      name: String,
+      spanCreationPolicy: Span.Options.SpanCreationPolicy
   ): F[XRaySpan[F]] =
     (
       segmentId[F],
@@ -308,7 +302,8 @@ private[xray] object XRaySpan {
         fields = fields,
         children = children,
         parent = Some(Right(parent)),
-        sampled = parent.sampled
+        sampled = parent.sampled,
+        spanCreationPolicy = spanCreationPolicy
       )
     }
 

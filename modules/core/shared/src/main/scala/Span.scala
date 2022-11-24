@@ -97,8 +97,7 @@ trait Span[F[_]] {
 
 object Span {
 
-  trait Default[F[_]] extends Span[F] {
-    protected implicit val applciativeInstance: Applicative[F]
+  abstract class Default[F[_]: Applicative] extends Span[F] {
     protected val spanCreationPolicy: Options.SpanCreationPolicy
 
     def span(name: String): Resource[F, Span[F]] =
@@ -108,10 +107,11 @@ object Span {
       spanCreationPolicy match {
         case Options.SpanCreationPolicy.Suppress => Resource.pure(Span.noop[F])
         case Options.SpanCreationPolicy.Coalesce => Resource.pure(this)
-        case Options.SpanCreationPolicy.Default  => createSpan(name, options)
+        case Options.SpanCreationPolicy.Default  => makeSpan(name, options)
       }
 
-    def createSpan(name: String, options: Options): Resource[F, Span[F]]
+    /** Like `span` but always creates a child span -- i.e., `options.spanCreationPolicy` is ignored. */
+    def makeSpan(name: String, options: Options): Resource[F, Span[F]]
   }
 
   /** Ensure that Fields mixin data is added to a span when an error is raised.

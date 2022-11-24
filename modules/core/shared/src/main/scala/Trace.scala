@@ -35,10 +35,11 @@ trait Trace[F[_]] {
   /** Creates a new span as a resource. */
   def spanR(name: String, options: Span.Options = Span.Options.Defaults): Resource[F, F ~> F]
 
+  // TODO delete?
   /** Create a new span, and within it run the continuation `k`. */
-  def span[A](name: String)(k: F[A]): F[A]
+  def span[A](name: String)(k: F[A]): F[A] = span(name, Span.Options.Defaults)(k)
 
-  /** Creates a new span as a resource. */
+  /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String, options: Span.Options = Span.Options.Defaults)(k: F[A]): F[A]
 
   /** A unique ID for this trace, if available. This can be useful to include in error messages for

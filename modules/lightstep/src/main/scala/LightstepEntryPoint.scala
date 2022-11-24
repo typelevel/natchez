@@ -16,7 +16,7 @@ final class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F
   override def root(name: String): Resource[F, Span[F]] =
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).start()))(s => Sync[F].delay(s.finish()))
-      .map(LightstepSpan(tracer, _))
+      .map(LightstepSpan(tracer, _, Span.Options.SpanCreationPolicy.Default))
 
   override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
     Resource
@@ -27,7 +27,7 @@ final class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F
           tracer.buildSpan(name).asChildOf(p).start()
         }
       )(s => Sync[F].delay(s.finish()))
-      .map(LightstepSpan(tracer, _))
+      .map(LightstepSpan(tracer, _, Span.Options.SpanCreationPolicy.Default))
 
   override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     continue(name, kernel).flatMap {

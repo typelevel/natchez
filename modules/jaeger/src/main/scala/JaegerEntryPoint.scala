@@ -27,12 +27,12 @@ final class JaegerEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[UR
           tracer.buildSpan(name).asChildOf(p).start()
         }
       )(s => Sync[F].delay(s.finish))
-      .map(JaegerSpan(tracer, _, uriPrefix))
+      .map(JaegerSpan(tracer, _, uriPrefix, Span.Options.SpanCreationPolicy.Default))
 
   def root(name: String): Resource[F, Span[F]] =
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).start()))(s => Sync[F].delay(s.finish))
-      .map(JaegerSpan(tracer, _, uriPrefix))
+      .map(JaegerSpan(tracer, _, uriPrefix, Span.Options.SpanCreationPolicy.Default))
 
   def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
     continue(name, kernel)

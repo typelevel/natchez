@@ -23,8 +23,9 @@ import java.net.URI
 final case class DDSpan[F[_]: Sync](
     tracer: ot.Tracer,
     span: ot.Span,
-    uriPrefix: Option[URI]
-) extends Span[F] {
+    uriPrefix: Option[URI],
+    spanCreationPolicy: Span.Options.SpanCreationPolicy
+) extends Span.Default[F] {
 
   def kernel: F[Kernel] =
     Sync[F].delay {
@@ -52,26 +53,16 @@ final case class DDSpan[F[_]: Sync](
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.log(event)).void
 
-  def span(name: String): Resource[F, Span[F]] =
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
+    val parent = options.parentKernel.map(k =>
+        tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava)))
     Span.putErrorFields(
       Resource
-        .makeCase(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)) {
+        .makeCase(Sync[F].delay(tracer.buildSpan(name).asChildOf(parent.orNull).asChildOf(span).start)) {
           case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
           case (span, _)                   => Sync[F].delay(span.finish())
         }
-        .map(DDSpan(tracer, _, uriPrefix))
-    )
-
-  def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
-    val parent =
-      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
-    Span.putErrorFields(
-      Resource
-        .makeCase(Sync[F].delay(tracer.buildSpan(name).asChildOf(parent).asChildOf(span).start)) {
-          case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
-          case (span, _)                   => Sync[F].delay(span.finish())
-        }
-        .map(DDSpan(tracer, _, uriPrefix))
+        .map(DDSpan(tracer, _, uriPrefix, options.spanCreationPolicy))
     )
   }
 
