@@ -91,9 +91,6 @@ object Span {
   abstract class Default[F[_]: Applicative] extends Span[F] {
     protected val spanCreationPolicy: Options.SpanCreationPolicy
 
-    def span(name: String): Resource[F, Span[F]] =
-      span(name, Options.Defaults)
-
     def span(name: String, options: Options): Resource[F, Span[F]] =
       spanCreationPolicy match {
         case Options.SpanCreationPolicy.Suppress => Resource.pure(Span.noop[F])
