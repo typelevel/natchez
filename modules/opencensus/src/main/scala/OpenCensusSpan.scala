@@ -14,6 +14,7 @@ import io.opencensus.trace.{AttributeValue, Sampler, Tracer, Tracing}
 import io.opencensus.trace.propagation.SpanContextParseException
 import io.opencensus.trace.propagation.TextFormat.Getter
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import org.typelevel.ci._
 
 import scala.collection.mutable
 import java.net.URI
@@ -51,7 +52,7 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Sync[F].delay(span.addAnnotation(event)).void
 
   override def kernel: F[Kernel] = Sync[F].delay {
-    val headers: mutable.Map[String, String] = mutable.Map.empty[String, String]
+    val headers: mutable.Map[CIString, String] = mutable.Map.empty[CIString, String]
     Tracing.getPropagationComponent.getB3Format
       .inject(span.getContext, headers, spanContextSetter)
     Kernel(headers.toMap)
@@ -89,9 +90,9 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 }
 
 private[opencensus] object OpenCensusSpan {
-  private val spanContextSetter = new Setter[mutable.Map[String, String]] {
-    override def put(carrier: mutable.Map[String, String], key: String, value: String): Unit = {
-      carrier.put(key, value)
+  private val spanContextSetter = new Setter[mutable.Map[CIString, String]] {
+    override def put(carrier: mutable.Map[CIString, String], key: String, value: String): Unit = {
+      carrier.put(CIString(key), value)
       ()
     }
   }
@@ -188,5 +189,5 @@ private[opencensus] object OpenCensusSpan {
     }
 
   private val spanContextGetter: Getter[Kernel] = (carrier: Kernel, key: String) =>
-    carrier.toHeaders(key)
+    carrier.toHeaders(CIString(key))
 }

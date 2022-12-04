@@ -100,7 +100,8 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-core" % catsVersion,
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-io" % fs2Version
+      "co.fs2" %%% "fs2-io" % fs2Version,
+      "org.typelevel" %%% "case-insensitive" % "1.3.0"
     )
   )
   .nativeSettings(commonNativeSettings)
