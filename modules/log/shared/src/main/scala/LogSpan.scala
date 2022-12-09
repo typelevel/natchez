@@ -26,10 +26,10 @@ import java.net.URI
 private[log] final case class LogSpan[F[_]: Sync: Logger](
     service: String,
     name: String,
-    sid: UUID,
-    parent: Option[Either[UUID, LogSpan[F]]],
+    sid: String,
+    parent: Option[Either[String, LogSpan[F]]],
     parentKernel: Option[Kernel],
-    traceUUID: UUID,
+    traceID: String,
     timestamp: Instant,
     fields: Ref[F, Map[String, Json]],
     children: Ref[F, List[JsonObject]],
@@ -37,7 +37,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
 ) extends Span.Default[F] {
   import LogSpan._
 
-  def parentId: Option[UUID] =
+  def parentId: Option[String] =
     parent.map(_.fold(identity, _.sid))
 
   def get(key: String): F[Option[Json]] =
@@ -46,8 +46,8 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
   def kernel: F[Kernel] =
     Kernel(
       Map(
-        Headers.TraceId -> traceUUID.toString,
-        Headers.SpanId -> sid.toString
+        Headers.TraceId -> traceID,
+        Headers.SpanId -> sid
       )
     ).pure[F]
 
@@ -89,7 +89,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "duration_ms" -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
           "trace.span_id" -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
-          "trace.trace_id" -> traceUUID.asJson
+          "trace.trace_id" -> traceID.asJson
         ) ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
 
       JsonObject.fromIterable(fields)
@@ -97,10 +97,10 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     }
 
   def traceId: F[Option[String]] =
-    traceUUID.toString.some.pure[F]
+    traceID.some.pure[F]
 
   def spanId: F[Option[String]] =
-    sid.toString.some.pure[F]
+    sid.some.pure[F]
 
   def traceUri: F[Option[URI]] = none.pure[F]
 }
@@ -172,10 +172,10 @@ private[log] object LogSpan {
     } yield LogSpan(
       service = parent.service,
       name = name,
-      sid = spanId,
+      sid = spanId.toString,
       parent = Some(Right(parent)),
       parentKernel = options.parentKernel,
-      traceUUID = parent.traceUUID,
+      traceID = parent.traceID,
       timestamp = timestamp,
       fields = fields,
       children = children,
@@ -188,17 +188,17 @@ private[log] object LogSpan {
   ): F[LogSpan[F]] =
     for {
       spanId <- uuid[F]
-      traceUUID <- uuid[F]
+      traceID <- uuid[F]
       timestamp <- now[F]
       fields <- Ref[F].of(Map.empty[String, Json])
       children <- Ref[F].of(List.empty[JsonObject])
     } yield LogSpan(
       service = service,
       name = name,
-      sid = spanId,
+      sid = spanId.toString,
       parent = None,
       parentKernel = None,
-      traceUUID = traceUUID,
+      traceID = traceID.toString,
       timestamp = timestamp,
       fields = fields,
       children = children,
@@ -211,8 +211,8 @@ private[log] object LogSpan {
       kernel: Kernel
   ): F[LogSpan[F]] =
     for {
-      traceUUID <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
-      parentId <- Sync[F].catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.SpanId)))
+      traceID <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.TraceId))
+      parentId <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.SpanId))
       spanId <- uuid[F]
       timestamp <- now[F]
       fields <- Ref[F].of(Map.empty[String, Json])
@@ -220,10 +220,10 @@ private[log] object LogSpan {
     } yield LogSpan(
       service = service,
       name = name,
-      sid = spanId,
+      sid = spanId.toString,
       parent = Some(Left(parentId)),
       parentKernel = None,
-      traceUUID = traceUUID,
+      traceID = traceID,
       timestamp = timestamp,
       fields = fields,
       children = children,
