@@ -39,7 +39,7 @@ trait Trace[F[_]] {
   def span[A](name: String, options: Span.Options = Span.Options.Defaults)(k: F[A]): F[A]
 
   /** Same as [[span]], expressed as a [[cats.arrow.FunctionK]]. */
-  def spanK[A](name: String, options: Span.Options = Span.Options.Defaults): F ~> F =
+  def spanK(name: String, options: Span.Options = Span.Options.Defaults): F ~> F =
     new (F ~> F) {
       def apply[A](fa: F[A]): F[A] = span(name, options)(fa)
     }
