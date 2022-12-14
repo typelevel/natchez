@@ -31,20 +31,20 @@ class SpanPropagationTest extends InMemorySuite {
     "spanR",
     new TraceTest {
       def program[F[_]: MonadCancelThrow: Trace] =
-        Trace[F].spanR("parent").use { f =>
-          Trace[F].span("child")(
+        Trace[F].spanR("spanR").use { f =>
+          Trace[F].span("span")(
             f(Trace[F].put("question" -> "ultimate")) *> Trace[F].put("answer" -> 42)
           )
         }
 
       def expectedHistory = List(
         (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()))),
-        (Lineage.Root, NatchezCommand.CreateSpan("parent", None)),
-        (Lineage.Root, NatchezCommand.CreateSpan("child", None)),
-        (Lineage.Root / "parent", NatchezCommand.Put(List("question" -> "ultimate"))),
-        (Lineage.Root / "child", NatchezCommand.Put(List("answer" -> 42))),
-        (Lineage.Root, NatchezCommand.ReleaseSpan("child")),
-        (Lineage.Root, NatchezCommand.ReleaseSpan("parent")),
+        (Lineage.Root, NatchezCommand.CreateSpan("spanR", None)),
+        (Lineage.Root, NatchezCommand.CreateSpan("span", None)),
+        (Lineage.Root / "spanR", NatchezCommand.Put(List("question" -> "ultimate"))),
+        (Lineage.Root / "span", NatchezCommand.Put(List("answer" -> 42))),
+        (Lineage.Root, NatchezCommand.ReleaseSpan("span")),
+        (Lineage.Root, NatchezCommand.ReleaseSpan("spanR")),
         (Lineage.Root, NatchezCommand.ReleaseRootSpan("root"))
       )
     }
