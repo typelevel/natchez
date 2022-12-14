@@ -4,12 +4,14 @@
 
 package natchez
 
+import cats.effect.MonadCancelThrow
+
 class SpanCoalesceTest extends InMemorySuite {
 
   traceTest(
     "suppress - nominal",
     new TraceTest {
-      def program[F[_]: Trace] = {
+      def program[F[_]: MonadCancelThrow: Trace] = {
         def detailed =
           Trace[F].span("parent")(Trace[F].span("child")(Trace[F].put("answer" -> 42)))
         Trace[F].span("suppressed", Span.Options.Suppress)(detailed)
@@ -27,7 +29,7 @@ class SpanCoalesceTest extends InMemorySuite {
   traceTest(
     "coaslesce - nominal",
     new TraceTest {
-      def program[F[_]: Trace] = {
+      def program[F[_]: MonadCancelThrow: Trace] = {
         def detailed =
           Trace[F].span("parent")(Trace[F].span("child")(Trace[F].put("answer" -> 42)))
         Trace[F].span("coalesced", Span.Options.Coalesce)(detailed)
