@@ -79,9 +79,12 @@ object Trace {
             child <- parent.span(name, options)
           } yield new (IO ~> IO) {
             def apply[A](fa: IO[A]): IO[A] =
-              local
-                .set(child)
-                .bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(parent))
+              local.get.flatMap { old =>
+                local
+                  .set(child)
+                  .bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(old))
+              }
+
           }
 
         override def span[A](name: String, options: Span.Options)(k: IO[A]): IO[A] =
