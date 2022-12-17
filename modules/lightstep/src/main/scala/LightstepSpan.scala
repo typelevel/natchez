@@ -27,7 +27,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
     Sync[F].delay {
       val m = new java.util.HashMap[String, String]
       tracer.inject(span.context, Format.Builtin.HTTP_HEADERS, new TextMapAdapter(m))
-      Kernel(m.asScala.toMap)
+      Kernel.fromJava(m)
     }
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
@@ -63,7 +63,7 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
 
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
     val p = options.parentKernel.map(k =>
-      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava))
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toJava))
     )
     Span.putErrorFields(
       Resource

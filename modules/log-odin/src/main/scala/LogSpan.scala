@@ -19,6 +19,7 @@ import io.circe.syntax._
 import io.circe.JsonObject
 import io.odin.Logger
 import java.net.URI
+import org.typelevel.ci._
 
 private[logodin] final case class LogSpan[F[_]: Sync: Logger](
     service: String,
@@ -130,8 +131,8 @@ private[logodin] object LogSpan {
     }
 
   object Headers {
-    val TraceId = "X-Natchez-Trace-Id"
-    val SpanId = "X-Natchez-Parent-Span-Id"
+    val TraceId = ci"X-Natchez-Trace-Id"
+    val SpanId = ci"X-Natchez-Parent-Span-Id"
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =

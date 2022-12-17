@@ -100,7 +100,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-core" % catsVersion,
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-io" % fs2Version
+      "co.fs2" %%% "fs2-io" % fs2Version,
+      "org.typelevel" %%% "case-insensitive" % "1.3.0",
+      "org.scala-lang.modules" %%% "scala-collection-compat" % collectionCompatVersion
     )
   )
   .nativeSettings(commonNativeSettings)
@@ -142,8 +144,7 @@ lazy val opencensus = project
     name := "natchez-opencensus",
     description := "Opencensus support for Natchez.",
     libraryDependencies ++= Seq(
-      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.31.1",
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion
+      "io.opencensus" % "opencensus-exporter-trace-ocagent" % "0.31.1"
     )
   )
 
@@ -156,8 +157,7 @@ lazy val lightstep = project
     name := "natchez-lightstep",
     description := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.30.5",
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion
+      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.30.5"
     )
   )
 
@@ -215,7 +215,6 @@ lazy val opentelemetry = project
     description := "Base OpenTelemetry Utilities for Natchez",
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "io.opentelemetry" % "opentelemetry-sdk" % "1.21.0"
     )
   )
@@ -229,9 +228,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
-      "com.datadoghq" % "dd-trace-ot" % "1.0.1",
-      "com.datadoghq" % "dd-trace-api" % "1.0.1"
+      "com.datadoghq" % "dd-trace-ot" % "1.2.0",
+      "com.datadoghq" % "dd-trace-api" % "1.2.0"
     )
   )
 
@@ -261,7 +259,6 @@ lazy val newrelic = project
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % "0.14.3",
-      "org.scala-lang.modules" %% "scala-collection-compat" % collectionCompatVersion,
       "com.newrelic.telemetry" % "telemetry" % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core" % "0.15.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.15.0"
