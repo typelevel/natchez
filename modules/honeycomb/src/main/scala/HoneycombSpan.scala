@@ -14,6 +14,7 @@ import java.time.Instant
 import java.util.UUID
 import natchez._
 import java.net.URI
+import org.typelevel.ci._
 
 private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
     client: HoneyClient,
@@ -77,8 +78,8 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
 private[honeycomb] object HoneycombSpan {
 
   object Headers {
-    val TraceId = "X-Natchez-Trace-Id"
-    val SpanId = "X-Natchez-Parent-Span-Id"
+    val TraceId = ci"X-Natchez-Trace-Id"
+    val SpanId = ci"X-Natchez-Parent-Span-Id"
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =

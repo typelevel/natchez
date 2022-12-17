@@ -35,7 +35,7 @@ final case class DDSpan[F[_]: Sync](
         Format.Builtin.HTTP_HEADERS,
         new TextMapAdapter(m)
       )
-      Kernel(m.asScala.toMap)
+      Kernel.fromJava(m)
     }
 
   def put(fields: (String, TraceValue)*): F[Unit] =
@@ -55,7 +55,7 @@ final case class DDSpan[F[_]: Sync](
 
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
     val parent = options.parentKernel.map(k =>
-      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toHeaders.asJava))
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toJava))
     )
     Span.putErrorFields(
       Resource

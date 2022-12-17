@@ -21,6 +21,7 @@ import io.circe.syntax._
 import cats.effect.kernel.Resource.ExitCase.Canceled
 import cats.effect.kernel.Resource.ExitCase.Errored
 import cats.effect.kernel.Resource.ExitCase.Succeeded
+import org.typelevel.ci._
 
 import scala.concurrent.duration._
 import scala.util.matching.Regex
@@ -154,7 +155,7 @@ private[xray] object XRaySpan {
       case NumberValue(n)                       => n.doubleValue.asJson
     }
 
-  val Header = "X-Amzn-Trace-Id"
+  val Header = ci"X-Amzn-Trace-Id"
 
   private[xray] def encodeHeader(
       rootId: String,

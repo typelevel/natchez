@@ -7,7 +7,7 @@ package natchez
 import java.net.URI
 
 import cats.data.{Chain, Kleisli}
-import cats.effect.{IO, Ref, Resource}
+import cats.effect.{IO, MonadCancelThrow, Ref, Resource}
 
 import natchez.Span.Options
 import munit.CatsEffectSuite
@@ -118,15 +118,15 @@ trait InMemorySuite extends CatsEffectSuite {
   val NatchezCommand = InMemory.NatchezCommand
 
   trait TraceTest {
-    def program[F[_]: Trace]: F[Unit]
+    def program[F[_]: MonadCancelThrow: Trace]: F[Unit]
     def expectedHistory: List[(Lineage, NatchezCommand)]
   }
 
   def traceTest(name: String, tt: TraceTest) = {
     test(s"$name - Kleisli")(
-      testTraceKleisli(tt.program[Kleisli[IO, Span[IO], *]](_), tt.expectedHistory)
+      testTraceKleisli(tt.program[Kleisli[IO, Span[IO], *]](implicitly, _), tt.expectedHistory)
     )
-    test(s"$name - IOLocal")(testTraceIoLocal(tt.program[IO](_), tt.expectedHistory))
+    test(s"$name - IOLocal")(testTraceIoLocal(tt.program[IO](implicitly, _), tt.expectedHistory))
   }
 
   def testTraceKleisli(
