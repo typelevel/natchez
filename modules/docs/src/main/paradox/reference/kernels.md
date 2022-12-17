@@ -16,7 +16,6 @@ import org.http4s.{ EntityDecoder, Uri, Header }
 import org.http4s.Method.GET
 import org.http4s.client.Client
 import org.http4s.client.dsl.io._
-import org.typelevel.ci.CIString
 ```
 
 We can add a `Span`'s kernel to an outgoing `Client` request. If the remote server supports tracing via the same back end, it can extend the trace with child spans.
@@ -27,7 +26,7 @@ def makeRequest[A](span: Span[IO], client: Client[IO], uri: Uri)(
 ): IO[A] =
   span.kernel.flatMap { k =>
     // turn a Map[String, String] into List[Header]
-    val http4sHeaders = k.toHeaders.map { case (k, v) => Header.Raw(CIString(k), v) } .toSeq
+    val http4sHeaders = k.toHeaders.map { case (k, v) => Header.Raw(k, v) } .toSeq
     client.expect[A](GET(uri).withHeaders(http4sHeaders))
   }
 ```
