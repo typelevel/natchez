@@ -63,11 +63,18 @@ class LogSuite extends CatsEffectSuite {
 
   test("continueOrElseRoot should preserve non-uuid trace from kernel") {
     MockLogger.newInstance[IO]("test").flatMap { implicit log =>
-      val kernel = Kernel(Map(LogSpan.Headers.TraceId -> "non-uuid-trace-id", LogSpan.Headers.SpanId -> "non-uuid-parent-span-id"))
-      val traceId = Log.entryPoint[IO]("service", filter(_).spaces2)
-        .continueOrElseRoot("root span", kernel).use { root =>
-        root.traceId
-      }
+      val kernel = Kernel(
+        Map(
+          LogSpan.Headers.TraceId -> "non-uuid-trace-id",
+          LogSpan.Headers.SpanId -> "non-uuid-parent-span-id"
+        )
+      )
+      val traceId = Log
+        .entryPoint[IO]("service", filter(_).spaces2)
+        .continueOrElseRoot("root span", kernel)
+        .use { root =>
+          root.traceId
+        }
 
       assertIO(traceId, Some("non-uuid-trace-id"))
     }
