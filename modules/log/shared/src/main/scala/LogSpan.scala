@@ -20,6 +20,7 @@ import io.circe.Encoder
 import io.circe.syntax._
 import io.circe.JsonObject
 import org.typelevel.log4cats.Logger
+import org.typelevel.ci._
 
 import java.net.URI
 
@@ -125,8 +126,8 @@ private[log] object LogSpan {
     }
 
   object Headers {
-    val TraceId = "X-Natchez-Trace-Id"
-    val SpanId = "X-Natchez-Parent-Span-Id"
+    val TraceId = ci"X-Natchez-Trace-Id"
+    val SpanId = ci"X-Natchez-Parent-Span-Id"
   }
 
   private def uuid[F[_]: Sync]: F[UUID] =

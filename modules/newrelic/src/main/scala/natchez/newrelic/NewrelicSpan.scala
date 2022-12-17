@@ -15,6 +15,7 @@ import com.newrelic.telemetry.spans.{Span, SpanBatch, SpanBatchSender}
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 import natchez.newrelic.NewrelicSpan.Headers
 import natchez.{Kernel, TraceValue}
+import org.typelevel.ci._
 
 import scala.jdk.CollectionConverters._
 
@@ -70,8 +71,8 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
 
 object NewrelicSpan {
   object Headers {
-    val TraceId = "X-Natchez-Trace-Id"
-    val SpanId = "X-Natchez-Parent-Span-Id"
+    val TraceId = ci"X-Natchez-Trace-Id"
+    val SpanId = ci"X-Natchez-Parent-Span-Id"
   }
 
   def fromKernel[F[_]: Sync](

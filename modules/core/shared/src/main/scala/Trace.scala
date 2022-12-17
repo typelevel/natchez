@@ -38,6 +38,12 @@ trait Trace[F[_]] {
   /** Create a new span, and within it run the continuation `k`. */
   def span[A](name: String, options: Span.Options = Span.Options.Defaults)(k: F[A]): F[A]
 
+  /** Same as [[span]], expressed as a [[cats.arrow.FunctionK]]. */
+  def spanK(name: String, options: Span.Options = Span.Options.Defaults): F ~> F =
+    new (F ~> F) {
+      def apply[A](fa: F[A]): F[A] = span(name, options)(fa)
+    }
+
   /** A unique ID for this trace, if available. This can be useful to include in error messages for
     * example, so you can quickly find the associated trace.
     */
@@ -79,9 +85,12 @@ object Trace {
             child <- parent.span(name, options)
           } yield new (IO ~> IO) {
             def apply[A](fa: IO[A]): IO[A] =
-              local
-                .set(child)
-                .bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(parent))
+              local.get.flatMap { old =>
+                local
+                  .set(child)
+                  .bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(old))
+              }
+
           }
 
         override def span[A](name: String, options: Span.Options)(k: IO[A]): IO[A] =

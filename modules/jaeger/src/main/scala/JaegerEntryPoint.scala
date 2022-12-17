@@ -11,7 +11,6 @@ import io.jaegertracing.internal.exceptions.UnsupportedFormatException
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.{opentracing => ot}
 
-import scala.jdk.CollectionConverters._
 import java.net.URI
 
 final class JaegerEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
@@ -22,7 +21,7 @@ final class JaegerEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[UR
         Sync[F].delay {
           val p = tracer.extract(
             Format.Builtin.HTTP_HEADERS,
-            new TextMapAdapter(kernel.toHeaders.asJava)
+            new TextMapAdapter(kernel.toJava)
           )
           tracer.buildSpan(name).asChildOf(p).start()
         }

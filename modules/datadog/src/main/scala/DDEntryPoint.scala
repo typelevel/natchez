@@ -11,7 +11,6 @@ import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.{opentracing => ot}
 
 import java.net.URI
-import scala.jdk.CollectionConverters._
 
 final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
     extends EntryPoint[F] {
@@ -26,7 +25,7 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
         Sync[F].delay {
           val spanContext = tracer.extract(
             Format.Builtin.HTTP_HEADERS,
-            new TextMapAdapter(kernel.toHeaders.asJava)
+            new TextMapAdapter(kernel.toJava)
           )
           tracer.buildSpan(name).asChildOf(spanContext).start()
         }

@@ -10,8 +10,6 @@ import cats.syntax.all._
 import io.opentracing.Tracer
 import io.opentracing.propagation.{Format, TextMapAdapter}
 
-import scala.jdk.CollectionConverters._
-
 final class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F] {
   override def root(name: String): Resource[F, Span[F]] =
     Resource
@@ -23,7 +21,7 @@ final class LightstepEntryPoint[F[_]: Sync](tracer: Tracer) extends EntryPoint[F
       .make(
         Sync[F].delay {
           val p =
-            tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+            tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toJava))
           tracer.buildSpan(name).asChildOf(p).start()
         }
       )(s => Sync[F].delay(s.finish()))

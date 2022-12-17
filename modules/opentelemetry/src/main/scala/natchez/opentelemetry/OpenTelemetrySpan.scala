@@ -22,6 +22,7 @@ import TraceValue.{BooleanValue, NumberValue, StringValue}
 import java.net.URI
 import scala.collection.mutable
 import io.opentelemetry.api.common.Attributes
+import org.typelevel.ci._
 
 private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
     otel: OTel,
@@ -64,7 +65,7 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
 
   override def kernel: F[Kernel] =
     Sync[F].delay {
-      val headers: mutable.Map[String, String] = mutable.Map.empty[String, String]
+      val headers: mutable.Map[CIString, String] = mutable.Map.empty[CIString, String]
       otel.getPropagators.getTextMapPropagator.inject(
         Context.current().`with`(span),
         headers,
@@ -215,15 +216,16 @@ private[opentelemetry] object OpenTelemetrySpan {
 
     import scala.jdk.CollectionConverters._
 
-    override def keys(carrier: Kernel): lang.Iterable[String] = carrier.toHeaders.keys.asJava
+    override def keys(carrier: Kernel): lang.Iterable[String] =
+      carrier.toHeaders.keys.map(_.toString).asJava
 
     override def get(carrier: Kernel, key: String): String =
-      carrier.toHeaders.getOrElse(key, null)
+      carrier.toHeaders.getOrElse(CIString(key), null)
   }
 
-  private val spanContextSetter = new TextMapSetter[mutable.Map[String, String]] {
-    override def set(carrier: mutable.Map[String, String], key: String, value: String): Unit = {
-      carrier.put(key, value)
+  private val spanContextSetter = new TextMapSetter[mutable.Map[CIString, String]] {
+    override def set(carrier: mutable.Map[CIString, String], key: String, value: String): Unit = {
+      carrier.put(CIString(key), value)
       ()
     }
   }

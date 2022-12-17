@@ -35,7 +35,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
         Format.Builtin.HTTP_HEADERS,
         new TextMapAdapter(m)
       )
-      Kernel(m.asScala.toMap)
+      Kernel.fromJava(m)
     }
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
@@ -75,7 +75,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
         val p = options.parentKernel.map(k =>
           tracer.extract(
             Format.Builtin.HTTP_HEADERS,
-            new TextMapAdapter(k.toHeaders.asJava)
+            new TextMapAdapter(k.toJava)
           )
         )
         Sync[F]
