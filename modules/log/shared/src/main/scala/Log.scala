@@ -21,14 +21,22 @@ object Log {
       def make(span: F[LogSpan[F]]): Resource[F, Span[F]] =
         Resource.makeCase(span)(LogSpan.finish(format)).widen
 
-      def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-        make(LogSpan.fromKernel(service, name, kernel))
+      override def continue(
+          name: String,
+          kernel: Kernel,
+          options: Span.Options
+      ): Resource[F, Span[F]] =
+        make(LogSpan.fromKernel(service, name, kernel, options))
 
-      def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-        make(LogSpan.fromKernelOrElseRoot(service, name, kernel))
+      override def continueOrElseRoot(
+          name: String,
+          kernel: Kernel,
+          options: Span.Options
+      ): Resource[F, Span[F]] =
+        make(LogSpan.fromKernelOrElseRoot(service, name, kernel, options))
 
-      def root(name: String): Resource[F, Span[F]] =
-        make(LogSpan.root(service, name))
+      override def root(name: String, options: Span.Options): Resource[F, Span[F]] =
+        make(LogSpan.root(service, name, options))
 
     }
 
