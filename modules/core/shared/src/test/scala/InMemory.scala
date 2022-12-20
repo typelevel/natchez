@@ -18,8 +18,10 @@ object InMemory {
       lineage: Lineage,
       k: Kernel,
       ref: Ref[IO, Chain[(Lineage, NatchezCommand)]],
-      val spanCreationPolicy: Options.SpanCreationPolicy
+      val options: Options
   ) extends natchez.Span.Default[IO] {
+    override protected val spanCreationPolicy: Options.SpanCreationPolicy =
+      options.spanCreationPolicy
 
     def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.Put(fields.toList)))
@@ -38,8 +40,8 @@ object InMemory {
 
     def makeSpan(name: String, options: Options): Resource[IO, natchez.Span[IO]] = {
       val acquire = ref
-        .update(_.append(lineage -> NatchezCommand.CreateSpan(name, options.parentKernel)))
-        .as(new Span(lineage / name, k, ref, options.spanCreationPolicy))
+        .update(_.append(lineage -> NatchezCommand.CreateSpan(name, options.parentKernel, options)))
+        .as(new Span(lineage / name, k, ref, options))
 
       val release = ref.update(_.append(lineage -> NatchezCommand.ReleaseSpan(name)))
 
@@ -59,19 +61,31 @@ object InMemory {
   class EntryPoint(val ref: Ref[IO, Chain[(Lineage, NatchezCommand)]])
       extends natchez.EntryPoint[IO] {
 
-    def root(name: String): Resource[IO, Span] =
-      newSpan(name, Kernel(Map.empty))
+    override def root(name: String, options: natchez.Span.Options): Resource[IO, Span] =
+      newSpan(name, Kernel(Map.empty), options)
 
-    def continue(name: String, kernel: Kernel): Resource[IO, Span] =
-      newSpan(name, kernel)
+    override def continue(
+        name: String,
+        kernel: Kernel,
+        options: natchez.Span.Options
+    ): Resource[IO, Span] =
+      newSpan(name, kernel, options)
 
-    def continueOrElseRoot(name: String, kernel: Kernel): Resource[IO, Span] =
-      newSpan(name, kernel)
+    override def continueOrElseRoot(
+        name: String,
+        kernel: Kernel,
+        options: natchez.Span.Options
+    ): Resource[IO, Span] =
+      newSpan(name, kernel, options)
 
-    private def newSpan(name: String, kernel: Kernel): Resource[IO, Span] = {
+    private def newSpan(
+        name: String,
+        kernel: Kernel,
+        options: natchez.Span.Options
+    ): Resource[IO, Span] = {
       val acquire = ref
-        .update(_.append(Lineage.Root -> NatchezCommand.CreateRootSpan(name, kernel)))
-        .as(new Span(Lineage.Root, kernel, ref, Options.SpanCreationPolicy.Default))
+        .update(_.append(Lineage.Root -> NatchezCommand.CreateRootSpan(name, kernel, options)))
+        .as(new Span(Lineage.Root, kernel, ref, options))
 
       val release = ref.update(_.append(Lineage.Root -> NatchezCommand.ReleaseRootSpan(name)))
 
@@ -99,13 +113,15 @@ object InMemory {
     case object AskTraceId extends NatchezCommand
     case object AskTraceUri extends NatchezCommand
     case class Put(fields: List[(String, natchez.TraceValue)]) extends NatchezCommand
-    case class CreateSpan(name: String, kernel: Option[Kernel]) extends NatchezCommand
+    case class CreateSpan(name: String, kernel: Option[Kernel], options: natchez.Span.Options)
+        extends NatchezCommand
     case class ReleaseSpan(name: String) extends NatchezCommand
     case class AttachError(err: Throwable) extends NatchezCommand
     case class LogEvent(event: String) extends NatchezCommand
     case class LogFields(fields: List[(String, TraceValue)]) extends NatchezCommand
     // entry point
-    case class CreateRootSpan(name: String, kernel: Kernel) extends NatchezCommand
+    case class CreateRootSpan(name: String, kernel: Kernel, options: natchez.Span.Options)
+        extends NatchezCommand
     case class ReleaseRootSpan(name: String) extends NatchezCommand
   }
 
