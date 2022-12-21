@@ -23,7 +23,7 @@ object Honeycomb {
       .make {
         for {
           b <- Sync[F].delay(
-            LibHoney.options.setGlobalFields(Map("service_name" -> service).asJava)
+            LibHoney.options.setGlobalFields(Map("service.name" -> service).asJava)
           )
           o <- f(b)
           c <- Sync[F].delay(LibHoney.create(o))

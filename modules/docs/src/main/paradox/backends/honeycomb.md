@@ -40,7 +40,7 @@ Honeycomb spans include the following fields, in addition to any user-specified 
 
 | Field                | Type                    | Meaning                             |
 |----------------------|-------------------------|-------------------------------------|
-| `service_name`       | String                  | User-supplied service name.         |
+| `service.name`       | String                  | User-supplied service name.         |
 | `name`               | String                  | User-supplied span name.            |
 | `trace.trace_id`     | String (UUID)           | Id shared by all spans in a trace.  |
 | `trace.span_id`      | String (UUID)           | Id of the parent span, if any.      |
