@@ -69,13 +69,13 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
       Resource.makeCase(LogSpan.child(this, label, options))(LogSpan.finishChild[F]).widen
     )
 
-  def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     putAny(
       "exit.case" -> "error".asJson,
       "exit.error.class" -> err.getClass.getName.asJson,
       "exit.error.message" -> err.getMessage.asJson,
       "exit.error.stackTrace" -> err.getStackTrace.map(_.toString).asJson
-    )
+    ) *> put(fields: _*)
 
   def json(finish: Instant): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>

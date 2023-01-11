@@ -50,8 +50,12 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v))
     }
 
-  override def attachError(err: Throwable): F[Unit] =
-    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
+    put(
+      ("error.message" -> TraceValue.StringValue(err.getMessage)) ::
+        ("error.class" -> TraceValue.StringValue(err.getClass.getSimpleName)) ::
+        fields.toList: _*
+    )
 
   override def log(fields: (String, TraceValue)*): F[Unit] = Sync[F].unit
 

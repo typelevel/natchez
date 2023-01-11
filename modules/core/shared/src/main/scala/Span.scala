@@ -25,7 +25,7 @@ trait Span[F[_]] {
   def log(event: String): F[Unit]
 
   /** Adds error information to this span. */
-  def attachError(err: Throwable): F[Unit]
+  def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit]
 
   /** The kernel for this span, which can be sent as headers to remote systems, which can then
     * continue this trace by constructing spans that are children of this one.
@@ -63,8 +63,8 @@ trait Span[F[_]] {
 
       override def kernel: G[Kernel] = f(outer.kernel)
 
-      override def attachError(err: Throwable) =
-        f(outer.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*) =
+        f(outer.attachError(err, fields: _*))
 
       override def log(event: String) =
         f(outer.log(event))
@@ -126,7 +126,7 @@ object Span {
   private abstract class EphemeralSpan[F[_]: Applicative] extends Span[F] {
     override def put(fields: (String, TraceValue)*): F[Unit] = ().pure[F]
     override def kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-    override def attachError(err: Throwable) = ().pure[F]
+    override def attachError(err: Throwable, fields: (String, TraceValue)*) = ().pure[F]
     override def log(event: String) = ().pure[F]
     override def log(fields: (String, TraceValue)*) = ().pure[F]
     override def spanId: F[Option[String]] = (None: Option[String]).pure[F]
