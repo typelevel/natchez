@@ -215,7 +215,7 @@ lazy val opentelemetry = project
     description := "Base OpenTelemetry Utilities for Natchez",
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
-      "io.opentelemetry" % "opentelemetry-sdk" % "1.21.0"
+      "io.opentelemetry" % "opentelemetry-sdk" % "1.22.0"
     )
   )
 
@@ -347,7 +347,7 @@ lazy val examples = project
       "org.slf4j" % "slf4j-simple" % "2.0.6",
       "eu.timepit" %% "refined" % "0.10.1",
       "is.cir" %% "ciris" % "3.0.0",
-      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.21.0",
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.22.0",
       "io.grpc" % "grpc-okhttp" % "1.51.1" // required for the OpenTelemetry exporter
     )
   )
@@ -406,7 +406,7 @@ lazy val docs = project
       "org.http4s" %% "http4s-client" % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
       "org.slf4j" % "slf4j-simple" % "2.0.6",
-      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.21.0" // for the opentelemetry example
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.22.0" // for the opentelemetry example
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3" // pray this does more good than harm
   )
