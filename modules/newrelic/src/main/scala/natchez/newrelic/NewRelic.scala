@@ -14,21 +14,25 @@ object NewRelic {
   def entryPoint[F[_]: Sync](system: String)(sender: SpanBatchSender): EntryPoint[F] =
     new EntryPoint[F] {
 
-      def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+      def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]] =
         Resource
-          .make(NewrelicSpan.fromKernel[F](system, name, kernel)(sender))(s =>
+          .make(NewrelicSpan.fromKernel[F](system, name, kernel, options)(sender))(s =>
             NewrelicSpan.finish[F](s)
           )
           .widen
 
-      def root(name: String): Resource[F, Span[F]] =
+      def root(name: String, options: Span.Options): Resource[F, Span[F]] =
         Resource
-          .make(NewrelicSpan.root[F](system, name, sender))(NewrelicSpan.finish[F])
+          .make(NewrelicSpan.root[F](system, name, sender, options))(NewrelicSpan.finish[F])
           .widen
 
-      def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-        continue(name, kernel).recoverWith { case _: NoSuchElementException =>
-          root(name)
+      def continueOrElseRoot(
+          name: String,
+          kernel: Kernel,
+          options: Span.Options
+      ): Resource[F, Span[F]] =
+        continue(name, kernel, options).recoverWith { case _: NoSuchElementException =>
+          root(name, options)
         }
 
     }
