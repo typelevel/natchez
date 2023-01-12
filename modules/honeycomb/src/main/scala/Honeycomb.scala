@@ -29,19 +29,24 @@ object Honeycomb {
           c <- Sync[F].delay(LibHoney.create(o))
           _ <- Sync[F].delay(c.addResponseObserver(responseObserver))
         } yield c
-      }(c => Sync[F].delay(c.close))
+      }(c => Sync[F].delay(c.close()))
       .map { c =>
         new EntryPoint[F] {
 
-          def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
-            Resource.makeCase(HoneycombSpan.fromKernel(c, name, kernel))(HoneycombSpan.finish).widen
-
-          def root(name: String): Resource[F, Span[F]] =
-            Resource.makeCase(HoneycombSpan.root(c, name))(HoneycombSpan.finish).widen
-
-          def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+          def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]] =
             Resource
-              .makeCase(HoneycombSpan.fromKernelOrElseRoot(c, name, kernel))(HoneycombSpan.finish)
+              .makeCase(HoneycombSpan.fromKernel(c, name, kernel, options))(HoneycombSpan.finish)
+              .widen
+
+          def root(name: String, options: Span.Options): Resource[F, Span[F]] =
+            Resource.makeCase(HoneycombSpan.root(c, name, options))(HoneycombSpan.finish).widen
+
+          def continueOrElseRoot(name: String, kernel: Kernel, options: Span.Options)
+              : Resource[F, Span[F]] =
+            Resource
+              .makeCase(HoneycombSpan.fromKernelOrElseRoot(c, name, kernel, options))(
+                HoneycombSpan.finish
+              )
               .widen
 
         }
