@@ -35,7 +35,8 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
 ) extends Span.Default[F] {
   import LogSpan._
 
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def spanId: F[Option[String]] =
     sid.toString.some.pure[F]

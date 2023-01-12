@@ -24,7 +24,8 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
 ) extends Span.Default[F] {
   import TraceValue._
 
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   override def kernel: F[Kernel] =
     Sync[F].delay {

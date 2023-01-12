@@ -36,7 +36,7 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
     tracer: Tracer,
     span: TSpan,
     prefix: Option[URI],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    spanCreationPolicyOverride: Span.Options.SpanCreationPolicy
 ) extends Span.Default[F] {
 
   import OpenTelemetrySpan._

@@ -23,7 +23,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
     tracer: ot.Tracer,
     span: ot.Span,
     prefix: Option[URI],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    spanCreationPolicyOverride: Span.Options.SpanCreationPolicy
 ) extends Span.Default[F] {
   import TraceValue._
 

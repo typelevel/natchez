@@ -28,7 +28,8 @@ final case class DDSpan[F[_]: Sync](
     uriPrefix: Option[URI],
     options: Span.Options
 ) extends Span.Default[F] {
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def kernel: F[Kernel] =
     Sync[F].delay {

@@ -37,7 +37,8 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
 ) extends Span.Default[F] {
   import LogSpan._
 
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def parentId: Option[String] =
     parent.map(_.fold(identity, _.sid))

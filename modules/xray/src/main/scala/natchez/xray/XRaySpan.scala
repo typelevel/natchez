@@ -36,7 +36,8 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
 ) extends Span.Default[F] {
   import XRaySpan._
 
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def put(fields: (String, TraceValue)*): F[Unit] = {
     val fieldsToAdd = fields.map { case (k, v) => k -> v.asJson }

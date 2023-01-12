@@ -90,10 +90,10 @@ trait Span[F[_]] {
 object Span {
 
   abstract class Default[F[_]: Applicative] extends Span[F] {
-    protected val spanCreationPolicy: Options.SpanCreationPolicy
+    protected val spanCreationPolicyOverride: Options.SpanCreationPolicy
 
-    def span(name: String, options: Options): Resource[F, Span[F]] =
-      spanCreationPolicy match {
+    override final def span(name: String, options: Options): Resource[F, Span[F]] =
+      spanCreationPolicyOverride match {
         case Options.SpanCreationPolicy.Suppress => Resource.pure(Span.noop[F])
         case Options.SpanCreationPolicy.Coalesce => Resource.pure(this)
         case Options.SpanCreationPolicy.Default  => makeSpan(name, options)

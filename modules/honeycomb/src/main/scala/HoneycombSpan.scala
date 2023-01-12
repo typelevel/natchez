@@ -29,7 +29,8 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
 ) extends Span.Default[F] {
   import HoneycombSpan._
 
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def get(key: String): F[Option[TraceValue]] =
     fields.get.map(_.get(key))

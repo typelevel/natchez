@@ -30,7 +30,7 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
     sender: SpanBatchSender,
     options: natchez.Span.Options
 ) extends natchez.Span.Default[F] {
-  override protected val spanCreationPolicy: natchez.Span.Options.SpanCreationPolicy =
+  override protected val spanCreationPolicyOverride: natchez.Span.Options.SpanCreationPolicy =
     options.spanCreationPolicy
 
   override def kernel: F[Kernel] =

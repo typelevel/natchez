@@ -29,7 +29,8 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
   import OpenCensusSpan._
 
-  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   private def traceToAttribute(value: TraceValue): AttributeValue = value match {
     case StringValue(v) =>

@@ -20,7 +20,7 @@ object InMemory {
       ref: Ref[IO, Chain[(Lineage, NatchezCommand)]],
       val options: Options
   ) extends natchez.Span.Default[IO] {
-    override protected val spanCreationPolicy: Options.SpanCreationPolicy =
+    override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
       options.spanCreationPolicy
 
     def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
