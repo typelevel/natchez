@@ -10,9 +10,10 @@ import cats.effect.Resource.ExitCase
 import cats.effect.Resource.ExitCase._
 import cats.syntax.all._
 import io.opencensus.trace.propagation.TextFormat.Setter
-import io.opencensus.trace.{AttributeValue, Sampler, Tracer, Tracing}
+import io.opencensus.trace.{AttributeValue, Sampler, SpanBuilder, Tracer, Tracing}
 import io.opencensus.trace.propagation.SpanContextParseException
 import io.opencensus.trace.propagation.TextFormat.Getter
+import natchez.Span.{Options, SpanKind}
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 import org.typelevel.ci._
 
@@ -23,10 +24,12 @@ import scala.jdk.CollectionConverters._
 private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     tracer: Tracer,
     span: io.opencensus.trace.Span,
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    options: Span.Options
 ) extends Span.Default[F] {
 
   import OpenCensusSpan._
+
+  override protected val spanCreationPolicy: Options.SpanCreationPolicy = options.spanCreationPolicy
 
   private def traceToAttribute(value: TraceValue): AttributeValue = value match {
     case StringValue(v) =>
@@ -62,9 +65,9 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Span.putErrorFields(
       Resource
         .makeCase(options.parentKernel match {
-          case None => OpenCensusSpan.child(this, name, options.spanCreationPolicy)
+          case None => OpenCensusSpan.child(this, name, options)
           case Some(k) =>
-            OpenCensusSpan.fromKernelWithSpan(tracer, name, k, span, options.spanCreationPolicy)
+            OpenCensusSpan.fromKernelWithSpan(tracer, name, k, span, options)
         })(
           OpenCensusSpan.finish
         )
@@ -112,6 +115,19 @@ private[opencensus] object OpenCensusSpan {
           case Errored(ex) => outer.attachError(ex)
         }
       }
+      _ <- outer.options.links
+        .traverse { k =>
+          Sync[F].delay {
+            Tracing.getPropagationComponent.getB3Format
+              .extract(k, spanContextGetter)
+              .getSpanId
+              .toLowerBase16
+          }
+        }
+        .flatMap { linkedSpanIds =>
+          // OpenCensus only has full support for parent and child links, so attach them as a field
+          outer.put("span.links" -> linkedSpanIds.mkString_(","))
+        }
       _ <- Sync[F].delay(outer.span.end())
     } yield ()
   }
@@ -119,75 +135,93 @@ private[opencensus] object OpenCensusSpan {
   def child[F[_]: Sync](
       parent: OpenCensusSpan[F],
       name: String,
-      spanCreationPolicy: Span.Options.SpanCreationPolicy
+      options: Span.Options
   ): F[OpenCensusSpan[F]] =
     Sync[F]
-      .delay(
-        parent.tracer
-          .spanBuilderWithExplicitParent(name, parent.span)
-          .startSpan()
-      )
-      .map(OpenCensusSpan(parent.tracer, _, spanCreationPolicy))
+      .delay(parent.tracer.spanBuilderWithExplicitParent(name, parent.span))
+      .flatTap(setOptionsOnBuilder[F](options))
+      .flatMap(startSpan[F])
+      .map(OpenCensusSpan(parent.tracer, _, options))
 
   def root[F[_]: Sync](
       tracer: Tracer,
       name: String,
-      sampler: Sampler
+      sampler: Sampler,
+      options: Span.Options
   ): F[OpenCensusSpan[F]] =
     Sync[F]
-      .delay(
-        tracer
-          .spanBuilder(name)
-          .setSampler(sampler)
-          .startSpan()
-      )
-      .map(OpenCensusSpan(tracer, _, Span.Options.SpanCreationPolicy.Default))
+      .delay(tracer.spanBuilder(name).setSampler(sampler))
+      .flatTap(setOptionsOnBuilder[F](options))
+      .flatMap(startSpan[F])
+      .map(OpenCensusSpan(tracer, _, options))
 
   def fromKernelWithSpan[F[_]: Sync](
       tracer: Tracer,
       name: String,
       kernel: Kernel,
       span: io.opencensus.trace.Span,
-      spanCreationPolicy: Span.Options.SpanCreationPolicy
-  ): F[OpenCensusSpan[F]] = Sync[F]
-    .delay {
-      val ctx = Tracing.getPropagationComponent.getB3Format
-        .extract(kernel, spanContextGetter)
-      tracer
-        .spanBuilderWithRemoteParent(name, ctx)
-        .setParentLinks(List(span).asJava)
-        .startSpan()
-    }
-    .map(OpenCensusSpan(tracer, _, spanCreationPolicy))
-
-  def fromKernel[F[_]: Sync](
-      tracer: Tracer,
-      name: String,
-      kernel: Kernel
+      options: Span.Options
   ): F[OpenCensusSpan[F]] =
     Sync[F]
       .delay {
         val ctx = Tracing.getPropagationComponent.getB3Format
           .extract(kernel, spanContextGetter)
-        tracer.spanBuilderWithRemoteParent(name, ctx).startSpan()
+        tracer
+          .spanBuilderWithRemoteParent(name, ctx)
+          .setParentLinks(List(span).asJava)
       }
-      .map(OpenCensusSpan(tracer, _, Span.Options.SpanCreationPolicy.Default))
+      .flatTap(setOptionsOnBuilder[F](options))
+      .flatMap(startSpan[F])
+      .map(OpenCensusSpan(tracer, _, options))
+
+  def fromKernel[F[_]: Sync](
+      tracer: Tracer,
+      name: String,
+      kernel: Kernel,
+      options: Span.Options
+  ): F[OpenCensusSpan[F]] =
+    Sync[F]
+      .delay {
+        val ctx = Tracing.getPropagationComponent.getB3Format
+          .extract(kernel, spanContextGetter)
+        tracer.spanBuilderWithRemoteParent(name, ctx)
+      }
+      .flatTap(setOptionsOnBuilder[F](options))
+      .flatMap(startSpan[F])
+      .map(OpenCensusSpan(tracer, _, options))
 
   def fromKernelOrElseRoot[F[_]](
       tracer: Tracer,
       name: String,
       kernel: Kernel,
-      sampler: Sampler
+      sampler: Sampler,
+      options: Span.Options
   )(implicit ev: Sync[F]): F[OpenCensusSpan[F]] =
-    fromKernel(tracer, name, kernel).recoverWith {
+    fromKernel(tracer, name, kernel, options).recoverWith {
       case _: SpanContextParseException =>
-        root(tracer, name, sampler)
+        root(tracer, name, sampler, options)
       case _: NoSuchElementException =>
-        root(tracer, name, sampler) // means headers are incomplete or invalid
+        root(tracer, name, sampler, options) // means headers are incomplete or invalid
       case _: NullPointerException =>
-        root(tracer, name, sampler) // means headers are incomplete or invalid
+        root(tracer, name, sampler, options) // means headers are incomplete or invalid
     }
 
   private val spanContextGetter: Getter[Kernel] = (carrier: Kernel, key: String) =>
     carrier.toHeaders(CIString(key))
+
+  private def setOptionsOnBuilder[F[_]: Sync](
+      options: Span.Options
+  )(builder: SpanBuilder): F[Unit] =
+    options.spanKind match {
+      case SpanKind.Server =>
+        Sync[F].delay(builder.setSpanKind(io.opencensus.trace.Span.Kind.SERVER)).void
+      case SpanKind.Client =>
+        Sync[F].delay(builder.setSpanKind(io.opencensus.trace.Span.Kind.CLIENT)).void
+      case _ =>
+        // OpenCensus only supports Server and Client span types, so ignore other types
+        ().pure[F]
+    }
+
+  private def startSpan[F[_]: Sync](builder: SpanBuilder): F[io.opencensus.trace.Span] =
+    Sync[F].delay(builder.startSpan())
 }
