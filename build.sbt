@@ -68,6 +68,7 @@ lazy val commonNativeSettings = Seq(
 // Compilation
 ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
+ThisBuild / githubWorkflowScalaVersions := Seq("2.12", "2.13", "3")
 
 lazy val root = tlCrossRootProject.aggregate(
   core,
