@@ -1,4 +1,5 @@
 addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.4.17")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-mergify" % "0.4.17")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.10.3")
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.4.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.3")
