@@ -39,17 +39,20 @@ object OpenCensus {
       .delay(Tracing.getTracer)
       .map { t =>
         new EntryPoint[F] {
-          def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+          def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]] =
             Resource
-              .makeCase(OpenCensusSpan.fromKernel(t, name, kernel))(OpenCensusSpan.finish)
+              .makeCase(OpenCensusSpan.fromKernel(t, name, kernel, options))(OpenCensusSpan.finish)
               .widen
 
-          def root(name: String): Resource[F, Span[F]] =
-            Resource.makeCase(OpenCensusSpan.root(t, name, sampler))(OpenCensusSpan.finish).widen
-
-          def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+          def root(name: String, options: Span.Options): Resource[F, Span[F]] =
             Resource
-              .makeCase(OpenCensusSpan.fromKernelOrElseRoot(t, name, kernel, sampler))(
+              .makeCase(OpenCensusSpan.root(t, name, sampler, options))(OpenCensusSpan.finish)
+              .widen
+
+          def continueOrElseRoot(name: String, kernel: Kernel, options: Span.Options)
+              : Resource[F, Span[F]] =
+            Resource
+              .makeCase(OpenCensusSpan.fromKernelOrElseRoot(t, name, kernel, sampler, options))(
                 OpenCensusSpan.finish
               )
               .widen
