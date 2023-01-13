@@ -6,23 +6,19 @@ package natchez.xray
 
 import cats._
 import cats.data._
-import cats.effect._
-import cats.syntax.all._
 import cats.effect.Resource.ExitCase
-import natchez._
-import natchez.TraceValue._
-import cats.effect.Resource
-
-import java.net.URI
-import io.circe.JsonObject
+import cats.effect._
+import cats.effect.kernel.Resource.ExitCase.{Canceled, Errored, Succeeded}
 import cats.effect.std.Random
+import cats.syntax.all._
 import io.circe._
 import io.circe.syntax._
-import cats.effect.kernel.Resource.ExitCase.Canceled
-import cats.effect.kernel.Resource.ExitCase.Errored
-import cats.effect.kernel.Resource.ExitCase.Succeeded
+import natchez.Span.Options
+import natchez.TraceValue._
+import natchez._
 import org.typelevel.ci._
 
+import java.net.URI
 import scala.concurrent.duration._
 import scala.util.matching.Regex
 
@@ -36,9 +32,12 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
     fields: Ref[F, Map[String, Json]],
     children: Ref[F, List[JsonObject]],
     sampled: Boolean,
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    options: Span.Options
 ) extends Span.Default[F] {
   import XRaySpan._
+
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def put(fields: (String, TraceValue)*): F[Unit] = {
     val fieldsToAdd = fields.map { case (k, v) => k -> v.asJson }
@@ -56,7 +55,7 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   def log(fields: (String, TraceValue)*): F[Unit] = Applicative[F].unit
 
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
-    Resource.makeCase(XRaySpan.child(this, name, options.spanCreationPolicy))(
+    Resource.makeCase(XRaySpan.child(this, name, options))(
       XRaySpan.finish[F](_, entry, _)
     )
 
@@ -120,7 +119,11 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
         "end_time" -> toEpochSeconds(end).asJson,
         "trace_id" -> xrayTraceId.asJson,
         "subsegments" -> cs.reverse.map(Json.fromJsonObject).asJson,
-        "annotations" -> allAnnotations.asJson
+        "annotations" -> allAnnotations.asJson,
+        "metadata" -> JsonObject(
+          "links" -> options.links.asJson,
+          "span.kind" -> options.spanKind.asJson
+        ).asJson
       ).deepMerge(exitCase match {
         case Canceled   => JsonObject.singleton("fault", true.asJson)
         case Errored(e) => XRayException(id, e).asJsonObject
@@ -135,6 +138,12 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
 private[xray] object XRaySpan {
 
   private[XRaySpan] val keyRegex: Regex = """[^A-Za-z0-9_]""".r
+  private[XRaySpan] implicit val ciStringKeyEncoder: KeyEncoder[CIString] =
+    KeyEncoder[String].contramap(_.toString)
+  private[XRaySpan] implicit val kernelEncoder: Encoder[Kernel] =
+    Encoder[Map[CIString, String]].contramap(_.toHeaders)
+  private[XRaySpan] implicit val spanKindEncoder: Encoder[Span.SpanKind] =
+    Encoder[String].contramap(_.toString)
 
   final case class XRayException(id: String, ex: Throwable)
 
@@ -206,7 +215,8 @@ private[xray] object XRaySpan {
   def fromHeader[F[_]: Concurrent: Clock: Random](
       name: String,
       header: XRayHeader,
-      entry: XRayEntryPoint[F]
+      entry: XRayEntryPoint[F],
+      options: Span.Options
   ): F[XRaySpan[F]] =
     (
       segmentId[F],
@@ -225,7 +235,7 @@ private[xray] object XRaySpan {
           children = children,
           parent = header.parentId.map(_.asLeft),
           sampled = header.sampled,
-          spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
+          options = options
         )
       }
 
@@ -233,17 +243,18 @@ private[xray] object XRaySpan {
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F],
-      useEnvironmentFallback: Boolean
+      useEnvironmentFallback: Boolean,
+      options: Span.Options
   ): F[Option[XRaySpan[F]]] =
     OptionT
       .fromOption[F](kernel.toHeaders.get(Header))
       .subflatMap(parseHeader)
-      .semiflatMap(fromHeader(name, _, entry))
+      .semiflatMap(fromHeader(name, _, entry, options))
       .orElse {
         OptionT
           .whenF(useEnvironmentFallback) {
             XRayEnvironment[F].kernelFromEnvironment
-              .flatMap(XRaySpan.fromKernel(name, _, entry, useEnvironmentFallback = false))
+              .flatMap(XRaySpan.fromKernel(name, _, entry, useEnvironmentFallback = false, options))
           }
           .flattenOption
       }
@@ -253,14 +264,16 @@ private[xray] object XRaySpan {
       name: String,
       kernel: Kernel,
       entry: XRayEntryPoint[F],
-      useEnvironmentFallback: Boolean
+      useEnvironmentFallback: Boolean,
+      options: Span.Options
   ): F[XRaySpan[F]] =
-    OptionT(fromKernel(name, kernel, entry, useEnvironmentFallback))
-      .getOrElseF(root(name, entry))
+    OptionT(fromKernel(name, kernel, entry, useEnvironmentFallback, options))
+      .getOrElseF(root(name, entry, options))
 
   def root[F[_]: Concurrent: Clock: Random](
       name: String,
-      entry: XRayEntryPoint[F]
+      entry: XRayEntryPoint[F],
+      options: Span.Options
   ): F[XRaySpan[F]] =
     (
       segmentId[F],
@@ -280,14 +293,14 @@ private[xray] object XRaySpan {
           children = children,
           parent = None,
           sampled = true,
-          spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
+          options = options
         )
       }
 
   def child[F[_]: Concurrent: Clock: Random](
       parent: XRaySpan[F],
       name: String,
-      spanCreationPolicy: Span.Options.SpanCreationPolicy
+      options: Span.Options
   ): F[XRaySpan[F]] =
     (
       segmentId[F],
@@ -305,7 +318,7 @@ private[xray] object XRaySpan {
         children = children,
         parent = Some(Right(parent)),
         sampled = parent.sampled,
-        spanCreationPolicy = spanCreationPolicy
+        options = options
       )
     }
 

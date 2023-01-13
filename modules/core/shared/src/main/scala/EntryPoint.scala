@@ -14,20 +14,32 @@ import cats.effect.Resource
 trait EntryPoint[F[_]] {
 
   /** Resource that creates a new root span in a new trace. */
-  def root(name: String): Resource[F, Span[F]]
+  final def root(name: String): Resource[F, Span[F]] = root(name, Span.Options.Defaults)
+
+  def root(name: String, options: Span.Options): Resource[F, Span[F]]
 
   /** Resource that creates a new span as the child of the span specified by the given kernel,
     * which typically arrives via request headers. By this mechanism we can continue a trace that
     * began in another system. If the required headers are not present in `kernel` an exception will
     * be raised in `F`.
     */
-  def continue(name: String, kernel: Kernel): Resource[F, Span[F]]
+  final def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    continue(name, kernel, Span.Options.Defaults)
+
+  def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]]
 
   /** Resource that attempts to creates a new span as with `continue`, but falls back to a new root
     * span as with `root` if the kernel does not contain the required headers. In other words, we
     * continue the existing span if we can, otherwise we start a new one.
     */
-  def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]]
+  final def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+    continueOrElseRoot(name, kernel, Span.Options.Defaults)
+
+  def continueOrElseRoot(
+      name: String,
+      kernel: Kernel,
+      options: Span.Options
+  ): Resource[F, Span[F]]
 
   /** Converts this `EntryPoint[F]` to an `EntryPoint[G]` using an `F ~> G`.
     */
@@ -42,17 +54,21 @@ trait EntryPoint[F[_]] {
 
     new EntryPoint[G] {
 
-      override def root(name: String): Resource[G, Span[G]] = aux(outer.root(name))
+      override def root(name: String, options: Span.Options): Resource[G, Span[G]] = aux(
+        outer.root(name, options)
+      )
 
       override def continue(
           name: String,
-          kernel: Kernel
-      ): Resource[G, Span[G]] = aux(outer.continue(name, kernel))
+          kernel: Kernel,
+          options: Span.Options
+      ): Resource[G, Span[G]] = aux(outer.continue(name, kernel, options))
 
       override def continueOrElseRoot(
           name: String,
-          kernel: Kernel
-      ): Resource[G, Span[G]] = aux(outer.continueOrElseRoot(name, kernel))
+          kernel: Kernel,
+          options: Span.Options
+      ): Resource[G, Span[G]] = aux(outer.continueOrElseRoot(name, kernel, options))
     }
   }
 }

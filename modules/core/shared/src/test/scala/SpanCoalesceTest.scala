@@ -18,8 +18,8 @@ class SpanCoalesceTest extends InMemorySuite {
       }
 
       def expectedHistory = List(
-        (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()))),
-        (Lineage.Root, NatchezCommand.CreateSpan("suppressed", None)),
+        (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()), Span.Options.Defaults)),
+        (Lineage.Root, NatchezCommand.CreateSpan("suppressed", None, Span.Options.Suppress)),
         (Lineage.Root, NatchezCommand.ReleaseSpan("suppressed")),
         (Lineage.Root, NatchezCommand.ReleaseRootSpan("root"))
       )
@@ -36,8 +36,8 @@ class SpanCoalesceTest extends InMemorySuite {
       }
 
       def expectedHistory = List(
-        (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()))),
-        (Lineage.Root, NatchezCommand.CreateSpan("coalesced", None)),
+        (Lineage.Root, NatchezCommand.CreateRootSpan("root", Kernel(Map()), Span.Options.Defaults)),
+        (Lineage.Root, NatchezCommand.CreateSpan("coalesced", None, Span.Options.Coalesce)),
         (Lineage.Root / "coalesced", NatchezCommand.Put(List("answer" -> 42))),
         (Lineage.Root, NatchezCommand.ReleaseSpan("coalesced")),
         (Lineage.Root, NatchezCommand.ReleaseRootSpan("root"))

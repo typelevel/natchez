@@ -10,17 +10,19 @@ import cats.effect.Resource
 
 final case class NoopEntrypoint[F[_]: Applicative]() extends EntryPoint[F] {
 
-  override def root(name: String): Resource[F, Span[F]] =
+  override def root(name: String, options: Span.Options): Resource[F, Span[F]] =
     Resource.eval[F, Span[F]](Applicative[F].pure(NoopSpan()))
 
   override def continue(
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   ): Resource[F, Span[F]] =
-    root(name)
+    root(name, options)
 
   override def continueOrElseRoot(
       name: String,
-      kernel: Kernel
-  ): Resource[F, Span[F]] = root(name)
+      kernel: Kernel,
+      options: Span.Options
+  ): Resource[F, Span[F]] = root(name, options)
 }

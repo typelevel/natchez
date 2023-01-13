@@ -14,21 +14,33 @@ import java.net.URI
 
 final case class OpenTelemetryEntryPoint[F[_]: Sync](sdk: OTel, tracer: Tracer, prefix: Option[URI])
     extends EntryPoint[F] {
-  override def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+  override def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]] =
     Resource
-      .makeCase(OpenTelemetrySpan.fromKernel(sdk, tracer, prefix, name, kernel))(
+      .makeCase(
+        OpenTelemetrySpan
+          .fromKernel(sdk, tracer, prefix, name, kernel, options)
+      )(
         OpenTelemetrySpan.finish
       )
       .widen
 
-  override def root(name: String): Resource[F, Span[F]] =
+  override def root(name: String, options: Span.Options): Resource[F, Span[F]] =
     Resource
-      .makeCase(OpenTelemetrySpan.root(sdk, tracer, prefix, name))(OpenTelemetrySpan.finish)
+      .makeCase(OpenTelemetrySpan.root(sdk, tracer, prefix, name, options))(
+        OpenTelemetrySpan.finish
+      )
       .widen
 
-  override def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
+  override def continueOrElseRoot(
+      name: String,
+      kernel: Kernel,
+      options: Span.Options
+  ): Resource[F, Span[F]] =
     Resource
-      .makeCase(OpenTelemetrySpan.fromKernelOrElseRoot(sdk, tracer, prefix, name, kernel))(
+      .makeCase(
+        OpenTelemetrySpan
+          .fromKernelOrElseRoot(sdk, tracer, prefix, name, kernel, options)
+      )(
         OpenTelemetrySpan.finish
       )
       .widen

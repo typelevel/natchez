@@ -8,6 +8,7 @@ package log
 import munit.CatsEffectSuite
 import cats.effect.IO
 import io.circe.Json
+import natchez.Span.SpanKind
 
 class LogSuite extends CatsEffectSuite {
 
@@ -33,15 +34,21 @@ class LogSuite extends CatsEffectSuite {
 
   test("log formatter should log things") {
     MockLogger.newInstance[IO]("test").flatMap { implicit log =>
-      Log.entryPoint[IO]("service", filter(_).spaces2).root("root span").use { root =>
-        root.put("foo" -> 1, "bar" -> true) *>
-          root.span("child").use { child =>
-            child.put("baz" -> "qux")
-          }
-      } *> log.get.assertEquals {
+      Log
+        .entryPoint[IO]("service", filter(_).spaces2)
+        .root("root span", Span.Options.Defaults.withSpanKind(SpanKind.Server))
+        .use { root =>
+          root.put("foo" -> 1, "bar" -> true) *>
+            root.span("child").use { child =>
+              child.put("baz" -> "qux")
+            }
+        } *> log.get.assertEquals {
         """|test: [info] {
            |  "name" : "root span",
            |  "service" : "service",
+           |  "span.kind" : "Server",
+           |  "span.links" : [
+           |  ],
            |  "foo" : 1,
            |  "bar" : true,
            |  "exit.case" : "succeeded",
@@ -49,6 +56,9 @@ class LogSuite extends CatsEffectSuite {
            |    {
            |      "name" : "child",
            |      "service" : "service",
+           |      "span.kind" : "Internal",
+           |      "span.links" : [
+           |      ],
            |      "baz" : "qux",
            |      "exit.case" : "succeeded",
            |      "children" : [
