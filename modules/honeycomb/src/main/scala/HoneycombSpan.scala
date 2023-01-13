@@ -70,11 +70,12 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def traceUri: F[Option[URI]] =
     none.pure[F] // TODO
 
-  override def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
-      "exit.case" -> "error",
-      "exit.error.class" -> err.getClass.getName,
-      "exit.error.message" -> err.getMessage
+      "exit.case" -> TraceValue.StringValue("error") ::
+        "exit.error.class" -> TraceValue.StringValue(err.getClass.getName) ::
+        "exit.error.message" -> TraceValue.StringValue(err.getMessage) ::
+        fields.toList: _*
     )
 
 }

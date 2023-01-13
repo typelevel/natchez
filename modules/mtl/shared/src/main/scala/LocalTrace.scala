@@ -23,8 +23,8 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
   override def put(fields: (String, TraceValue)*): F[Unit] =
     local.ask.flatMap(_.put(fields: _*))
 
-  override def attachError(err: Throwable): F[Unit] =
-    local.ask.flatMap(_.attachError(err))
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
+    local.ask.flatMap(_.attachError(err, fields: _*))
 
   override def log(fields: (String, TraceValue)*): F[Unit] =
     local.ask.flatMap(_.log(fields: _*))

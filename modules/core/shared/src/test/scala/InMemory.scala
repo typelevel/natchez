@@ -26,8 +26,8 @@ object InMemory {
     def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.Put(fields.toList)))
 
-    def attachError(err: Throwable): IO[Unit] =
-      ref.update(_.append(lineage -> NatchezCommand.AttachError(err)))
+    def attachError(err: Throwable, fields: (String, TraceValue)*): IO[Unit] =
+      ref.update(_.append(lineage -> NatchezCommand.AttachError(err, fields.toList)))
 
     def log(event: String): IO[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.LogEvent(event)))
@@ -116,7 +116,8 @@ object InMemory {
     case class CreateSpan(name: String, kernel: Option[Kernel], options: natchez.Span.Options)
         extends NatchezCommand
     case class ReleaseSpan(name: String) extends NatchezCommand
-    case class AttachError(err: Throwable) extends NatchezCommand
+    case class AttachError(err: Throwable, fields: List[(String, TraceValue)])
+        extends NatchezCommand
     case class LogEvent(event: String) extends NatchezCommand
     case class LogFields(fields: List[(String, TraceValue)]) extends NatchezCommand
     // entry point

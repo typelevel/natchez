@@ -81,9 +81,9 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
       Kernel(headers.toMap)
     }
 
-  override def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName) *>
-      Sync[F].delay(span.recordException(err)).void
+      Sync[F].delay(span.recordException(err, fieldsToAttributes(fields: _*))).void
 
   override def log(fields: (String, TraceValue)*): F[Unit] =
     Sync[F].delay(span.addEvent("event", fieldsToAttributes(fields: _*))).void

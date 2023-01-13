@@ -95,7 +95,7 @@ final case class DDSpan[F[_]: Sync](
       uri.resolve(s"/apm/trace/$traceId?spanID=$spanId")
     }.value
 
-  def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
       Tags.ERROR.getKey -> true,
       DDTags.ERROR_MSG -> err.getMessage,
@@ -114,13 +114,13 @@ final case class DDSpan[F[_]: Sync](
     } >>
       Sync[F].delay {
         span.log(
-          Map(
+          (Map(
             Fields.EVENT -> "error",
             Fields.ERROR_OBJECT -> err,
             Fields.ERROR_KIND -> err.getClass.getSimpleName,
             Fields.MESSAGE -> err.getMessage,
             Fields.STACK -> err.getStackTrace.mkString
-          ).asJava
+          ) ++ fields.toList.nested.map(_.value).value.toMap).asJava
         )
       }.void
 }

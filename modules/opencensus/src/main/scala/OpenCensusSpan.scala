@@ -89,8 +89,12 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
 
   def traceUri: F[Option[URI]] = none.pure[F]
 
-  override def attachError(err: Throwable): F[Unit] =
-    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
+    put(
+      ("error.message" -> TraceValue.StringValue(err.getMessage)) ::
+        ("error.class" -> TraceValue.StringValue(err.getClass.getSimpleName)) ::
+        fields.toList: _*
+    )
 }
 
 private[opencensus] object OpenCensusSpan {

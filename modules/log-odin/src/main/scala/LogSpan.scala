@@ -67,8 +67,12 @@ private[logodin] final case class LogSpan[F[_]: Sync: Logger](
   def putAny(fields: (String, Json)*): F[Unit] =
     this.fields.update(_ ++ fields.toMap)
 
-  def attachError(err: Throwable): F[Unit] =
-    put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName)
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
+    put(
+      ("error.message" -> TraceValue.StringValue(err.getMessage)) ::
+        ("error.class" -> TraceValue.StringValue(err.getClass.getSimpleName)) ::
+        fields.toList: _*
+    )
 
   def log(event: String): F[Unit] = Applicative[F].unit
 
