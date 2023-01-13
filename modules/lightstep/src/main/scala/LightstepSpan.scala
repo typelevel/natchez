@@ -11,6 +11,8 @@ import io.opentracing.log.Fields
 import io.{opentracing => ot}
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.opentracing.tag.Tags
+import natchez.Span.Options
+import natchez.lightstep.Lightstep._
 
 import scala.jdk.CollectionConverters._
 import java.net.URI
@@ -18,10 +20,12 @@ import java.net.URI
 private[lightstep] final case class LightstepSpan[F[_]: Sync](
     tracer: ot.Tracer,
     span: ot.Span,
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    options: Span.Options
 ) extends Span.Default[F] {
-
   import TraceValue._
+
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   override def kernel: F[Kernel] =
     Sync[F].delay {
@@ -37,19 +41,19 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  override def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
       Tags.ERROR.getKey -> true
     ) >>
       Sync[F].delay {
         span.log(
-          Map(
+          (Map(
             Fields.EVENT -> "error",
             Fields.ERROR_OBJECT -> err,
             Fields.ERROR_KIND -> err.getClass.getSimpleName,
             Fields.MESSAGE -> err.getMessage,
             Fields.STACK -> err.getStackTrace.mkString
-          ).asJava
+          ) ++ fields.toList.nested.map(_.value).value.toMap).asJava
         )
       }.void
 
@@ -67,10 +71,14 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
     )
     Span.putErrorFields(
       Resource
-        .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start()))(
-          s => Sync[F].delay(s.finish())
-        )
-        .map(LightstepSpan(tracer, _, options.spanCreationPolicy))
+        .make {
+          Sync[F]
+            .delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span))
+            .flatTap(addSpanKind(_, options.spanKind))
+            .flatMap(options.links.foldM(_)(addLink[F](tracer)))
+            .flatMap(builder => Sync[F].delay(builder.start()))
+        }(s => Sync[F].delay(s.finish()))
+        .map(LightstepSpan(tracer, _, options))
     )
   }
 

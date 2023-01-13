@@ -23,7 +23,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
     tracer: ot.Tracer,
     span: ot.Span,
     prefix: Option[URI],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    spanCreationPolicyOverride: Span.Options.SpanCreationPolicy
 ) extends Span.Default[F] {
   import TraceValue._
 
@@ -45,19 +45,19 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  override def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
       Tags.ERROR.getKey -> true
     ) >>
       Sync[F].delay {
         span.log(
-          Map(
+          (Map(
             Fields.EVENT -> "error",
             Fields.ERROR_OBJECT -> err,
             Fields.ERROR_KIND -> err.getClass.getSimpleName,
             Fields.MESSAGE -> err.getMessage,
             Fields.STACK -> err.getStackTrace.mkString
-          ).asJava
+          ) ++ fields.toList.nested.map(_.value).value.toMap).asJava
         )
       }.void
 

@@ -31,17 +31,21 @@ final class XRayEntryPoint[F[_]: Concurrent: Clock: Random: XRayEnvironment](
   def make(span: F[XRaySpan[F]]): Resource[F, Span[F]] =
     Resource.makeCase(span)(XRaySpan.finish(_, this, _)).widen
 
-  def root(name: String): Resource[F, Span[F]] =
-    make(XRaySpan.root(name, this))
+  override def root(name: String, options: Span.Options): Resource[F, Span[F]] =
+    make(XRaySpan.root(name, this, options))
 
-  def continue(name: String, kernel: Kernel): Resource[F, Span[F]] =
+  override def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]] =
     make(
-      OptionT(XRaySpan.fromKernel(name, kernel, this, useEnvironmentFallback))
+      OptionT(XRaySpan.fromKernel(name, kernel, this, useEnvironmentFallback, options))
         .getOrElseF(new NoSuchElementException().raiseError)
     )
 
-  def continueOrElseRoot(name: String, kernel: Kernel): Resource[F, Span[F]] =
-    make(XRaySpan.fromKernelOrElseRoot(name, kernel, this, useEnvironmentFallback))
+  override def continueOrElseRoot(
+      name: String,
+      kernel: Kernel,
+      options: Span.Options
+  ): Resource[F, Span[F]] =
+    make(XRaySpan.fromKernelOrElseRoot(name, kernel, this, useEnvironmentFallback, options))
 }
 
 object XRayEntryPoint {

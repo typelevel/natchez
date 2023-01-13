@@ -16,6 +16,8 @@ import io.opentracing.tag.Tags
 import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 import _root_.datadog.trace.api.DDTags
 import _root_.datadog.trace.api.interceptor.MutableSpan
+import natchez.Span.Options
+import natchez.datadog.DDTracer.{addLink, addSpanKind}
 
 import scala.jdk.CollectionConverters._
 import java.net.URI
@@ -24,8 +26,10 @@ final case class DDSpan[F[_]: Sync](
     tracer: ot.Tracer,
     span: ot.Span,
     uriPrefix: Option[URI],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    options: Span.Options
 ) extends Span.Default[F] {
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def kernel: F[Kernel] =
     Sync[F].delay {
@@ -53,21 +57,26 @@ final case class DDSpan[F[_]: Sync](
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.log(event)).void
 
-  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] = {
-    val parent = options.parentKernel.map(k =>
-      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toJava))
-    )
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields(
       Resource
         .makeCase(
-          Sync[F].delay(tracer.buildSpan(name).asChildOf(parent.orNull).asChildOf(span).start)
+          Sync[F]
+            .delay {
+              val parent = options.parentKernel.map(k =>
+                tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(k.toJava))
+              )
+              tracer.buildSpan(name).asChildOf(parent.orNull).asChildOf(span)
+            }
+            .flatTap(addSpanKind(_, options.spanKind))
+            .flatMap(options.links.foldM(_)(addLink[F](tracer)))
+            .flatMap(builder => Sync[F].delay(builder.start()))
         ) {
           case (span, ExitCase.Errored(e)) => Sync[F].delay(span.log(e.toString).finish())
           case (span, _)                   => Sync[F].delay(span.finish())
         }
-        .map(DDSpan(tracer, _, uriPrefix, options.spanCreationPolicy))
+        .map(DDSpan(tracer, _, uriPrefix, options))
     )
-  }
 
   def traceId: F[Option[String]] =
     Sync[F].pure {
@@ -86,7 +95,7 @@ final case class DDSpan[F[_]: Sync](
       uri.resolve(s"/apm/trace/$traceId?spanID=$spanId")
     }.value
 
-  def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
       Tags.ERROR.getKey -> true,
       DDTags.ERROR_MSG -> err.getMessage,
@@ -105,13 +114,13 @@ final case class DDSpan[F[_]: Sync](
     } >>
       Sync[F].delay {
         span.log(
-          Map(
+          (Map(
             Fields.EVENT -> "error",
             Fields.ERROR_OBJECT -> err,
             Fields.ERROR_KIND -> err.getClass.getSimpleName,
             Fields.MESSAGE -> err.getMessage,
             Fields.STACK -> err.getStackTrace.mkString
-          ).asJava
+          ) ++ fields.toList.nested.map(_.value).value.toMap).asJava
         )
       }.void
 }

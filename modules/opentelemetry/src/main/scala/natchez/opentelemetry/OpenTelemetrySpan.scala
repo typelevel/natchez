@@ -5,17 +5,24 @@
 package natchez
 package opentelemetry
 
-import cats.data.Nested
+import cats.data.{Chain, Nested}
 import cats.effect.{Resource, Sync}
 import cats.effect.kernel.Resource.ExitCase
 import cats.effect.kernel.Resource.ExitCase.{Canceled, Errored, Succeeded}
 import cats.syntax.all._
-import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.{
+  SpanBuilder,
+  SpanContext,
+  StatusCode,
+  TraceFlags,
+  TraceState,
+  Tracer,
+  Span => TSpan
+}
 import io.opentelemetry.context.propagation.{TextMapGetter, TextMapSetter}
 import io.opentelemetry.context.Context
 
 import java.lang
-import io.opentelemetry.api.trace.{Tracer, Span => TSpan}
 import io.opentelemetry.api.{OpenTelemetry => OTel}
 import TraceValue.{BooleanValue, NumberValue, StringValue}
 
@@ -29,7 +36,7 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
     tracer: Tracer,
     span: TSpan,
     prefix: Option[URI],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    spanCreationPolicyOverride: Span.Options.SpanCreationPolicy
 ) extends Span.Default[F] {
 
   import OpenTelemetrySpan._
@@ -74,9 +81,9 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
       Kernel(headers.toMap)
     }
 
-  override def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put("error.message" -> err.getMessage, "error.class" -> err.getClass.getSimpleName) *>
-      Sync[F].delay(span.recordException(err)).void
+      Sync[F].delay(span.recordException(err, fieldsToAttributes(fields: _*))).void
 
   override def log(fields: (String, TraceValue)*): F[Unit] =
     Sync[F].delay(span.addEvent("event", fieldsToAttributes(fields: _*))).void
@@ -88,10 +95,20 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
     Span.putErrorFields(
       Resource
         .makeCase(options.parentKernel match {
-          case None => OpenTelemetrySpan.child(this, name, options.spanCreationPolicy)
+          case None =>
+            OpenTelemetrySpan
+              .child(otel, this, name, options)
           case Some(k) =>
             OpenTelemetrySpan
-              .fromKernelWithSpan(otel, tracer, name, k, span, prefix, options.spanCreationPolicy)
+              .fromKernelWithSpan(
+                otel,
+                tracer,
+                name,
+                k,
+                span,
+                prefix,
+                options
+              )
         })(
           OpenTelemetrySpan.finish
         )
@@ -140,32 +157,79 @@ private[opentelemetry] object OpenTelemetrySpan {
   }
 
   def child[F[_]: Sync](
+      otel: OTel,
       parent: OpenTelemetrySpan[F],
       name: String,
-      spanCreationPolicy: Span.Options.SpanCreationPolicy
+      options: Span.Options
   ): F[OpenTelemetrySpan[F]] =
-    Sync[F]
-      .delay(
-        parent.tracer
-          .spanBuilder(name)
-          .setParent(Context.current().`with`(parent.span))
-          .startSpan()
+    createSpan(parent.tracer, name, options.spanKind)
+      .flatMap { spanBuilder =>
+        Sync[F].delay {
+          spanBuilder.setParent(Context.current().`with`(parent.span))
+        }
+      }
+      .flatMap(addLinks[F](otel, options.links))
+      .flatMap(startSpan[F])
+      .map(
+        OpenTelemetrySpan(parent.otel, parent.tracer, _, parent.prefix, options.spanCreationPolicy)
       )
-      .map(OpenTelemetrySpan(parent.otel, parent.tracer, _, parent.prefix, spanCreationPolicy))
 
   def root[F[_]: Sync](
       otel: OTel,
       tracer: Tracer,
       prefix: Option[URI],
-      name: String
+      name: String,
+      options: Span.Options
   ): F[OpenTelemetrySpan[F]] =
-    Sync[F]
-      .delay(
-        tracer
-          .spanBuilder(name)
-          .startSpan()
-      )
-      .map(OpenTelemetrySpan(otel, tracer, _, prefix, Span.Options.SpanCreationPolicy.Default))
+    createSpan(tracer, name, options.spanKind)
+      .flatMap(addLinks[F](otel, options.links))
+      .flatMap(startSpan[F])
+      .map(OpenTelemetrySpan(otel, tracer, _, prefix, options.spanCreationPolicy))
+
+  private def startSpan[F[_]: Sync](spanBuilder: SpanBuilder): F[TSpan] =
+    Sync[F].delay(spanBuilder.startSpan())
+
+  private def createSpan[F[_]: Sync](
+      tracer: Tracer,
+      name: String,
+      spanKind: Span.SpanKind
+  ): F[SpanBuilder] =
+    Sync[F].delay {
+      tracer
+        .spanBuilder(name)
+        .setSpanKind(spanKind match {
+          case Span.SpanKind.Internal => io.opentelemetry.api.trace.SpanKind.INTERNAL
+          case Span.SpanKind.Client   => io.opentelemetry.api.trace.SpanKind.CLIENT
+          case Span.SpanKind.Server   => io.opentelemetry.api.trace.SpanKind.SERVER
+          case Span.SpanKind.Producer => io.opentelemetry.api.trace.SpanKind.PRODUCER
+          case Span.SpanKind.Consumer => io.opentelemetry.api.trace.SpanKind.CONSUMER
+        })
+    }
+
+  private def addLinks[F[_]: Sync](otel: OTel, links: Chain[Kernel])(
+      spanBuilder: SpanBuilder
+  ): F[SpanBuilder] =
+    links.foldM(spanBuilder) { (builder, kernel) =>
+      Sync[F].delay {
+        val ctx = otel.getPropagators.getTextMapPropagator.extract(
+          Context.current(),
+          kernel,
+          spanContextGetter
+        )
+        val link = TSpan.fromContext(ctx).getSpanContext
+
+        builder.addLink {
+          // See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#isremote
+          // "When extracting a SpanContext through the Propagators API, IsRemote MUST return true"
+          SpanContext.createFromRemoteParent(
+            link.getTraceId,
+            link.getSpanId,
+            TraceFlags.getDefault,
+            TraceState.getDefault
+          )
+        }
+      }
+    }
 
   def fromKernelWithSpan[F[_]: Sync](
       sdk: OTel,
@@ -174,42 +238,53 @@ private[opentelemetry] object OpenTelemetrySpan {
       kernel: Kernel,
       span: TSpan,
       prefix: Option[URI],
-      spanCreationPolicy: Span.Options.SpanCreationPolicy
-  ): F[OpenTelemetrySpan[F]] = Sync[F]
-    .delay {
-      val ctx = sdk.getPropagators.getTextMapPropagator
-        .extract(Context.current(), kernel, spanContextGetter)
-      tracer.spanBuilder(name).setParent(ctx).addLink(span.getSpanContext).startSpan
-    }
-    .map(OpenTelemetrySpan(sdk, tracer, _, prefix, spanCreationPolicy))
+      options: Span.Options
+  ): F[OpenTelemetrySpan[F]] =
+    createSpan(tracer, name, options.spanKind)
+      .flatMap { sb =>
+        Sync[F].delay {
+          val ctx = sdk.getPropagators.getTextMapPropagator
+            .extract(Context.current(), kernel, spanContextGetter)
+          sb.setParent(ctx).addLink(span.getSpanContext)
+        }
+      }
+      .flatMap(addLinks[F](sdk, options.links))
+      .flatMap(startSpan[F])
+      .map(OpenTelemetrySpan(sdk, tracer, _, prefix, options.spanCreationPolicy))
 
   def fromKernel[F[_]: Sync](
       otel: OTel,
       tracer: Tracer,
       prefix: Option[URI],
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   ): F[OpenTelemetrySpan[F]] =
-    Sync[F]
-      .delay {
-        val ctx = otel.getPropagators.getTextMapPropagator
-          .extract(Context.current(), kernel, spanContextGetter)
-        tracer.spanBuilder(name).setParent(ctx).startSpan()
+    createSpan(tracer, name, options.spanKind)
+      .flatMap { sb =>
+        Sync[F].delay {
+          val ctx = otel.getPropagators.getTextMapPropagator
+            .extract(Context.current(), kernel, spanContextGetter)
+          sb.setParent(ctx)
+        }
       }
-      .map(OpenTelemetrySpan(otel, tracer, _, prefix, Span.Options.SpanCreationPolicy.Default))
+      .flatMap(addLinks[F](otel, options.links))
+      .flatMap(startSpan[F])
+      .map(OpenTelemetrySpan(otel, tracer, _, prefix, options.spanCreationPolicy))
 
   def fromKernelOrElseRoot[F[_]](
       otel: OTel,
       tracer: Tracer,
       prefix: Option[URI],
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   )(implicit ev: Sync[F]): F[OpenTelemetrySpan[F]] =
-    fromKernel(otel, tracer, prefix, name, kernel).recoverWith {
+    fromKernel(otel, tracer, prefix, name, kernel, options).recoverWith {
       case _: NoSuchElementException =>
-        root(otel, tracer, prefix, name) // means headers are incomplete or invalid
+        root(otel, tracer, prefix, name, options) // means headers are incomplete or invalid
       case _: NullPointerException =>
-        root(otel, tracer, prefix, name) // means headers are incomplete or invalid
+        root(otel, tracer, prefix, name, options) // means headers are incomplete or invalid
     }
 
   private val spanContextGetter: TextMapGetter[Kernel] = new TextMapGetter[Kernel] {

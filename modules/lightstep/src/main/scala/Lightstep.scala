@@ -9,6 +9,8 @@ import cats.effect.{Resource, Sync}
 import cats.syntax.all._
 import com.lightstep.tracer.shared.Options.OptionsBuilder
 import io.opentracing.Tracer
+import io.opentracing.propagation.{Format, TextMapAdapter}
+import natchez.Span.SpanKind
 import natchez.opentracing.GlobalTracer
 
 object Lightstep {
@@ -22,4 +24,31 @@ object Lightstep {
 
   def globalTracerEntryPoint[F[_]: Sync]: F[Option[EntryPoint[F]]] =
     GlobalTracer.fetch.map(_.map(new LightstepEntryPoint[F](_)))
+
+  /** see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/compatibility.md#opentracing
+    */
+  private[lightstep] def addLink[F[_]: Sync](
+      tracer: Tracer
+  )(builder: Tracer.SpanBuilder, linkKernel: Kernel): F[Tracer.SpanBuilder] =
+    Sync[F].delay {
+      Option(tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(linkKernel.toJava)))
+        .fold(builder)(builder.addReference("follows_from", _))
+    }
+
+  /** see https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table
+    */
+  private[lightstep] def addSpanKind[F[_]: Sync](
+      builder: Tracer.SpanBuilder,
+      spanKind: Span.SpanKind
+  ): F[Unit] =
+    Option(spanKind)
+      .collect {
+        case SpanKind.Client   => "client"
+        case SpanKind.Server   => "server"
+        case SpanKind.Producer => "producer"
+        case SpanKind.Consumer => "consumer"
+      }
+      .fold(().pure[F]) { kind =>
+        Sync[F].delay(builder.withTag("span.kind", kind)).void
+      }
 }

@@ -4,12 +4,13 @@
 
 package natchez
 
-import cats.data.Kleisli
+import cats.data.{Chain, Kleisli}
 import cats.effect.MonadCancel
 import cats.effect.Resource
 import cats.effect.Resource.ExitCase
 import cats.syntax.applicative._
-import cats.{~>, Applicative}
+import cats.{Applicative, ~>}
+
 import java.net.URI
 
 /** An span that can be passed around and used to create child spans. */
@@ -25,7 +26,7 @@ trait Span[F[_]] {
   def log(event: String): F[Unit]
 
   /** Adds error information to this span. */
-  def attachError(err: Throwable): F[Unit]
+  def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit]
 
   /** The kernel for this span, which can be sent as headers to remote systems, which can then
     * continue this trace by constructing spans that are children of this one.
@@ -63,8 +64,8 @@ trait Span[F[_]] {
 
       override def kernel: G[Kernel] = f(outer.kernel)
 
-      override def attachError(err: Throwable) =
-        f(outer.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*) =
+        f(outer.attachError(err, fields: _*))
 
       override def log(event: String) =
         f(outer.log(event))
@@ -89,10 +90,10 @@ trait Span[F[_]] {
 object Span {
 
   abstract class Default[F[_]: Applicative] extends Span[F] {
-    protected val spanCreationPolicy: Options.SpanCreationPolicy
+    protected val spanCreationPolicyOverride: Options.SpanCreationPolicy
 
-    def span(name: String, options: Options): Resource[F, Span[F]] =
-      spanCreationPolicy match {
+    override final def span(name: String, options: Options): Resource[F, Span[F]] =
+      spanCreationPolicyOverride match {
         case Options.SpanCreationPolicy.Suppress => Resource.pure(Span.noop[F])
         case Options.SpanCreationPolicy.Coalesce => Resource.pure(this)
         case Options.SpanCreationPolicy.Default  => makeSpan(name, options)
@@ -126,7 +127,7 @@ object Span {
   private abstract class EphemeralSpan[F[_]: Applicative] extends Span[F] {
     override def put(fields: (String, TraceValue)*): F[Unit] = ().pure[F]
     override def kernel: F[Kernel] = Kernel(Map.empty).pure[F]
-    override def attachError(err: Throwable) = ().pure[F]
+    override def attachError(err: Throwable, fields: (String, TraceValue)*) = ().pure[F]
     override def log(event: String) = ().pure[F]
     override def log(fields: (String, TraceValue)*) = ().pure[F]
     override def spanId: F[Option[String]] = (None: Option[String]).pure[F]
@@ -171,10 +172,16 @@ object Span {
 
     /** Specifies how additional span creation requests are handled on the new span. */
     def spanCreationPolicy: Options.SpanCreationPolicy
+    def spanKind: Span.SpanKind
+    def links: Chain[Kernel]
 
     def withParentKernel(kernel: Kernel): Options
     def withoutParentKernel: Options
     def withSpanCreationPolicy(p: Options.SpanCreationPolicy): Options
+
+    def withSpanKind(spanKind: SpanKind): Options
+
+    def withLink(kernel: Kernel): Options
   }
 
   object Options {
@@ -193,17 +200,38 @@ object Span {
 
     private case class OptionsImpl(
         parentKernel: Option[Kernel],
-        spanCreationPolicy: SpanCreationPolicy
+        spanCreationPolicy: SpanCreationPolicy,
+        spanKind: SpanKind,
+        links: Chain[Kernel]
     ) extends Options {
-      def withParentKernel(kernel: Kernel): Options = OptionsImpl(Some(kernel), spanCreationPolicy)
-      def withoutParentKernel: Options = OptionsImpl(None, spanCreationPolicy)
-      def withSpanCreationPolicy(p: SpanCreationPolicy): Options = OptionsImpl(parentKernel, p)
+      override def withParentKernel(kernel: Kernel): Options =
+        OptionsImpl(Some(kernel), spanCreationPolicy, spanKind, links)
+      override def withoutParentKernel: Options =
+        OptionsImpl(None, spanCreationPolicy, spanKind, links)
+      override def withSpanCreationPolicy(p: SpanCreationPolicy): Options =
+        OptionsImpl(parentKernel, p, spanKind, links)
+      override def withSpanKind(spanKind: SpanKind): Options =
+        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links)
+      override def withLink(kernel: Kernel): Options =
+        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links.append(kernel))
     }
 
-    val Defaults: Options = OptionsImpl(None, SpanCreationPolicy.Default)
+    val Defaults: Options =
+      OptionsImpl(None, SpanCreationPolicy.Default, SpanKind.Internal, Chain.empty)
     val Suppress: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Suppress)
     val Coalesce: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Coalesce)
 
     def parentKernel(kernel: Kernel): Options = Defaults.withParentKernel(kernel)
   }
+
+  sealed trait SpanKind
+
+  object SpanKind {
+    case object Internal extends SpanKind
+    case object Client extends SpanKind
+    case object Server extends SpanKind
+    case object Producer extends SpanKind
+    case object Consumer extends SpanKind
+  }
+
 }

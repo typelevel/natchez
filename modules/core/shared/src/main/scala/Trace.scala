@@ -25,7 +25,7 @@ trait Trace[F[_]] {
   def log(event: String): F[Unit]
 
   /** Adds error information to the current span. */
-  def attachError(err: Throwable): F[Unit]
+  def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit]
 
   /** The kernel for the current span, which can be sent as headers to remote systems, which can
     * then continue this trace by constructing spans that are children of the current one.
@@ -67,8 +67,8 @@ object Trace {
         override def put(fields: (String, TraceValue)*): IO[Unit] =
           local.get.flatMap(_.put(fields: _*))
 
-        override def attachError(err: Throwable): IO[Unit] =
-          local.get.flatMap(_.attachError(err))
+        override def attachError(err: Throwable, fields: (String, TraceValue)*): IO[Unit] =
+          local.get.flatMap(_.attachError(err, fields: _*))
 
         override def log(fields: (String, TraceValue)*): IO[Unit] =
           local.get.flatMap(_.log(fields: _*))
@@ -119,7 +119,7 @@ object Trace {
         final val void = Applicative[F].unit
         override val kernel: F[Kernel] = Kernel(Map.empty).pure[F]
         override def put(fields: (String, TraceValue)*): F[Unit] = void
-        override def attachError(err: Throwable): F[Unit] = void
+        override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] = void
         override def log(fields: (String, TraceValue)*): F[Unit] = void
         override def log(event: String): F[Unit] = void
         override def spanR(name: String, options: Span.Options): Resource[F, F ~> F] =
@@ -149,8 +149,11 @@ object Trace {
     override def put(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.put(fields: _*))
 
-    override def attachError(err: Throwable): Kleisli[F, Span[F], Unit] =
-      Kleisli(_.attachError(err))
+    override def attachError(
+        err: Throwable,
+        fields: (String, TraceValue)*
+    ): Kleisli[F, Span[F], Unit] =
+      Kleisli(_.attachError(err, fields: _*))
 
     override def log(fields: (String, TraceValue)*): Kleisli[F, Span[F], Unit] =
       Kleisli(_.log(fields: _*))
@@ -187,8 +190,11 @@ object Trace {
         override def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
           Kleisli(e => f(e).put(fields: _*))
 
-        override def attachError(err: Throwable): Kleisli[F, E, Unit] =
-          Kleisli(e => f(e).attachError(err))
+        override def attachError(
+            err: Throwable,
+            fields: (String, TraceValue)*
+        ): Kleisli[F, E, Unit] =
+          Kleisli(e => f(e).attachError(err, fields: _*))
 
         override def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
           Kleisli(e => f(e).log(fields: _*))
@@ -239,8 +245,8 @@ object Trace {
       override def put(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.put(fields: _*))
 
-      override def attachError(err: Throwable): Kleisli[F, E, Unit] =
-        Kleisli.liftF(trace.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
+        Kleisli.liftF(trace.attachError(err, fields: _*))
 
       override def log(fields: (String, TraceValue)*): Kleisli[F, E, Unit] =
         Kleisli.liftF(trace.log(fields: _*))
@@ -283,8 +289,8 @@ object Trace {
       override def put(fields: (String, TraceValue)*): StateT[F, S, Unit] =
         StateT.liftF(trace.put(fields: _*))
 
-      override def attachError(err: Throwable): StateT[F, S, Unit] =
-        StateT.liftF(trace.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): StateT[F, S, Unit] =
+        StateT.liftF(trace.attachError(err, fields: _*))
 
       override def log(fields: (String, TraceValue)*): StateT[F, S, Unit] =
         StateT.liftF(trace.log(fields: _*))
@@ -331,8 +337,8 @@ object Trace {
       override def put(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.put(fields: _*))
 
-      override def attachError(err: Throwable): EitherT[F, E, Unit] =
-        EitherT.liftF(trace.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): EitherT[F, E, Unit] =
+        EitherT.liftF(trace.attachError(err, fields: _*))
 
       override def log(fields: (String, TraceValue)*): EitherT[F, E, Unit] =
         EitherT.liftF(trace.log(fields: _*))
@@ -377,8 +383,8 @@ object Trace {
       override def put(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.put(fields: _*))
 
-      override def attachError(err: Throwable): OptionT[F, Unit] =
-        OptionT.liftF(trace.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): OptionT[F, Unit] =
+        OptionT.liftF(trace.attachError(err, fields: _*))
 
       override def log(fields: (String, TraceValue)*): OptionT[F, Unit] =
         OptionT.liftF(trace.log(fields: _*))
@@ -424,8 +430,8 @@ object Trace {
       override def put(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.put(fields: _*).map(_.pure[G]).nested
 
-      override def attachError(err: Throwable): Nested[F, G, Unit] =
-        trace.attachError(err).map(_.pure[G]).nested
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): Nested[F, G, Unit] =
+        trace.attachError(err, fields: _*).map(_.pure[G]).nested
 
       override def log(fields: (String, TraceValue)*): Nested[F, G, Unit] =
         trace.log(fields: _*).map(_.pure[G]).nested
@@ -476,8 +482,8 @@ object Trace {
       override def kernel: Resource[F, Kernel] =
         Resource.eval(trace.kernel)
 
-      override def attachError(err: Throwable): Resource[F, Unit] =
-        Resource.eval(trace.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): Resource[F, Unit] =
+        Resource.eval(trace.attachError(err, fields: _*))
 
       override def log(event: String): Resource[F, Unit] =
         Resource.eval(trace.log(event))
@@ -523,8 +529,8 @@ object Trace {
       override def kernel: Stream[F, Kernel] =
         Stream.eval(trace.kernel)
 
-      override def attachError(err: Throwable): Stream[F, Unit] =
-        Stream.eval(trace.attachError(err))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): Stream[F, Unit] =
+        Stream.eval(trace.attachError(err, fields: _*))
 
       override def log(event: String): Stream[F, Unit] =
         Stream.eval(trace.log(event))

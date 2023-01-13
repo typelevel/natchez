@@ -16,7 +16,8 @@ final case class NoopSpan[F[_]: Applicative]() extends Span[F] {
   override def put(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit
 
-  override def attachError(err: Throwable): F[Unit] = Applicative[F].unit
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
+    Applicative[F].unit
 
   override def log(fields: (String, TraceValue)*): F[Unit] =
     Applicative[F].unit

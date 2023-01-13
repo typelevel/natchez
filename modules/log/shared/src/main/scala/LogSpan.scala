@@ -15,10 +15,9 @@ import java.time.Instant
 import java.util.UUID
 import natchez._
 import natchez.TraceValue._
-import io.circe.Json
-import io.circe.Encoder
+import io.circe.{Encoder, Json, JsonObject, KeyEncoder}
 import io.circe.syntax._
-import io.circe.JsonObject
+import natchez.Span.Options
 import org.typelevel.log4cats.Logger
 import org.typelevel.ci._
 
@@ -34,9 +33,12 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     timestamp: Instant,
     fields: Ref[F, Map[String, Json]],
     children: Ref[F, List[JsonObject]],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    options: Span.Options
 ) extends Span.Default[F] {
   import LogSpan._
+
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def parentId: Option[String] =
     parent.map(_.fold(identity, _.sid))
@@ -69,13 +71,13 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
       Resource.makeCase(LogSpan.child(this, label, options))(LogSpan.finishChild[F]).widen
     )
 
-  def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     putAny(
       "exit.case" -> "error".asJson,
       "exit.error.class" -> err.getClass.getName.asJson,
       "exit.error.message" -> err.getMessage.asJson,
       "exit.error.stackTrace" -> err.getStackTrace.map(_.toString).asJson
-    )
+    ) *> put(fields: _*)
 
   def json(finish: Instant): F[JsonObject] =
     (fields.get, children.get).mapN { (fs, cs) =>
@@ -90,7 +92,9 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
           "duration_ms" -> (finish.toEpochMilli - timestamp.toEpochMilli).asJson,
           "trace.span_id" -> sid.asJson,
           "trace.parent_id" -> parentId.asJson,
-          "trace.trace_id" -> traceID.asJson
+          "trace.trace_id" -> traceID.asJson,
+          "span.kind" -> options.spanKind.asJson,
+          "span.links" -> options.links.asJson
         ) ++ fs ++ List("children" -> cs.reverse.map(Json.fromJsonObject).asJson)
 
       JsonObject.fromIterable(fields)
@@ -124,6 +128,12 @@ private[log] object LogSpan {
       case NumberValue(n: BigInt)               => n.asJson
       case NumberValue(n)                       => n.doubleValue.asJson
     }
+
+  implicit val KeyEncodeCIString: KeyEncoder[CIString] = KeyEncoder[String].contramap(_.toString)
+
+  implicit val EncodeKernel: Encoder[Kernel] = Encoder[Map[CIString, String]].contramap(_.toHeaders)
+
+  implicit val EncodeSpanKind: Encoder[Span.SpanKind] = Encoder[String].contramap(_.toString)
 
   object Headers {
     val TraceId = ci"X-Natchez-Trace-Id"
@@ -180,12 +190,13 @@ private[log] object LogSpan {
       timestamp = timestamp,
       fields = fields,
       children = children,
-      spanCreationPolicy = options.spanCreationPolicy
+      options = options
     )
 
   def root[F[_]: Sync: Logger](
       service: String,
-      name: String
+      name: String,
+      options: Span.Options
   ): F[LogSpan[F]] =
     for {
       spanId <- uuid[F]
@@ -203,13 +214,14 @@ private[log] object LogSpan {
       timestamp = timestamp,
       fields = fields,
       children = children,
-      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
+      options = options
     )
 
   def fromKernel[F[_]: Sync: Logger](
       service: String,
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   ): F[LogSpan[F]] =
     for {
       traceID <- Sync[F].catchNonFatal(kernel.toHeaders(Headers.TraceId))
@@ -228,15 +240,16 @@ private[log] object LogSpan {
       timestamp = timestamp,
       fields = fields,
       children = children,
-      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
+      options = options
     )
 
   def fromKernelOrElseRoot[F[_]: Sync: Logger](
       service: String,
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   ): F[LogSpan[F]] =
-    fromKernel(service, name, kernel).recoverWith { case _: NoSuchElementException =>
-      root(service, name)
+    fromKernel(service, name, kernel, options).recoverWith { case _: NoSuchElementException =>
+      root(service, name, options)
     }
 }

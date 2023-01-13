@@ -9,10 +9,11 @@ import cats.effect.Resource.ExitCase
 import cats.effect.Resource.ExitCase._
 
 import cats.syntax.all._
-import io.honeycomb.libhoney.HoneyClient
+import io.honeycomb.libhoney.{Event, HoneyClient}
 import java.time.Instant
 import java.util.UUID
 import natchez._
+import natchez.Span.Options
 import java.net.URI
 import org.typelevel.ci._
 
@@ -24,9 +25,12 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
     traceUUID: UUID,
     timestamp: Instant,
     fields: Ref[F, Map[String, TraceValue]],
-    spanCreationPolicy: Span.Options.SpanCreationPolicy
+    options: Span.Options
 ) extends Span.Default[F] {
   import HoneycombSpan._
+
+  override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
+    options.spanCreationPolicy
 
   def get(key: String): F[Option[TraceValue]] =
     fields.get.map(_.get(key))
@@ -51,7 +55,7 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
     Span.putErrorFields(
       Resource
-        .makeCase(HoneycombSpan.child(this, name, options.spanCreationPolicy))(
+        .makeCase(HoneycombSpan.child(this, name, options))(
           HoneycombSpan.finish[F]
         )
         .widen
@@ -66,11 +70,12 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
   def traceUri: F[Option[URI]] =
     none.pure[F] // TODO
 
-  override def attachError(err: Throwable): F[Unit] =
+  override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
-      "exit.case" -> "error",
-      "exit.error.class" -> err.getClass.getName,
-      "exit.error.message" -> err.getMessage
+      "exit.case" -> TraceValue.StringValue("error") ::
+        "exit.error.class" -> TraceValue.StringValue(err.getClass.getName) ::
+        "exit.error.message" -> TraceValue.StringValue(err.getMessage) ::
+        fields.toList: _*
     )
 
 }
@@ -88,9 +93,12 @@ private[honeycomb] object HoneycombSpan {
   private def now[F[_]: Sync]: F[Instant] =
     Sync[F].delay(Instant.now)
 
-  def finish[F[_]: Sync]: (HoneycombSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
+  private def createEvent[F[_]: Sync](
+      span: HoneycombSpan[F],
+      exitCase: ExitCase,
+      durationMs: Long
+  ): F[Event] =
     for {
-      n <- now
       fs <- span.fields.get
       e <- Sync[F].delay {
         val e = span.client.createEvent()
@@ -100,7 +108,11 @@ private[honeycomb] object HoneycombSpan {
         e.addField("name", span.name) // and other trace fields
         e.addField("trace.span_id", span.spanUUID)
         e.addField("trace.trace_id", span.traceUUID)
-        e.addField("duration_ms", n.toEpochMilli - span.timestamp.toEpochMilli)
+        e.addField("duration_ms", durationMs)
+        e.addField(
+          "span.kind",
+          span.options.spanKind.toString
+        ) // see https://github.com/honeycombio/opentelemetry-exporter-python/blob/17864084812ed67e6dc580e4119f7a5a37841d03/opentelemetry/ext/honeycomb/__init__.py#L130
         exitCase match {
           case Succeeded   => e.addField("exit.case", "completed")
           case Canceled    => e.addField("exit.case", "canceled")
@@ -108,14 +120,36 @@ private[honeycomb] object HoneycombSpan {
         }
         e
       }
-      _ <- Sync[F].delay(e.send())
+    } yield e
+
+  def finish[F[_]: Sync]: (HoneycombSpan[F], ExitCase) => F[Unit] = { (span, exitCase) =>
+    for {
+      n <- now
+      durationMs = n.toEpochMilli - span.timestamp.toEpochMilli
+      e <- createEvent(span, exitCase, durationMs)
+      links <- span.options.links.traverse { k =>
+        (k.toHeaders.get(Headers.TraceId), k.toHeaders.get(Headers.SpanId)).tupled
+          .traverse { case (traceId, spanId) =>
+            createEvent(span, exitCase, durationMs)
+              .flatMap { linkEvent =>
+                Sync[F].delay {
+                  linkEvent.addMetadata("meta.annotation_type", "link")
+                  linkEvent.addField("trace.parent_id", span.spanUUID)
+                  linkEvent.addField("trace.link.span_id", spanId)
+                  linkEvent.addField("trace.link.trace_id", traceId)
+                }
+              }
+          }
+      }
+      events = links.collect { case Some(event) => event }.prepend(e)
+      _ <- events.traverse_(e => Sync[F].delay(e.send()))
     } yield ()
   }
 
   def child[F[_]: Sync](
       parent: HoneycombSpan[F],
       name: String,
-      spanCreationPolicy: Span.Options.SpanCreationPolicy
+      options: Span.Options
   ): F[HoneycombSpan[F]] =
     for {
       spanUUID <- uuid[F]
@@ -129,12 +163,13 @@ private[honeycomb] object HoneycombSpan {
       traceUUID = parent.traceUUID,
       timestamp = timestamp,
       fields = fields,
-      spanCreationPolicy = spanCreationPolicy
+      options = options
     )
 
   def root[F[_]: Sync](
       client: HoneyClient,
-      name: String
+      name: String,
+      options: Span.Options
   ): F[HoneycombSpan[F]] =
     for {
       spanUUID <- uuid[F]
@@ -149,13 +184,14 @@ private[honeycomb] object HoneycombSpan {
       traceUUID = traceUUID,
       timestamp = timestamp,
       fields = fields,
-      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
+      options = options
     )
 
   def fromKernel[F[_]](
       client: HoneyClient,
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
     for {
       traceUUID <- ev.catchNonFatal(UUID.fromString(kernel.toHeaders(Headers.TraceId)))
@@ -171,15 +207,16 @@ private[honeycomb] object HoneycombSpan {
       traceUUID = traceUUID,
       timestamp = timestamp,
       fields = fields,
-      spanCreationPolicy = Span.Options.SpanCreationPolicy.Default
+      options = options
     )
 
   def fromKernelOrElseRoot[F[_]](
       client: HoneyClient,
       name: String,
-      kernel: Kernel
+      kernel: Kernel,
+      options: Span.Options
   )(implicit ev: Sync[F]): F[HoneycombSpan[F]] =
-    fromKernel(client, name, kernel).recoverWith { case _: NoSuchElementException =>
-      root(client, name)
+    fromKernel(client, name, kernel, options).recoverWith { case _: NoSuchElementException =>
+      root(client, name, options)
     }
 }
