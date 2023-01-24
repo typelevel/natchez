@@ -83,6 +83,7 @@ lazy val root = tlCrossRootProject.aggregate(
   datadog,
   log,
   newrelic,
+  mock,
   mtl,
   noop,
   xray,
@@ -331,7 +332,8 @@ lazy val mock = project
     description := "Mock Open Tracing implementation",
     libraryDependencies ++= Seq(
       "io.opentracing" % "opentracing-mock" % "0.33.0"
-    )
+    ),
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap
   )
 
 lazy val examples = project
