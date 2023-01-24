@@ -27,7 +27,7 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
         Format.Builtin.HTTP_HEADERS,
         new TextMapAdapter(m)
       )
-      Kernel(m.asScala.toMap)
+      Kernel.fromJava(m)
     }
 
   def put(fields: (String, TraceValue)*): F[Unit] =
@@ -37,7 +37,7 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  def attachError(err: Throwable): F[Unit] =
+  def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
       Tags.ERROR.getKey -> true
     ) >>
@@ -61,7 +61,7 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.log(event)).void
 
-  def span(name: String): Resource[F, Span[F]] =
+  def span(name: String, options: Span.Options): Resource[F, Span[F]] =
     Resource
       .make {
         Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)
@@ -72,7 +72,7 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
 
   def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
     val parent =
-      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
+      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toJava))
     Resource
       .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).asChildOf(parent).start)) { s =>
         Sync[F].delay(s.finish())
