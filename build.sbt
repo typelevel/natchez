@@ -68,6 +68,7 @@ ThisBuild / githubWorkflowScalaVersions := Seq("2.12", "2.13", "3")
 
 lazy val root = tlCrossRootProject.aggregate(
   core,
+  coreTests,
   jaeger,
   honeycomb,
   opencensus,
@@ -83,6 +84,7 @@ lazy val root = tlCrossRootProject.aggregate(
   noop,
   xray,
   logOdin,
+  testkit,
   examples
 )
 
@@ -105,6 +107,12 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
   )
+
+lazy val coreTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("modules/core-tests"))
+  .dependsOn(core, testkit)
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
+  .settings(commonSettings)
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
@@ -371,6 +379,17 @@ lazy val logOdin = project
       "com.github.valskalla" %% "odin-core" % "0.13.0",
       "com.github.valskalla" %% "odin-json" % "0.13.0"
     )
+  )
+
+lazy val testkit = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("modules/testkit"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "natchez-testkit",
+    description := "In-memory Natchez implementation that is useful for testing",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap
   )
 
 lazy val docs = project
