@@ -61,10 +61,6 @@ lazy val commonSettings = Seq(
   )
 )
 
-lazy val commonNativeSettings = Seq(
-  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
-)
-
 // Compilation
 ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
@@ -106,7 +102,9 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.scala-lang.modules" %%% "scala-collection-compat" % collectionCompatVersion
     )
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
@@ -248,7 +246,9 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test
     )
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val newrelic = project
   .in(file("modules/newrelic"))
@@ -278,7 +278,9 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-mtl" % "1.3.0"
     )
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/noop"))
@@ -290,7 +292,9 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
