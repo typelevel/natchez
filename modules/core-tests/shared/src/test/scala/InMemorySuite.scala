@@ -7,6 +7,7 @@ package natchez
 import cats.data.Kleisli
 import cats.effect.{IO, MonadCancelThrow}
 import munit.CatsEffectSuite
+import natchez.InMemory.Lineage.defaultRootName
 
 trait InMemorySuite extends CatsEffectSuite {
   type Lineage = InMemory.Lineage
@@ -46,7 +47,7 @@ trait InMemorySuite extends CatsEffectSuite {
       expectedHistory: List[(Lineage, NatchezCommand)]
   ): IO[Unit] =
     InMemory.EntryPoint.create[IO].flatMap { ep =>
-      val traced = ep.root("root").use { r =>
+      val traced = ep.root(defaultRootName).use { r =>
         makeTraceAndResolver(r).flatMap { case (traceInstance, resolve) =>
           resolve(traceProgram(traceInstance))
         }

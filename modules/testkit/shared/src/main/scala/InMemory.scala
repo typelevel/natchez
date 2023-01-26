@@ -85,7 +85,7 @@ object InMemory {
     ): Resource[F, Span[F]] = {
       val acquire = ref
         .update(_.append(Lineage.Root -> NatchezCommand.CreateRootSpan(name, kernel, options)))
-        .as(new Span(Lineage.Root, kernel, ref, options))
+        .as(new Span(Lineage.Root(name), kernel, ref, options))
 
       val release = ref.update(_.append(Lineage.Root -> NatchezCommand.ReleaseRootSpan(name)))
 
@@ -102,7 +102,9 @@ object InMemory {
     def /(name: String): Lineage.Child = Lineage.Child(name, this)
   }
   object Lineage {
-    case object Root extends Lineage
+    val defaultRootName = "root"
+    case class Root(name: String) extends Lineage
+    object Root extends Root(defaultRootName)
     final case class Child(name: String, parent: Lineage) extends Lineage
   }
 
