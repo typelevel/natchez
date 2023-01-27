@@ -283,7 +283,10 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     name := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-mtl" % "1.3.0"
+      "org.typelevel" %%% "cats-mtl" % "1.3.0",
+      "org.typelevel" %%% "cats-mtl-laws" % "1.3.0" % Test,
+      "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test,
+      "org.typelevel" %%% "cats-effect-testkit" % "3.4.5" % Test
     )
   )
   .nativeSettings(
