@@ -29,6 +29,14 @@ pull_request_rules:
       add:
       - core
       remove: []
+- name: Label core-tests PRs
+  conditions:
+  - files~=^modules/core-tests/
+  actions:
+    label:
+      add:
+      - core-tests
+      remove: []
 - name: Label datadog PRs
   conditions:
   - files~=^modules/datadog/
@@ -164,6 +172,14 @@ pull_request_rules:
     label:
       add:
       - opentracing
+      remove: []
+- name: Label testkit PRs
+  conditions:
+  - files~=^modules/testkit/
+  actions:
+    label:
+      add:
+      - testkit
       remove: []
 - name: Label xray PRs
   conditions:

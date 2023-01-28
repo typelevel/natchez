@@ -4,41 +4,41 @@
 
 package natchez
 
-import java.net.URI
-
-import cats.data.{Chain, Kleisli}
-import cats.effect.{IO, MonadCancelThrow, Ref, Resource}
-
+import cats._
+import cats.data._
+import cats.effect.{Trace => _, _}
+import cats.syntax.all._
 import natchez.Span.Options
-import munit.CatsEffectSuite
+
+import java.net.URI
 
 object InMemory {
 
-  class Span(
+  class Span[F[_]: Applicative](
       lineage: Lineage,
       k: Kernel,
-      ref: Ref[IO, Chain[(Lineage, NatchezCommand)]],
+      ref: Ref[F, Chain[(Lineage, NatchezCommand)]],
       val options: Options
-  ) extends natchez.Span.Default[IO] {
+  ) extends natchez.Span.Default[F] {
     override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
       options.spanCreationPolicy
 
-    def put(fields: (String, natchez.TraceValue)*): IO[Unit] =
+    def put(fields: (String, natchez.TraceValue)*): F[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.Put(fields.toList)))
 
-    def attachError(err: Throwable, fields: (String, TraceValue)*): IO[Unit] =
+    def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.AttachError(err, fields.toList)))
 
-    def log(event: String): IO[Unit] =
+    def log(event: String): F[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.LogEvent(event)))
 
-    def log(fields: (String, TraceValue)*): IO[Unit] =
+    def log(fields: (String, TraceValue)*): F[Unit] =
       ref.update(_.append(lineage -> NatchezCommand.LogFields(fields.toList)))
 
-    def kernel: IO[Kernel] =
+    def kernel: F[Kernel] =
       ref.update(_.append(lineage -> NatchezCommand.AskKernel(k))).as(k)
 
-    def makeSpan(name: String, options: Options): Resource[IO, natchez.Span[IO]] = {
+    def makeSpan(name: String, options: Options): Resource[F, natchez.Span[F]] = {
       val acquire = ref
         .update(_.append(lineage -> NatchezCommand.CreateSpan(name, options.parentKernel, options)))
         .as(new Span(lineage / name, k, ref, options))
@@ -48,44 +48,44 @@ object InMemory {
       Resource.make(acquire)(_ => release)
     }
 
-    def traceId: IO[Option[String]] =
+    def traceId: F[Option[String]] =
       ref.update(_.append(lineage -> NatchezCommand.AskTraceId)).as(None)
 
-    def spanId: IO[Option[String]] =
+    def spanId: F[Option[String]] =
       ref.update(_.append(lineage -> NatchezCommand.AskSpanId)).as(None)
 
-    def traceUri: IO[Option[URI]] =
+    def traceUri: F[Option[URI]] =
       ref.update(_.append(lineage -> NatchezCommand.AskTraceUri)).as(None)
   }
 
-  class EntryPoint(val ref: Ref[IO, Chain[(Lineage, NatchezCommand)]])
-      extends natchez.EntryPoint[IO] {
+  class EntryPoint[F[_]: Applicative](val ref: Ref[F, Chain[(Lineage, NatchezCommand)]])
+      extends natchez.EntryPoint[F] {
 
-    override def root(name: String, options: natchez.Span.Options): Resource[IO, Span] =
+    override def root(name: String, options: natchez.Span.Options): Resource[F, Span[F]] =
       newSpan(name, Kernel(Map.empty), options)
 
     override def continue(
         name: String,
         kernel: Kernel,
         options: natchez.Span.Options
-    ): Resource[IO, Span] =
+    ): Resource[F, Span[F]] =
       newSpan(name, kernel, options)
 
     override def continueOrElseRoot(
         name: String,
         kernel: Kernel,
         options: natchez.Span.Options
-    ): Resource[IO, Span] =
+    ): Resource[F, Span[F]] =
       newSpan(name, kernel, options)
 
     private def newSpan(
         name: String,
         kernel: Kernel,
         options: natchez.Span.Options
-    ): Resource[IO, Span] = {
+    ): Resource[F, Span[F]] = {
       val acquire = ref
         .update(_.append(Lineage.Root -> NatchezCommand.CreateRootSpan(name, kernel, options)))
-        .as(new Span(Lineage.Root, kernel, ref, options))
+        .as(new Span(Lineage.Root(name), kernel, ref, options))
 
       val release = ref.update(_.append(Lineage.Root -> NatchezCommand.ReleaseRootSpan(name)))
 
@@ -94,15 +94,17 @@ object InMemory {
   }
 
   object EntryPoint {
-    def create: IO[EntryPoint] =
-      Ref.of[IO, Chain[(Lineage, NatchezCommand)]](Chain.empty).map(log => new EntryPoint(log))
+    def create[F[_]: Concurrent]: F[EntryPoint[F]] =
+      Ref.of[F, Chain[(Lineage, NatchezCommand)]](Chain.empty).map(log => new EntryPoint(log))
   }
 
   sealed trait Lineage {
     def /(name: String): Lineage.Child = Lineage.Child(name, this)
   }
   object Lineage {
-    case object Root extends Lineage
+    val defaultRootName = "root"
+    case class Root(name: String) extends Lineage
+    object Root extends Root(defaultRootName)
     final case class Child(name: String, parent: Lineage) extends Lineage
   }
 
@@ -126,53 +128,4 @@ object InMemory {
     case class ReleaseRootSpan(name: String) extends NatchezCommand
   }
 
-}
-
-trait InMemorySuite extends CatsEffectSuite {
-  type Lineage = InMemory.Lineage
-  val Lineage = InMemory.Lineage
-  type NatchezCommand = InMemory.NatchezCommand
-  val NatchezCommand = InMemory.NatchezCommand
-
-  trait TraceTest {
-    def program[F[_]: MonadCancelThrow: Trace]: F[Unit]
-    def expectedHistory: List[(Lineage, NatchezCommand)]
-  }
-
-  def traceTest(name: String, tt: TraceTest) = {
-    test(s"$name - Kleisli")(
-      testTraceKleisli(tt.program[Kleisli[IO, Span[IO], *]](implicitly, _), tt.expectedHistory)
-    )
-    test(s"$name - IOLocal")(testTraceIoLocal(tt.program[IO](implicitly, _), tt.expectedHistory))
-  }
-
-  def testTraceKleisli(
-      traceProgram: Trace[Kleisli[IO, Span[IO], *]] => Kleisli[IO, Span[IO], Unit],
-      expectedHistory: List[(Lineage, NatchezCommand)]
-  ) = testTrace[Kleisli[IO, Span[IO], *]](
-    traceProgram,
-    root => IO.pure(Trace[Kleisli[IO, Span[IO], *]] -> (k => k.run(root))),
-    expectedHistory
-  )
-
-  def testTraceIoLocal(
-      traceProgram: Trace[IO] => IO[Unit],
-      expectedHistory: List[(Lineage, NatchezCommand)]
-  ) = testTrace[IO](traceProgram, Trace.ioTrace(_).map(_ -> identity), expectedHistory)
-
-  def testTrace[F[_]](
-      traceProgram: Trace[F] => F[Unit],
-      makeTraceAndResolver: Span[IO] => IO[(Trace[F], F[Unit] => IO[Unit])],
-      expectedHistory: List[(Lineage, NatchezCommand)]
-  ) =
-    InMemory.EntryPoint.create.flatMap { ep =>
-      val traced = ep.root("root").use { r =>
-        makeTraceAndResolver(r).flatMap { case (traceInstance, resolve) =>
-          resolve(traceProgram(traceInstance))
-        }
-      }
-      traced *> ep.ref.get.map { history =>
-        assertEquals(history.toList, expectedHistory)
-      }
-    }
 }
