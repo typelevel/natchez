@@ -6,8 +6,8 @@ package natchez
 
 import cats._
 import cats.data.Kleisli
-import cats.mtl.Local
 import cats.effect.{Trace => _, _}
+import cats.mtl.{Local, MonadPartialOrder}
 
 package object mtl {
   implicit def natchezMtlTraceForLocal[F[_]](implicit
@@ -25,13 +25,13 @@ package object mtl {
       )(f: Span[Kleisli[F, Span[F], *]] => Span[Kleisli[F, Span[F], *]]): Kleisli[F, Span[F], A] =
         fa.local {
           f.andThen(_.mapK(Kleisli.applyK(Span.noop[F])))
-            .compose(_.mapK(Kleisli.liftK))
+            .compose(_.mapK(MonadPartialOrder[F, Kleisli[F, Span[F], *]]))
         }
 
       override def applicative: Applicative[Kleisli[F, Span[F], *]] =
-        Kleisli.catsDataApplicativeForKleisli
+        MonadPartialOrder[F, Kleisli[F, Span[F], *]].monadG
 
       override def ask[E2 >: Span[Kleisli[F, Span[F], *]]]: Kleisli[F, Span[F], E2] =
-        Kleisli.ask[F, Span[F]].map(_.mapK(Kleisli.liftK))
+        Kleisli.ask[F, Span[F]].map(_.mapK(MonadPartialOrder[F, Kleisli[F, Span[F], *]]))
     }
 }
