@@ -4,10 +4,11 @@
 
 package natchez
 
-import cats.Applicative
+import cats.arrow.FunctionK
+import cats.{Applicative, ~>}
 import cats.syntax.all._
 import cats.data.Kleisli
-import cats.effect.{IO, IOLocal, MonadCancelThrow}
+import cats.effect.{Concurrent, IO, IOLocal, MonadCancelThrow}
 import cats.mtl.Local
 import munit.CatsEffectSuite
 import natchez.InMemory.Lineage.defaultRootName
@@ -67,74 +68,67 @@ object InMemorySuite {
   }
 
   trait LocalSuite extends InMemorySuite {
+    type LocalProgram[F[_]] = (EntryPoint[F], Local[F, Span[F]]) => F[Unit]
+
     trait LocalTest {
-      def program[F[_]: MonadCancelThrow](implicit L: Local[F, Span[F]]): F[Unit]
+      def program[F[_]: MonadCancelThrow](entryPoint: EntryPoint[F])(implicit
+          L: Local[F, Span[F]]
+      ): F[Unit]
       def expectedHistory: List[(Lineage, NatchezCommand)]
     }
 
     def localTest(name: String, tt: LocalTest): Unit = {
       test(s"$name - Kleisli")(
-        testLocalKleisli(tt.program[Kleisli[IO, Span[IO], *]](implicitly, _), tt.expectedHistory)
+        testLocalKleisli(tt.program[Kleisli[IO, Span[IO], *]](_)(implicitly, _), tt.expectedHistory)
       )
-      test(s"$name - IOLocal")(testLocalIoLocal(tt.program[IO](implicitly, _), tt.expectedHistory))
+      test(s"$name - IOLocal")(
+        testLocalIoLocal(tt.program[IO](_)(implicitly, _), tt.expectedHistory)
+      )
     }
 
-    def testLocalKleisli(
-        localProgram: Local[Kleisli[IO, Span[IO], *], Span[Kleisli[IO, Span[IO], *]]] => Kleisli[
-          IO,
-          Span[IO],
-          Unit
-        ],
+    private def testLocalKleisli(
+        localProgram: LocalProgram[Kleisli[IO, Span[IO], *]],
         expectedHistory: List[(Lineage, NatchezCommand)]
-    ): IO[Unit] = testTraceViaLocal[Kleisli[IO, Span[IO], *]](
-      localProgram,
-      root =>
-        IO.pure(
-          implicitly[Local[Kleisli[IO, Span[IO], *], Span[Kleisli[IO, Span[IO], *]]]] -> (k =>
-            k.run(root)
-          )
-        ),
+    ): IO[Unit] = testProgramGivenEntryPoint[Kleisli[IO, Span[IO], *]](
+      localProgram(_, implicitly),
+      Kleisli.applyK(Span.noop[IO]),
       expectedHistory
     )
 
-    def testLocalIoLocal(
-        localProgram: Local[IO, Span[IO]] => IO[Unit],
+    private def testLocalIoLocal(
+        localProgram: LocalProgram[IO],
         expectedHistory: List[(Lineage, NatchezCommand)]
     ): IO[Unit] =
-      testTraceViaLocal[IO](
-        localProgram,
-        IOLocal(_)
-          .map { ioLocal =>
-            new Local[IO, Span[IO]] {
-              override def local[A](fa: IO[A])(f: Span[IO] => Span[IO]): IO[A] =
-                ioLocal.get.flatMap { initial =>
-                  ioLocal.set(f(initial)) >> fa.guarantee(ioLocal.set(initial))
-                }
+      testProgramGivenEntryPoint[IO](
+        ep =>
+          IOLocal(Span.noop[IO])
+            .map { ioLocal =>
+              new Local[IO, Span[IO]] {
+                override def local[A](fa: IO[A])(f: Span[IO] => Span[IO]): IO[A] =
+                  ioLocal.get.flatMap { initial =>
+                    ioLocal.set(f(initial)) >> fa.guarantee(ioLocal.set(initial))
+                  }
 
-              override def applicative: Applicative[IO] = implicitly
+                override def applicative: Applicative[IO] = implicitly
 
-              override def ask[E2 >: Span[IO]]: IO[E2] = ioLocal.get
+                override def ask[E2 >: Span[IO]]: IO[E2] = ioLocal.get
+              }
             }
-          }
-          .tupleRight(identity[IO[Unit]]),
+            .flatMap(localProgram(ep, _)),
+        FunctionK.id,
         expectedHistory
       )
 
-    def testTraceViaLocal[F[_]](
-        localProgram: Local[F, Span[F]] => F[Unit],
-        makeTraceAndResolver: Span[IO] => IO[(Local[F, Span[F]], F[Unit] => IO[Unit])],
+    private def testProgramGivenEntryPoint[F[_]: Concurrent](
+        localProgram: EntryPoint[F] => F[Unit],
+        fk: F ~> IO,
         expectedHistory: List[(Lineage, NatchezCommand)]
     ): IO[Unit] =
-      InMemory.EntryPoint.create[IO].flatMap { ep =>
-        val traced = ep.root(defaultRootName).use { r =>
-          makeTraceAndResolver(r).flatMap { case (localInstance, resolve) =>
-            resolve(localProgram(localInstance))
-          }
-        }
-        traced *> ep.ref.get.map { history =>
+      fk(InMemory.EntryPoint.create[F].flatMap { ep =>
+        localProgram(ep) *> ep.ref.get.map { history =>
           assertEquals(history.toList, expectedHistory)
         }
-      }
+      })
   }
 
 }
