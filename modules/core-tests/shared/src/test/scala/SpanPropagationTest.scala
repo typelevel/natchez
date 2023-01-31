@@ -7,7 +7,7 @@ package natchez
 import cats.effect.MonadCancelThrow
 import cats.syntax.all._
 
-class SpanPropagationTest extends InMemorySuite {
+class SpanPropagationTest extends InMemorySuite.TraceSuite {
 
   traceTest(
     "propagation",

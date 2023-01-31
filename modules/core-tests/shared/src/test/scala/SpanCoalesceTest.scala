@@ -6,7 +6,7 @@ package natchez
 
 import cats.effect.MonadCancelThrow
 
-class SpanCoalesceTest extends InMemorySuite {
+class SpanCoalesceTest extends InMemorySuite.TraceSuite {
 
   traceTest(
     "suppress - nominal",

@@ -110,7 +110,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 
 lazy val coreTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/core-tests"))
-  .dependsOn(core, testkit)
+  .dependsOn(core, mtl, testkit)
   .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .settings(commonSettings)
 
