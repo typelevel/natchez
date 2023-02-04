@@ -9,7 +9,7 @@ val scala30Version = "3.2.2"
 val collectionCompatVersion = "2.9.0"
 
 val catsVersion = "2.9.0"
-val catsEffectVersion = "3.4.5"
+val catsEffectVersion = "3.4.6"
 val fs2Version = "3.5.0"
 
 // Publishing
