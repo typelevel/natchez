@@ -17,7 +17,7 @@ import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
 import java.net.URI
 
 final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.MockSpan)
-    extends Span[F] {
+    extends Span.Default[F] {
 
   def kernel: F[Kernel] =
     Sync[F].delay {
@@ -27,7 +27,7 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
         Format.Builtin.HTTP_HEADERS,
         new TextMapAdapter(m)
       )
-      Kernel(m.asScala.toMap)
+      Kernel.fromJava(m)
     }
 
   def put(fields: (String, TraceValue)*): F[Unit] =
@@ -37,20 +37,22 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
     }
 
-  def attachError(err: Throwable): F[Unit] =
+  def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
       Tags.ERROR.getKey -> true
     ) >>
       Sync[F].delay {
-        span.log(
-          Map(
+        span.log {
+          val otherFields = fields.toList.nested.map(_.value).value.toMap
+          val errorFields = Map(
             Fields.EVENT -> "error",
             Fields.ERROR_OBJECT -> err,
             Fields.ERROR_KIND -> err.getClass.getSimpleName,
             Fields.MESSAGE -> err.getMessage,
             Fields.STACK -> err.getStackTrace.mkString
-          ).asJava
-        )
+          )
+          (otherFields ++ errorFields).asJava
+        }
       }.void
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
@@ -61,24 +63,25 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
   override def log(event: String): F[Unit] =
     Sync[F].delay(span.log(event)).void
 
-  def span(name: String): Resource[F, Span[F]] =
-    Resource
-      .make {
-        Sync[F].delay(tracer.buildSpan(name).asChildOf(span).start)
-      } { s =>
-        Sync[F].delay(s.finish())
-      }
-      .map(MockSpan(tracer, _))
+  override protected val spanCreationPolicyOverride: Span.Options.SpanCreationPolicy =
+    Span.Options.SpanCreationPolicy.Default
 
-  def span(name: String, kernel: Kernel): Resource[F, Span[F]] = {
-    val parent =
-      tracer.extract(Format.Builtin.HTTP_HEADERS, new TextMapAdapter(kernel.toHeaders.asJava))
-    Resource
-      .make(Sync[F].delay(tracer.buildSpan(name).asChildOf(span).asChildOf(parent).start)) { s =>
-        Sync[F].delay(s.finish())
-      }
-      .map(MockSpan(tracer, _))
-  }
+  override def makeSpan(name: String, options: Span.Options): Resource[F, Span[F]] =
+    Span.putErrorFields {
+      Resource
+        .make {
+          val p = options.parentKernel.map(k =>
+            tracer.extract(
+              Format.Builtin.HTTP_HEADERS,
+              new TextMapAdapter(k.toJava)
+            )
+          )
+          Sync[F].delay(tracer.buildSpan(name).asChildOf(p.orNull).asChildOf(span).start)
+        } { s =>
+          Sync[F].delay(s.finish())
+        }
+        .map(MockSpan(tracer, _))
+    }
 
   def traceId: F[Option[String]] =
     span.context.toTraceId.some.pure[F]
