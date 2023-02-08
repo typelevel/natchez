@@ -4,12 +4,12 @@ ThisBuild / tlBaseVersion := "0.3"
 
 val scala212Version = "2.12.17"
 val scala213Version = "2.13.10"
-val scala30Version = "3.2.1"
+val scala30Version = "3.2.2"
 
 val collectionCompatVersion = "2.9.0"
 
 val catsVersion = "2.9.0"
-val catsEffectVersion = "3.4.5"
+val catsEffectVersion = "3.4.6"
 val fs2Version = "3.5.0"
 
 // Publishing
@@ -61,10 +61,6 @@ lazy val commonSettings = Seq(
   )
 )
 
-lazy val commonNativeSettings = Seq(
-  tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
-)
-
 // Compilation
 ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
@@ -72,6 +68,7 @@ ThisBuild / githubWorkflowScalaVersions := Seq("2.12", "2.13", "3")
 
 lazy val root = tlCrossRootProject.aggregate(
   core,
+  coreTests,
   jaeger,
   honeycomb,
   opencensus,
@@ -87,6 +84,7 @@ lazy val root = tlCrossRootProject.aggregate(
   noop,
   xray,
   logOdin,
+  testkit,
   examples
 )
 
@@ -106,7 +104,15 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.scala-lang.modules" %%% "scala-collection-compat" % collectionCompatVersion
     )
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
+
+lazy val coreTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("modules/core-tests"))
+  .dependsOn(core, testkit)
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
+  .settings(commonSettings)
 
 lazy val jaeger = project
   .in(file("modules/jaeger"))
@@ -229,8 +235,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.5.0",
-      "com.datadoghq" % "dd-trace-api" % "1.5.0"
+      "com.datadoghq" % "dd-trace-ot" % "1.6.0",
+      "com.datadoghq" % "dd-trace-api" % "1.6.0"
     )
   )
 
@@ -248,7 +254,9 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test
     )
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val newrelic = project
   .in(file("modules/newrelic"))
@@ -278,7 +286,9 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-mtl" % "1.3.0"
     )
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/noop"))
@@ -290,7 +300,9 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     description := "No-Op Open Tracing implementation",
     libraryDependencies ++= Seq()
   )
-  .nativeSettings(commonNativeSettings)
+  .nativeSettings(
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+  )
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
@@ -367,6 +379,17 @@ lazy val logOdin = project
       "com.github.valskalla" %% "odin-core" % "0.13.0",
       "com.github.valskalla" %% "odin-json" % "0.13.0"
     )
+  )
+
+lazy val testkit = crossProject(JSPlatform, JVMPlatform, NativePlatform)
+  .in(file("modules/testkit"))
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "natchez-testkit",
+    description := "In-memory Natchez implementation that is useful for testing",
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap
   )
 
 lazy val docs = project
