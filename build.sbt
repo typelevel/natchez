@@ -10,7 +10,7 @@ val collectionCompatVersion = "2.9.0"
 
 val catsVersion = "2.9.0"
 val catsEffectVersion = "3.4.6"
-val fs2Version = "3.6.0"
+val fs2Version = "3.6.1"
 
 // Publishing
 
