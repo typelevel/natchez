@@ -101,17 +101,7 @@ final case class DDSpan[F[_]: Sync](
       DDTags.ERROR_MSG -> err.getMessage,
       DDTags.ERROR_TYPE -> err.getClass.getSimpleName,
       DDTags.ERROR_STACK -> err.getStackTrace.mkString
-    ) >> {
-      // Set error on root span
-      span match {
-        case ms: MutableSpan =>
-          Sync[F].delay {
-            val localRootSpan = ms.getLocalRootSpan
-            localRootSpan.setError(true)
-          }.void
-        case _ => Sync[F].unit
-      }
-    } >>
+    ) >>
       Sync[F].delay {
         span.log(
           (Map(
