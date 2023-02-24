@@ -321,7 +321,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-core" % "0.14.3",
       "co.fs2" %%% "fs2-io" % fs2Version,
       "com.comcast" %%% "ip4s-core" % "3.2.0",
-      "org.scodec" %%% "scodec-bits" % "1.1.35"
+      "org.scodec" %%% "scodec-bits" % "1.1.36"
     )
   )
   .jsSettings(
