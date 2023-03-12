@@ -72,8 +72,8 @@ private[honeycomb] final case class HoneycombSpan[F[_]: Sync](
 
   override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
     put(
-      Tags.error(true),
-      "exit.case" -> TraceValue.StringValue("error") ::
+      Tags.error(true) ::
+        "exit.case" -> TraceValue.StringValue("error") ::
         "exit.error.class" -> TraceValue.StringValue(err.getClass.getName) ::
         "exit.error.message" -> TraceValue.StringValue(err.getMessage) ::
         fields.toList: _*
