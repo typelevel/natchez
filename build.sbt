@@ -363,7 +363,7 @@ lazy val examples = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % "2.5.0",
       "org.slf4j" % "slf4j-simple" % "2.0.6",
-      "eu.timepit" %% "refined" % "0.10.2",
+      "eu.timepit" %% "refined" % "0.10.1",
       "is.cir" %% "ciris" % "3.1.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.22.0",
       "io.grpc" % "grpc-okhttp" % "1.52.1" // required for the OpenTelemetry exporter
