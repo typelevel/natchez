@@ -105,7 +105,7 @@ class LogSuite extends CatsEffectSuite {
                       |  ],
                       |  "exit.case" : "succeeded",
                       |  "exit.error.class" : "java.lang.RuntimeException",
-                      |  "exit.error.message" : "java.lang.RuntimeException: oops",
+                      |  "exit.error.message" : "oops",
                       |  "children" : [
                       |  ]
                       |}
@@ -118,7 +118,7 @@ class LogSuite extends CatsEffectSuite {
                    |  ],
                    |  "exit.case" : "succeeded",
                    |  "exit.error.class" : "java.lang.RuntimeException",
-                   |  "exit.error.message" : "java.lang.RuntimeException",
+                   |  "exit.error.message" : null,
                    |  "children" : [
                    |  ]
                    |}
