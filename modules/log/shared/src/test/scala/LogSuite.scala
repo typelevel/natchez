@@ -7,6 +7,7 @@ package log
 
 import munit.CatsEffectSuite
 import cats.effect.IO
+import cats.syntax.traverse._
 import io.circe.Json
 import natchez.Span.SpanKind
 
@@ -28,6 +29,7 @@ class LogSuite extends CatsEffectSuite {
             .remove("trace.span_id")
             .remove("trace.parent_id")
             .remove("trace.trace_id")
+            .remove("exit.error.stackTrace") // contains thread info
             .mapValues(filter)
         )
     )
@@ -90,4 +92,48 @@ class LogSuite extends CatsEffectSuite {
     }
   }
 
+  test("log formatter should handle exceptions") {
+    val exWithMsg = new RuntimeException("oops")
+    val exNull = new RuntimeException(null: String)
+
+    val tests = List[(Throwable, String)](
+      exWithMsg -> """|test: [info] {
+                      |  "name" : "root span",
+                      |  "service" : "service",
+                      |  "span.kind" : "Server",
+                      |  "span.links" : [
+                      |  ],
+                      |  "exit.case" : "succeeded",
+                      |  "exit.error.class" : "java.lang.RuntimeException",
+                      |  "exit.error.message" : "java.lang.RuntimeException: oops",
+                      |  "children" : [
+                      |  ]
+                      |}
+                      |""".stripMargin,
+      exNull -> """|test: [info] {
+                   |  "name" : "root span",
+                   |  "service" : "service",
+                   |  "span.kind" : "Server",
+                   |  "span.links" : [
+                   |  ],
+                   |  "exit.case" : "succeeded",
+                   |  "exit.error.class" : "java.lang.RuntimeException",
+                   |  "exit.error.message" : "java.lang.RuntimeException",
+                   |  "children" : [
+                   |  ]
+                   |}
+                   |""".stripMargin
+    )
+
+    tests.traverse { case (exception, expected) =>
+      MockLogger.newInstance[IO]("test").flatMap { implicit log =>
+        Log
+          .entryPoint[IO]("service", filter(_).spaces2)
+          .root("root span", Span.Options.Defaults.withSpanKind(SpanKind.Server))
+          .use { root =>
+            root.attachError(err = exception)
+          } *> log.get.assertEquals(expected)
+      }
+    }
+  }
 }
