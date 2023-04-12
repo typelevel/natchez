@@ -75,7 +75,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger](
     putAny(
       "exit.case" -> "error".asJson,
       "exit.error.class" -> err.getClass.getName.asJson,
-      "exit.error.message" -> err.getMessage.asJson,
+      "exit.error.message" -> Option(err.getMessage).map(_.asJson).getOrElse(Json.Null),
       "exit.error.stackTrace" -> err.getStackTrace.map(_.toString).asJson
     ) *> put(fields: _*)
 
