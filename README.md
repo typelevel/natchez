@@ -7,5 +7,5 @@
 
 Natchez is distributed tracing library for Scala.
 
-Please proceed to the [microsite](http://tpolecat.github.io/natchez/) for more information.
+Please proceed to the [microsite](https://typelevel.org/natchez/) for more information.
 
