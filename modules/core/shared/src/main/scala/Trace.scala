@@ -49,6 +49,11 @@ trait Trace[F[_]] {
     */
   def traceId: F[Option[String]]
 
+  /** A unique ID for this span, if available. This can be useful to include in error messages for
+    * example, so you can quickly find the associated trace.
+    */
+  def spanId: F[Option[String]]
+
   /** A unique URI for this trace, if available. This can be useful to include in error messages for
     * example, so you can quickly find the associated trace.
     */
@@ -99,6 +104,9 @@ object Trace {
         override def traceId: IO[Option[String]] =
           local.get.flatMap(_.traceId)
 
+        override def spanId: IO[Option[String]] =
+          local.get.flatMap(_.spanId)
+
         override def traceUri: IO[Option[URI]] =
           local.get.flatMap(_.traceUri)
       }
@@ -126,6 +134,7 @@ object Trace {
           Resource.pure(FunctionK.id)
         override def span[A](name: String, options: Span.Options)(k: F[A]): F[A] = k
         override def traceId: F[Option[String]] = none.pure[F]
+        override def spanId: F[Option[String]] = none.pure[F]
         override def traceUri: F[Option[URI]] = none.pure[F]
       }
   }
@@ -226,12 +235,18 @@ object Trace {
         override def traceId: Kleisli[F, E, Option[String]] =
           Kleisli(e => f(e).traceId)
 
+        override def spanId: Kleisli[F, E, Option[String]] =
+          Kleisli(e => f(e).spanId)
+
         override def traceUri: Kleisli[F, E, Option[URI]] =
           Kleisli(e => f(e).traceUri)
       }
 
     override def traceId: Kleisli[F, Span[F], Option[String]] =
       Kleisli(_.traceId)
+
+    override def spanId: Kleisli[F, Span[F], Option[String]] =
+      Kleisli(_.spanId)
 
     override def traceUri: Kleisli[F, Span[F], Option[URI]] =
       Kleisli(_.traceUri)
@@ -277,6 +292,9 @@ object Trace {
 
       override def traceId: Kleisli[F, E, Option[String]] =
         Kleisli.liftF(trace.traceId)
+
+      override def spanId: Kleisli[F, E, Option[String]] =
+        Kleisli.liftF(trace.spanId)
 
       override def traceUri: Kleisli[F, E, Option[URI]] =
         Kleisli.liftF(trace.traceUri)
@@ -324,6 +342,9 @@ object Trace {
 
       override def traceId: StateT[F, S, Option[String]] =
         StateT.liftF(trace.traceId)
+
+      override def spanId: StateT[F, S, Option[String]] =
+        StateT.liftF(trace.spanId)
 
       override def traceUri: StateT[F, S, Option[URI]] =
         StateT.liftF(trace.traceUri)
@@ -373,6 +394,9 @@ object Trace {
       override def traceId: EitherT[F, E, Option[String]] =
         EitherT.liftF(trace.traceId)
 
+      override def spanId: EitherT[F, E, Option[String]] =
+        EitherT.liftF(trace.spanId)
+
       override def traceUri: EitherT[F, E, Option[URI]] =
         EitherT.liftF(trace.traceUri)
     }
@@ -416,6 +440,9 @@ object Trace {
 
       override def traceId: OptionT[F, Option[String]] =
         OptionT.liftF(trace.traceId)
+
+      override def spanId: OptionT[F, Option[String]] =
+        OptionT.liftF(trace.spanId)
 
       override def traceUri: OptionT[F, Option[URI]] =
         OptionT.liftF(trace.traceUri)
@@ -468,6 +495,9 @@ object Trace {
       override def traceId: Nested[F, G, Option[String]] =
         trace.traceId.map(_.pure[G]).nested
 
+      override def spanId: Nested[F, G, Option[String]] =
+        trace.spanId.map(_.pure[G]).nested
+
       override def traceUri: Nested[F, G, Option[URI]] =
         trace.traceUri.map(_.pure[G]).nested
     }
@@ -517,6 +547,9 @@ object Trace {
       override def traceId: Resource[F, Option[String]] =
         Resource.eval(trace.traceId)
 
+      override def spanId: Resource[F, Option[String]] =
+        Resource.eval(trace.spanId)
+
       override def traceUri: Resource[F, Option[URI]] =
         Resource.eval(trace.traceUri)
     }
@@ -559,6 +592,9 @@ object Trace {
 
       override def traceId: Stream[F, Option[String]] =
         Stream.eval(trace.traceId)
+
+      override def spanId: Stream[F, Option[String]] =
+        Stream.eval(trace.spanId)
 
       override def traceUri: Stream[F, Option[URI]] =
         Stream.eval(trace.traceUri)

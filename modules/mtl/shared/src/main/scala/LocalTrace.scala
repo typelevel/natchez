@@ -54,6 +54,9 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
   override def traceId: F[Option[String]] =
     local.ask.flatMap(_.traceId)
 
+  override def spanId: F[Option[String]] =
+    local.ask.flatMap(_.spanId)
+
   override def traceUri: F[Option[URI]] =
     local.ask.flatMap(_.traceUri)
 }
