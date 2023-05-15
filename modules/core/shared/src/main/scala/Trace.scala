@@ -52,7 +52,7 @@ trait Trace[F[_]] {
   /** A unique ID for this span, if available. This can be useful to include in error messages for
     * example, so you can quickly find the associated trace.
     */
-  def spanId: F[Option[String]]
+  def spanId(implicit F: Applicative[F]): F[Option[String]] = F.pure(None)
 
   /** A unique URI for this trace, if available. This can be useful to include in error messages for
     * example, so you can quickly find the associated trace.
