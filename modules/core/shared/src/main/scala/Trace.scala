@@ -104,7 +104,7 @@ object Trace {
         override def traceId: IO[Option[String]] =
           local.get.flatMap(_.traceId)
 
-        override def spanId: IO[Option[String]] =
+        override def spanId(implicit F: Applicative[IO]): IO[Option[String]] =
           local.get.flatMap(_.spanId)
 
         override def traceUri: IO[Option[URI]] =
@@ -134,7 +134,8 @@ object Trace {
           Resource.pure(FunctionK.id)
         override def span[A](name: String, options: Span.Options)(k: F[A]): F[A] = k
         override def traceId: F[Option[String]] = none.pure[F]
-        override def spanId: F[Option[String]] = none.pure[F]
+        override def spanId(implicit A: Applicative[F]): F[Option[String]] =
+          A.pure(None)
         override def traceUri: F[Option[URI]] = none.pure[F]
       }
   }
@@ -235,7 +236,9 @@ object Trace {
         override def traceId: Kleisli[F, E, Option[String]] =
           Kleisli(e => f(e).traceId)
 
-        override def spanId: Kleisli[F, E, Option[String]] =
+        override def spanId(implicit
+            F: Applicative[Kleisli[F, E, *]]
+        ): Kleisli[F, E, Option[String]] =
           Kleisli(e => f(e).spanId)
 
         override def traceUri: Kleisli[F, E, Option[URI]] =
@@ -245,7 +248,9 @@ object Trace {
     override def traceId: Kleisli[F, Span[F], Option[String]] =
       Kleisli(_.traceId)
 
-    override def spanId: Kleisli[F, Span[F], Option[String]] =
+    override def spanId(implicit
+        F: Applicative[Kleisli[F, Span[F], *]]
+    ): Kleisli[F, Span[F], Option[String]] =
       Kleisli(_.spanId)
 
     override def traceUri: Kleisli[F, Span[F], Option[URI]] =
@@ -293,7 +298,9 @@ object Trace {
       override def traceId: Kleisli[F, E, Option[String]] =
         Kleisli.liftF(trace.traceId)
 
-      override def spanId: Kleisli[F, E, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[Kleisli[F, E, *]]
+      ): Kleisli[F, E, Option[String]] =
         Kleisli.liftF(trace.spanId)
 
       override def traceUri: Kleisli[F, E, Option[URI]] =
@@ -343,7 +350,9 @@ object Trace {
       override def traceId: StateT[F, S, Option[String]] =
         StateT.liftF(trace.traceId)
 
-      override def spanId: StateT[F, S, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[StateT[F, S, *]]
+      ): StateT[F, S, Option[String]] =
         StateT.liftF(trace.spanId)
 
       override def traceUri: StateT[F, S, Option[URI]] =
@@ -394,7 +403,9 @@ object Trace {
       override def traceId: EitherT[F, E, Option[String]] =
         EitherT.liftF(trace.traceId)
 
-      override def spanId: EitherT[F, E, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[EitherT[F, E, *]]
+      ): EitherT[F, E, Option[String]] =
         EitherT.liftF(trace.spanId)
 
       override def traceUri: EitherT[F, E, Option[URI]] =
@@ -441,7 +452,9 @@ object Trace {
       override def traceId: OptionT[F, Option[String]] =
         OptionT.liftF(trace.traceId)
 
-      override def spanId: OptionT[F, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[OptionT[F, *]]
+      ): OptionT[F, Option[String]] =
         OptionT.liftF(trace.spanId)
 
       override def traceUri: OptionT[F, Option[URI]] =
@@ -495,7 +508,9 @@ object Trace {
       override def traceId: Nested[F, G, Option[String]] =
         trace.traceId.map(_.pure[G]).nested
 
-      override def spanId: Nested[F, G, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[Nested[F, G, *]]
+      ): Nested[F, G, Option[String]] =
         trace.spanId.map(_.pure[G]).nested
 
       override def traceUri: Nested[F, G, Option[URI]] =
@@ -547,7 +562,9 @@ object Trace {
       override def traceId: Resource[F, Option[String]] =
         Resource.eval(trace.traceId)
 
-      override def spanId: Resource[F, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[Resource[F, *]]
+      ): Resource[F, Option[String]] =
         Resource.eval(trace.spanId)
 
       override def traceUri: Resource[F, Option[URI]] =
@@ -593,7 +610,9 @@ object Trace {
       override def traceId: Stream[F, Option[String]] =
         Stream.eval(trace.traceId)
 
-      override def spanId: Stream[F, Option[String]] =
+      override def spanId(implicit
+          F: Applicative[Stream[F, *]]
+      ): Stream[F, Option[String]] =
         Stream.eval(trace.spanId)
 
       override def traceUri: Stream[F, Option[URI]] =

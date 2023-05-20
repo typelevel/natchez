@@ -12,6 +12,7 @@ import cats.effect.MonadCancel
 import cats.effect.Resource
 import cats.syntax.all._
 import java.net.URI
+import cats.Applicative
 
 private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
     ev: MonadCancel[F, Throwable]
@@ -54,7 +55,7 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
   override def traceId: F[Option[String]] =
     local.ask.flatMap(_.traceId)
 
-  override def spanId: F[Option[String]] =
+  override def spanId(implicit F: Applicative[F]): F[Option[String]] =
     local.ask.flatMap(_.spanId)
 
   override def traceUri: F[Option[URI]] =

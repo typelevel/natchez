@@ -36,8 +36,8 @@ final case class NoopTrace[F[_]: Applicative]() extends Trace[F] {
   override def traceId: F[Option[String]] =
     none.pure[F]
 
-  override def spanId: F[Option[String]] =
-    none.pure[F]
+  override def spanId(implicit A: Applicative[F]): F[Option[String]] =
+    A.pure(None)
 
   override def traceUri: F[Option[URI]] =
     none.pure[F]
