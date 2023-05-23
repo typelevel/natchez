@@ -9,7 +9,7 @@ val scala30Version = "3.2.2"
 val collectionCompatVersion = "2.9.0"
 
 val catsVersion = "2.9.0"
-val catsEffectVersion = "3.4.9"
+val catsEffectVersion = "3.4.11"
 val fs2Version = "3.6.1"
 
 // Publishing
@@ -101,7 +101,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "org.typelevel" %%% "case-insensitive" % "1.3.0",
+      "org.typelevel" %%% "case-insensitive" % "1.4.0",
       "org.scala-lang.modules" %%% "scala-collection-compat" % collectionCompatVersion
     )
   )
@@ -165,7 +165,7 @@ lazy val lightstep = project
     name := "natchez-lightstep",
     description := "Lightstep support for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.31.0"
+      "com.lightstep.tracer" % "lightstep-tracer-jre" % "0.32.0"
     )
   )
 
@@ -178,7 +178,7 @@ lazy val lightstepGrpc = project
     name := "natchez-lightstep-grpc",
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-grpc" % "0.31.0",
+      "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
       "io.grpc" % "grpc-netty" % "1.55.1",
       "io.netty" % "netty-tcnative-boringssl-static" % "2.0.60.Final"
     ),
@@ -194,7 +194,7 @@ lazy val lightstepHttp = project
     name := "natchez-lightstep-http",
     description := "Lightstep HTTP bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.lightstep.tracer" % "tracer-okhttp" % "0.31.0"
+      "com.lightstep.tracer" % "tracer-okhttp" % "0.32.0"
     ),
     mimaPreviousArtifacts := Set()
   )
@@ -236,8 +236,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.12.1",
-      "com.datadoghq" % "dd-trace-api" % "1.12.1"
+      "com.datadoghq" % "dd-trace-ot" % "1.14.0",
+      "com.datadoghq" % "dd-trace-api" % "1.14.0"
     )
   )
 
@@ -287,7 +287,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-mtl" % "1.3.0",
       "org.typelevel" %%% "cats-mtl-laws" % "1.3.0" % Test,
       "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test,
-      "org.typelevel" %%% "cats-effect-testkit" % "3.4.9" % Test
+      "org.typelevel" %%% "cats-effect-testkit" % "3.4.11" % Test
     )
   )
   .nativeSettings(
