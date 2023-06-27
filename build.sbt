@@ -236,8 +236,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.14.0",
-      "com.datadoghq" % "dd-trace-api" % "1.14.0"
+      "com.datadoghq" % "dd-trace-ot" % "1.16.3",
+      "com.datadoghq" % "dd-trace-api" % "1.16.3"
     )
   )
 
