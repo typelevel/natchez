@@ -142,7 +142,7 @@ object Span {
 
   private class RootsSpan[F[_]: Applicative](ep: EntryPoint[F]) extends EphemeralSpan[F] {
     override def span(name: String, options: Span.Options): Resource[F, Span[F]] =
-      options.parentKernel.fold(ep.root(name))(ep.continueOrElseRoot(name, _))
+      options.parentKernel.fold(ep.root(name, options))(ep.continueOrElseRoot(name, _, options))
   }
 
   private def resolve[F[_]](span: Span[F]): Kleisli[F, Span[F], *] ~> F =
