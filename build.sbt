@@ -6,7 +6,7 @@ val scala212Version = "2.12.17"
 val scala213Version = "2.13.10"
 val scala30Version = "3.2.2"
 
-val collectionCompatVersion = "2.10.0"
+val collectionCompatVersion = "2.11.0"
 
 val catsVersion = "2.9.0"
 val catsEffectVersion = "3.4.11"
@@ -179,7 +179,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
-      "io.grpc" % "grpc-netty" % "1.55.1",
+      "io.grpc" % "grpc-netty" % "1.56.0",
       "io.netty" % "netty-tcnative-boringssl-static" % "2.0.61.Final"
     ),
     mimaPreviousArtifacts := Set()
@@ -236,8 +236,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.14.0",
-      "com.datadoghq" % "dd-trace-api" % "1.14.0"
+      "com.datadoghq" % "dd-trace-ot" % "1.17.0",
+      "com.datadoghq" % "dd-trace-api" % "1.17.0"
     )
   )
 
@@ -363,10 +363,10 @@ lazy val examples = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
       "org.slf4j" % "slf4j-simple" % "2.0.7",
-      "eu.timepit" %% "refined" % "0.10.3",
+      "eu.timepit" %% "refined" % "0.11.0",
       "is.cir" %% "ciris" % "3.1.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.27.0",
-      "io.grpc" % "grpc-okhttp" % "1.55.1" // required for the OpenTelemetry exporter
+      "io.grpc" % "grpc-okhttp" % "1.56.0" // required for the OpenTelemetry exporter
     )
   )
 
