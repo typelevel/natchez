@@ -17,7 +17,7 @@ object TraceValue {
   implicit def viaTraceableValue[A: TraceableValue](a: A): TraceValue =
     TraceableValue[A].toTraceValue(a)
 
-  @deprecated("use .viaTraceableValue(TraceableValue)", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def stringToTraceValue(value: String): TraceValue = StringValue(value)
   @deprecated("use .viaTraceableValue(TraceableValue)", "0.3.0")
   def boolToTraceValue(value: Boolean): TraceValue = BooleanValue(value)
