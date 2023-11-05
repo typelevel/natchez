@@ -8,7 +8,7 @@ val scala30Version = "3.3.0"
 
 val collectionCompatVersion = "2.11.0"
 
-val catsVersion = "2.9.0"
+val catsVersion = "2.10.0"
 val catsEffectVersion = "3.5.1"
 val fs2Version = "3.6.1"
 
@@ -407,7 +407,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(
     scalacOptions := Nil,
-    git.remoteRepo := "git@github.com:tpolecat/natchez.git",
+    git.remoteRepo := "git@github.com:typelevel/natchez.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
