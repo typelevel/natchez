@@ -3,14 +3,14 @@ import com.typesafe.tools.mima.core._
 ThisBuild / tlBaseVersion := "0.3"
 
 val scala212Version = "2.12.18"
-val scala213Version = "2.13.11"
-val scala30Version = "3.3.0"
+val scala213Version = "2.13.12"
+val scala30Version = "3.3.1"
 
 val collectionCompatVersion = "2.11.0"
 
-val catsVersion = "2.9.0"
-val catsEffectVersion = "3.5.1"
-val fs2Version = "3.6.1"
+val catsVersion = "2.10.0"
+val catsEffectVersion = "3.5.2"
+val fs2Version = "3.9.2"
 
 // Publishing
 
@@ -55,8 +55,8 @@ lazy val commonSettings = Seq(
   ),
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit" % "1.0.0-M8" % Test,
-    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M8" % Test,
+    "org.scalameta" %%% "munit" % "1.0.0-M10" % Test,
+    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M10" % Test,
     "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M3" % Test
   )
 )
@@ -179,8 +179,8 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
-      "io.grpc" % "grpc-netty" % "1.56.0",
-      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.61.Final"
+      "io.grpc" % "grpc-netty" % "1.56.1",
+      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.62.Final"
     ),
     mimaPreviousArtifacts := Set()
   )
@@ -236,8 +236,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.17.0",
-      "com.datadoghq" % "dd-trace-api" % "1.17.0"
+      "com.datadoghq" % "dd-trace-ot" % "1.22.0",
+      "com.datadoghq" % "dd-trace-api" % "1.22.0"
     )
   )
 
@@ -250,7 +250,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     name := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.5",
+      "io.circe" %%% "circe-core" % "0.14.6",
       "org.typelevel" %%% "log4cats-core" % "2.6.0",
       "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test
     )
@@ -268,10 +268,10 @@ lazy val newrelic = project
     name := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.14.5",
+      "io.circe" %% "circe-core" % "0.14.6",
       "com.newrelic.telemetry" % "telemetry" % "0.10.0",
-      "com.newrelic.telemetry" % "telemetry-core" % "0.15.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.15.0"
+      "com.newrelic.telemetry" % "telemetry-core" % "0.16.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.16.0"
     )
   )
 
@@ -284,10 +284,10 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     name := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-mtl" % "1.3.1",
-      "org.typelevel" %%% "cats-mtl-laws" % "1.3.1" % Test,
+      "org.typelevel" %%% "cats-mtl" % "1.4.0",
+      "org.typelevel" %%% "cats-mtl-laws" % "1.4.0" % Test,
       "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test,
-      "org.typelevel" %%% "cats-effect-testkit" % "3.5.1" % Test
+      "org.typelevel" %%% "cats-effect-testkit" % "3.5.2" % Test
     )
   )
   .nativeSettings(
@@ -318,10 +318,10 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     name := "natchez-xray",
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.5",
+      "io.circe" %%% "circe-core" % "0.14.6",
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.comcast" %%% "ip4s-core" % "3.3.0",
-      "org.scodec" %%% "scodec-bits" % "1.1.37"
+      "com.comcast" %%% "ip4s-core" % "3.4.0",
+      "org.scodec" %%% "scodec-bits" % "1.1.38"
     )
   )
   .jsSettings(
@@ -362,11 +362,12 @@ lazy val examples = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
-      "org.slf4j" % "slf4j-simple" % "2.0.7",
+      "org.slf4j" % "slf4j-simple" % "2.0.9",
       "eu.timepit" %% "refined" % "0.11.0",
-      "is.cir" %% "ciris" % "3.2.0",
+      "is.cir" %% "ciris" % "3.4.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.31.0",
-      "io.grpc" % "grpc-okhttp" % "1.56.0" // required for the OpenTelemetry exporter
+      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.22.0-alpha",
+      "io.grpc" % "grpc-okhttp" % "1.56.1" // required for the OpenTelemetry exporter
     )
   )
 
@@ -407,7 +408,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(
     scalacOptions := Nil,
-    git.remoteRepo := "git@github.com:tpolecat/natchez.git",
+    git.remoteRepo := "git@github.com:typelevel/natchez.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
@@ -434,7 +435,7 @@ lazy val docs = project
       "org.http4s" %% "http4s-dsl" % "0.23.15",
       "org.http4s" %% "http4s-client" % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
-      "org.slf4j" % "slf4j-simple" % "2.0.7",
+      "org.slf4j" % "slf4j-simple" % "2.0.9",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.31.0" // for the opentelemetry example
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3" // pray this does more good than harm
