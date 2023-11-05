@@ -436,7 +436,8 @@ lazy val docs = project
       "org.http4s" %% "http4s-client" % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
       "org.slf4j" % "slf4j-simple" % "2.0.9",
-      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.31.0" // for the opentelemetry example
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.31.0", // for the opentelemetry example
+      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.22.0-alpha"
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3" // pray this does more good than harm
   )
