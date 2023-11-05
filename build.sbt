@@ -270,8 +270,8 @@ lazy val newrelic = project
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % "0.14.5",
       "com.newrelic.telemetry" % "telemetry" % "0.10.0",
-      "com.newrelic.telemetry" % "telemetry-core" % "0.15.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.15.0"
+      "com.newrelic.telemetry" % "telemetry-core" % "0.16.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.16.0"
     )
   )
 
