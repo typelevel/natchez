@@ -36,7 +36,7 @@ import natchez.EntryPoint
 import natchez.opentelemetry.OpenTelemetry
 import cats.effect._
 import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes
+import io.opentelemetry.semconv.ResourceAttributes
 import io.opentelemetry.sdk.resources.{Resource => OtelResource}
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
 import io.opentelemetry.context.propagation.ContextPropagators
