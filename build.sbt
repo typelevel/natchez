@@ -8,7 +8,7 @@ val scala30Version = "3.3.0"
 
 val collectionCompatVersion = "2.11.0"
 
-val catsVersion = "2.9.0"
+val catsVersion = "2.10.0"
 val catsEffectVersion = "3.5.1"
 val fs2Version = "3.6.1"
 
@@ -236,8 +236,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.17.0",
-      "com.datadoghq" % "dd-trace-api" % "1.17.0"
+      "com.datadoghq" % "dd-trace-ot" % "1.22.0",
+      "com.datadoghq" % "dd-trace-api" % "1.22.0"
     )
   )
 
@@ -320,8 +320,8 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.5",
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.comcast" %%% "ip4s-core" % "3.3.0",
-      "org.scodec" %%% "scodec-bits" % "1.1.37"
+      "com.comcast" %%% "ip4s-core" % "3.4.0",
+      "org.scodec" %%% "scodec-bits" % "1.1.38"
     )
   )
   .jsSettings(
@@ -364,7 +364,7 @@ lazy val examples = project
       "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
       "org.slf4j" % "slf4j-simple" % "2.0.7",
       "eu.timepit" %% "refined" % "0.11.0",
-      "is.cir" %% "ciris" % "3.2.0",
+      "is.cir" %% "ciris" % "3.4.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.27.0",
       "io.grpc" % "grpc-okhttp" % "1.56.0" // required for the OpenTelemetry exporter
     )
@@ -407,7 +407,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(
     scalacOptions := Nil,
-    git.remoteRepo := "git@github.com:tpolecat/natchez.git",
+    git.remoteRepo := "git@github.com:typelevel/natchez.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
