@@ -407,7 +407,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(
     scalacOptions := Nil,
-    git.remoteRepo := "git@github.com:tpolecat/natchez.git",
+    git.remoteRepo := "git@github.com:typelevel/natchez.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
