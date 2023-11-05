@@ -17,17 +17,17 @@ object TraceValue {
   implicit def viaTraceableValue[A: TraceableValue](a: A): TraceValue =
     TraceableValue[A].toTraceValue(a)
 
-  @deprecated("use toTraceValue", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def stringToTraceValue(value: String): TraceValue = StringValue(value)
-  @deprecated("use toTraceValue", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def boolToTraceValue(value: Boolean): TraceValue = BooleanValue(value)
-  @deprecated("use toTraceValue", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def intToTraceValue(value: Int): TraceValue = NumberValue(value)
-  @deprecated("use toTraceValue", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def longToTraceValue(value: Long): TraceValue = NumberValue(value)
-  @deprecated("use toTraceValue", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def floatToTraceValue(value: Float): TraceValue = NumberValue(value)
-  @deprecated("use toTraceValue", "0.3.0")
+  @deprecated("use `viaTraceableValue(value)`", "0.3.0")
   def doubleToTraceValue(value: Double): TraceValue = NumberValue(value)
 }
 
