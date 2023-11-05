@@ -3,13 +3,13 @@ import com.typesafe.tools.mima.core._
 ThisBuild / tlBaseVersion := "0.3"
 
 val scala212Version = "2.12.18"
-val scala213Version = "2.13.11"
+val scala213Version = "2.13.12"
 val scala30Version = "3.3.1"
 
 val collectionCompatVersion = "2.11.0"
 
-val catsVersion = "2.9.0"
-val catsEffectVersion = "3.5.1"
+val catsVersion = "2.10.0"
+val catsEffectVersion = "3.5.2"
 val fs2Version = "3.6.1"
 
 // Publishing
@@ -180,7 +180,7 @@ lazy val lightstepGrpc = project
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
       "io.grpc" % "grpc-netty" % "1.56.0",
-      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.61.Final"
+      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.62.Final"
     ),
     mimaPreviousArtifacts := Set()
   )
@@ -236,8 +236,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.17.0",
-      "com.datadoghq" % "dd-trace-api" % "1.17.0"
+      "com.datadoghq" % "dd-trace-ot" % "1.22.0",
+      "com.datadoghq" % "dd-trace-api" % "1.22.0"
     )
   )
 
@@ -270,8 +270,8 @@ lazy val newrelic = project
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % "0.14.5",
       "com.newrelic.telemetry" % "telemetry" % "0.10.0",
-      "com.newrelic.telemetry" % "telemetry-core" % "0.15.0",
-      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.15.0"
+      "com.newrelic.telemetry" % "telemetry-core" % "0.16.0",
+      "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.16.0"
     )
   )
 
@@ -287,7 +287,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-mtl" % "1.3.1",
       "org.typelevel" %%% "cats-mtl-laws" % "1.3.1" % Test,
       "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test,
-      "org.typelevel" %%% "cats-effect-testkit" % "3.5.1" % Test
+      "org.typelevel" %%% "cats-effect-testkit" % "3.5.2" % Test
     )
   )
   .nativeSettings(
@@ -320,8 +320,8 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.5",
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.comcast" %%% "ip4s-core" % "3.3.0",
-      "org.scodec" %%% "scodec-bits" % "1.1.37"
+      "com.comcast" %%% "ip4s-core" % "3.4.0",
+      "org.scodec" %%% "scodec-bits" % "1.1.38"
     )
   )
   .jsSettings(
@@ -364,7 +364,7 @@ lazy val examples = project
       "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
       "org.slf4j" % "slf4j-simple" % "2.0.7",
       "eu.timepit" %% "refined" % "0.11.0",
-      "is.cir" %% "ciris" % "3.2.0",
+      "is.cir" %% "ciris" % "3.4.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.27.0",
       "io.grpc" % "grpc-okhttp" % "1.56.0" // required for the OpenTelemetry exporter
     )
@@ -407,7 +407,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(
     scalacOptions := Nil,
-    git.remoteRepo := "git@github.com:tpolecat/natchez.git",
+    git.remoteRepo := "git@github.com:typelevel/natchez.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
