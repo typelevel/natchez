@@ -31,7 +31,16 @@ object XRayEnvironment {
           .value
 
       override def traceId: F[Option[String]] =
-        Env[F].get("_X_AMZN_TRACE_ID")
+        Functor[F] match {
+          // this is a hack, but it lets us defer breaking source compatibility until cats-effect 3.6,
+          // when there will hopefully be a constraint similar to Env, but for retrieving system properties
+          case sync: Sync[F @unchecked] =>
+            OptionT(sync.delay(sys.props.get("com.amazonaws.xray.traceHeader")))
+              .orElseF(Env[F].get("_X_AMZN_TRACE_ID"))(sync)
+              .value
+          case _ =>
+            Env[F].get("_X_AMZN_TRACE_ID")
+        }
 
       override def kernelFromEnvironment: F[Kernel] =
         OptionT(traceId)
