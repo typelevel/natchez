@@ -5,11 +5,11 @@
 package natchez
 package datadog
 
-import cats.effect._
-import cats.syntax.all._
+import cats.effect.*
+import cats.syntax.all.*
+import io.opentracing as ot
 import io.opentracing.propagation.{Format, TextMapAdapter}
-import io.{opentracing => ot}
-import natchez.datadog.DDTracer._
+import natchez.datadog.DDTracer.*
 
 import java.net.URI
 
@@ -25,11 +25,17 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
 
     Resource
       .make(initSpan())(s => Sync[F].delay(s.finish()))
-      .flatTap(span => Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close())))
+      .flatTap(span =>
+        Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close()))
+      )
       .map(DDSpan(tracer, _, uriPrefix, options))
   }
 
-  override def continue(name: String, kernel: Kernel, options: Span.Options): Resource[F, Span[F]] = {
+  override def continue(
+      name: String,
+      kernel: Kernel,
+      options: Span.Options
+  ): Resource[F, Span[F]] = {
     def initSpan(): F[ot.Span] =
       Sync[F]
         .delay {
@@ -45,7 +51,9 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
 
     Resource
       .make(initSpan())(s => Sync[F].delay(s.finish()))
-      .flatTap(span => Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close())))
+      .flatTap(span =>
+        Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close()))
+      )
       .map(DDSpan(tracer, _, uriPrefix, options))
   }
 
