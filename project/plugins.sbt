@@ -5,7 +5,7 @@ ThisBuild / libraryDependencySchemes ++= Seq(
 
 addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.6.6")
 addSbtPlugin("org.typelevel" % "sbt-typelevel-mergify" % "0.6.6")
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.10.5")
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.10.6")
 addSbtPlugin("com.github.sbt" % "sbt-site" % "1.5.0")
 addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.5.0")
 addSbtPlugin("com.github.sbt" % "sbt-ghpages" % "0.8.0")
