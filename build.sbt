@@ -55,8 +55,8 @@ lazy val commonSettings = Seq(
   ),
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit" % "1.0.0-M10" % Test,
-    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M10" % Test,
+    "org.scalameta" %%% "munit" % "1.0.0-M11" % Test,
+    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M11" % Test,
     "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M4" % Test,
     "org.typelevel" %%% "scalacheck-effect-munit" % "2.0.0-M2" % Test
   )
