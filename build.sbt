@@ -55,8 +55,8 @@ lazy val commonSettings = Seq(
   ),
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit" % "1.0.0-M10" % Test,
-    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M10" % Test,
+    "org.scalameta" %%% "munit" % "1.0.0-M11" % Test,
+    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M11" % Test,
     "org.typelevel" %%% "munit-cats-effect" % "2.0.0-M4" % Test,
     "org.typelevel" %%% "scalacheck-effect-munit" % "2.0.0-M2" % Test
   )
@@ -180,8 +180,8 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
-      "io.grpc" % "grpc-netty" % "1.60.0",
-      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.62.Final"
+      "io.grpc" % "grpc-netty" % "1.60.2",
+      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.63.Final"
     ),
     mimaPreviousArtifacts := Set()
   )
@@ -224,7 +224,7 @@ lazy val opentelemetry = project
     description := "Base OpenTelemetry Utilities for Natchez",
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
     libraryDependencies ++= Seq(
-      "io.opentelemetry" % "opentelemetry-sdk" % "1.33.0"
+      "io.opentelemetry" % "opentelemetry-sdk" % "1.35.0"
     )
   )
 
@@ -237,8 +237,8 @@ lazy val datadog = project
     name := "natchez-datadog",
     description := "Datadog bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "com.datadoghq" % "dd-trace-ot" % "1.25.1",
-      "com.datadoghq" % "dd-trace-api" % "1.25.1"
+      "com.datadoghq" % "dd-trace-ot" % "1.30.1",
+      "com.datadoghq" % "dd-trace-api" % "1.30.1"
     )
   )
 
@@ -321,7 +321,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.6",
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "com.comcast" %%% "ip4s-core" % "3.4.0",
+      "com.comcast" %%% "ip4s-core" % "3.5.0",
       "org.scodec" %%% "scodec-bits" % "1.1.38"
     )
   )
@@ -363,12 +363,12 @@ lazy val examples = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
-      "org.slf4j" % "slf4j-simple" % "2.0.9",
+      "org.slf4j" % "slf4j-simple" % "2.0.12",
       "eu.timepit" %% "refined" % "0.11.1",
       "is.cir" %% "ciris" % "3.5.0",
-      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.33.0",
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.35.0",
       "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.22.0-alpha",
-      "io.grpc" % "grpc-okhttp" % "1.60.0" // required for the OpenTelemetry exporter
+      "io.grpc" % "grpc-okhttp" % "1.60.2" // required for the OpenTelemetry exporter
     )
   )
 
@@ -436,8 +436,8 @@ lazy val docs = project
       "org.http4s" %% "http4s-dsl" % "0.23.15",
       "org.http4s" %% "http4s-client" % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
-      "org.slf4j" % "slf4j-simple" % "2.0.9",
-      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.33.0", // for the opentelemetry example
+      "org.slf4j" % "slf4j-simple" % "2.0.12",
+      "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.35.0", // for the opentelemetry example
       "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.22.0-alpha"
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3" // pray this does more good than harm
