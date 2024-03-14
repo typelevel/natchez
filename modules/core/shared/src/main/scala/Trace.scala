@@ -552,7 +552,6 @@ object Trace {
       override def span[A](name: String, options: Span.Options)(k: Resource[F, A]): Resource[F, A] =
         trace.spanR(name, options).flatMap { f =>
           Resource.applyFull { cancelable =>
-            // todo: should f be cancelable? does it matter?
             f(cancelable(k.allocatedCase)).map { case (a, release) =>
               a -> release.andThen(f(_))
             }
