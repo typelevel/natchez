@@ -34,16 +34,16 @@ private[mtl] class LocalTrace[F[_]](local: Local[F, Span[F]])(implicit
     local.ask.flatMap(_.log(event))
 
   override def spanR(name: String, options: Span.Options): Resource[F, F ~> F] =
-    Resource(
+    Resource.applyFull { cancelable =>
       local.ask.flatMap(t =>
-        t.span(name, options).allocated.map { case (child, release) =>
+        cancelable(t.span(name, options).allocatedCase).map { case (child, release) =>
           new (F ~> F) {
             def apply[A](fa: F[A]): F[A] =
               local.scope(fa)(child)
           } -> release
         }
       )
-    )
+    }
 
   override def span[A](name: String, options: Span.Options)(k: F[A]): F[A] =
     local.ask.flatMap { span =>

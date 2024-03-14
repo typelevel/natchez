@@ -175,16 +175,15 @@ object Trace {
         name: String,
         options: Span.Options
     ): Resource[Kleisli[F, Span[F], *], Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]] =
-      Resource(
-        Kleisli((span: Span[F]) =>
-          span.span(name, options).allocated.map { case (child, release) =>
+      Resource.applyFull { cancelable =>
+        cancelable(Kleisli((span: Span[F]) => span.span(name, options).allocatedCase)).map {
+          case (child, release) =>
             new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
               def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
                 fa.local((_: Span[F]) => child).mapF(_.onError { case e => child.attachError(e) })
-            } -> Kleisli.liftF[F, Span[F], Unit](release)
-          }
-        )
-      )
+            } -> release.andThen(Kleisli.liftF[F, Span[F], Unit](_))
+        }
+      }
 
     override def span[A](name: String, options: Span.Options)(
         k: Kleisli[F, Span[F], A]
@@ -216,17 +215,20 @@ object Trace {
             name: String,
             options: Span.Options
         ): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
-          Resource(
-            Kleisli((e: E) =>
-              f(e).span(name, options).allocated.map { case (child, release) =>
-                new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
-                  def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
-                    fa.local((_: E) => g(e, child))
-                      .mapF(_.onError { case e => child.attachError(e) })
-                } -> Kleisli.liftF[F, E, Unit](release)
-              }
-            )
-          )
+          Resource.applyFull { cancelable =>
+            Kleisli
+              .ask[F, E]
+              .flatMap(e =>
+                cancelable(Kleisli.liftF(f(e).span(name, options).allocatedCase)).map {
+                  case (child, release) =>
+                    new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
+                      def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
+                        fa.local((_: E) => g(e, child))
+                          .mapF(_.onError { case e => child.attachError(e) })
+                    } -> release.andThen(Kleisli.liftF[F, E, Unit](_))
+                }
+              )
+          }
 
         override def span[A](name: String, options: Span.Options)(
             k: Kleisli[F, E, A]
@@ -281,14 +283,17 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[Kleisli[F, E, *], Kleisli[F, E, *] ~> Kleisli[F, E, *]] =
-        Resource(
-          Kleisli((e: E) =>
-            trace.spanR(name, options).allocated.map { case (f, release) =>
-              f.compose(Kleisli.applyK(e)).andThen(Kleisli.liftK[F, E]) ->
-                Kleisli.liftF[F, E, Unit](f(release))
+        Resource.applyFull { cancelable =>
+          Kleisli
+            .ask[F, E]
+            .flatMap { e =>
+              cancelable(Kleisli.liftF(trace.spanR(name, options).allocatedCase)).map {
+                case (f, release) =>
+                  f.compose(Kleisli.applyK(e)).andThen(Kleisli.liftK[F, E]) ->
+                    release.andThen(f(_)).andThen(Kleisli.liftF[F, E, Unit])
+              }
             }
-          )
-        )
+        }
 
       override def span[A](name: String, options: Span.Options)(
           k: ReaderT[F, E, A]
@@ -330,17 +335,16 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[StateT[F, S, *], StateT[F, S, *] ~> StateT[F, S, *]] =
-        Resource(
-          StateT.liftF(
-            trace.spanR(name, options).allocated.map { case (f, release) =>
+        Resource.applyFull { cancelable =>
+          cancelable(StateT.liftF(trace.spanR(name, options).allocatedCase)).map {
+            case (f, release) =>
               new (StateT[F, S, *] ~> StateT[F, S, *]) {
                 def apply[A](fa: StateT[F, S, A]): StateT[F, S, A] =
                   StateT.applyF(f(fa.runF))
               } ->
-                StateT.liftF[F, S, Unit](f(release))
-            }
-          )
-        )
+                release.andThen(f(_)).andThen(StateT.liftF[F, S, Unit](_))
+          }
+        }
 
       override def span[A](name: String, options: Span.Options)(
           k: StateT[F, S, A]
@@ -383,17 +387,16 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[EitherT[F, E, *], EitherT[F, E, *] ~> EitherT[F, E, *]] =
-        Resource(
-          EitherT.liftF(
-            trace.spanR(name, options).allocated.map { case (f, release) =>
+        Resource.applyFull { cancelable =>
+          cancelable(EitherT.liftF(trace.spanR(name, options).allocatedCase)).map {
+            case (f, release) =>
               new (EitherT[F, E, *] ~> EitherT[F, E, *]) {
                 def apply[A](fa: EitherT[F, E, A]): EitherT[F, E, A] =
                   EitherT(f(fa.value))
               } ->
-                EitherT.liftF[F, E, Unit](f(release))
-            }
-          )
-        )
+                release.andThen(f(_)).andThen(EitherT.liftF[F, E, Unit])
+          }
+        }
 
       override def span[A](name: String, options: Span.Options)(
           k: EitherT[F, E, A]
@@ -434,17 +437,15 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[OptionT[F, *], OptionT[F, *] ~> OptionT[F, *]] =
-        Resource(
-          OptionT.liftF(
-            trace.spanR(name, options).allocated.map { case (f, release) =>
+        Resource.applyFull { cancelable =>
+          cancelable(OptionT.liftF(trace.spanR(name, options).allocatedCase)).map {
+            case (f, release) =>
               new (OptionT[F, *] ~> OptionT[F, *]) {
-                def apply[A](fa: OptionT[F, A]): OptionT[F, A] =
-                  OptionT(f(fa.value))
+                def apply[A](fa: OptionT[F, A]): OptionT[F, A] = fa.mapK(f)
               } ->
-                OptionT.liftF[F, Unit](f(release))
-            }
-          )
-        )
+                release.map(f(_)).map(OptionT.liftF(_))
+          }
+        }
 
       override def span[A](name: String, options: Span.Options)(k: OptionT[F, A]): OptionT[F, A] =
         OptionT(trace.span(name, options)(k.value))
@@ -486,19 +487,16 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[Nested[F, G, *], Nested[F, G, *] ~> Nested[F, G, *]] =
-        Resource(
-          Nested(
-            trace.spanR(name, options).allocated.map { case (f, release) =>
-              (
-                new (Nested[F, G, *] ~> Nested[F, G, *]) {
-                  def apply[A](fa: Nested[F, G, A]): Nested[F, G, A] =
-                    Nested(f(fa.value))
-                } ->
-                  Nested(f(release).map(_.pure[G]))
-              ).pure[G]
-            }
-          )
-        )
+        Resource.applyFull { cancelable =>
+          cancelable(Nested(trace.spanR(name, options).allocatedCase.map(_.pure[G]))).map {
+            case (f, release) =>
+              new (Nested[F, G, *] ~> Nested[F, G, *]) {
+                def apply[A](fa: Nested[F, G, A]): Nested[F, G, A] =
+                  Nested(f(fa.value))
+              } ->
+                release.andThen(_.map(_.pure[G])).andThen(Nested(_))
+          }
+        }
 
       override def span[A](name: String, options: Span.Options)(
           k: Nested[F, G, A]
@@ -540,23 +538,25 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[Resource[F, *], Resource[F, *] ~> Resource[F, *]] =
-        Resource(
-          Resource.eval(
-            trace.spanR(name, options).allocated.map { case (f, release) =>
+        Resource.applyFull { cancelable =>
+          cancelable(Resource.eval(trace.spanR(name, options).allocatedCase)).map {
+            case (f, release) =>
               new (Resource[F, *] ~> Resource[F, *]) {
                 def apply[A](fa: Resource[F, A]): Resource[F, A] =
                   fa.mapK(f)
               } ->
-                Resource.eval[F, Unit](f(release))
-            }
-          )
-        )
+                release.andThen(f(_)).andThen(Resource.eval(_))
+          }
+        }
 
       override def span[A](name: String, options: Span.Options)(k: Resource[F, A]): Resource[F, A] =
         trace.spanR(name, options).flatMap { f =>
-          Resource(f(k.allocated).map { case (a, release) =>
-            a -> f(release)
-          })
+          Resource.applyFull { cancelable =>
+            // todo: should f be cancelable? does it matter?
+            f(cancelable(k.allocatedCase)).map { case (a, release) =>
+              a -> release.andThen(f(_))
+            }
+          }
         }
 
       override def traceId: Resource[F, Option[String]] =
@@ -592,17 +592,16 @@ object Trace {
           name: String,
           options: Span.Options
       ): Resource[Stream[F, *], Stream[F, *] ~> Stream[F, *]] =
-        Resource(
-          Stream.eval(
-            trace.spanR(name, options).allocated.map { case (f, release) =>
+        Resource.applyFull { cancelable =>
+          cancelable(Stream.eval(trace.spanR(name, options).allocatedCase)).map {
+            case (f, release) =>
               new (Stream[F, *] ~> Stream[F, *]) {
                 def apply[A](fa: Stream[F, A]): Stream[F, A] =
                   fa.translate(f)
               } ->
-                Stream.eval[F, Unit](f(release))
-            }
-          )
-        )
+                release.andThen(f(_)).andThen(Stream.eval(_))
+          }
+        }
 
       override def span[A](name: String, options: Span.Options)(k: Stream[F, A]): Stream[F, A] =
         Stream.resource(trace.spanR(name, options)).flatMap(k.translate)
