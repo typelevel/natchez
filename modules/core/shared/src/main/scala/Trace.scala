@@ -180,7 +180,7 @@ object Trace {
           case (child, release) =>
             new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
               def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-                fa.local((_: Span[F]) => child).mapF(_.onError { case e => child.attachError(e) })
+                fa.local((_: Span[F]) => child).mapF(_.onError(e => child.attachError(e)))
             } -> release.andThen(Kleisli.liftF[F, Span[F], Unit](_))
         }
       }
@@ -224,7 +224,7 @@ object Trace {
                     new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
                       def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
                         fa.local((_: E) => g(e, child))
-                          .mapF(_.onError { case e => child.attachError(e) })
+                          .mapF(_.onError(e => child.attachError(e)))
                     } -> release.andThen(Kleisli.liftF[F, E, Unit](_))
                 }
               )
