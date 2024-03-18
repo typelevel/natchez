@@ -93,7 +93,7 @@ object Trace {
               local.get.flatMap { old =>
                 local
                   .set(child)
-                  .bracket(_ => fa.onError(child.attachError(_)))(_ => local.set(old))
+                  .bracket(_ => fa.onError { case e => child.attachError(e) })(_ => local.set(old))
               }
 
           }
@@ -180,7 +180,7 @@ object Trace {
           case (child, release) =>
             new (Kleisli[F, Span[F], *] ~> Kleisli[F, Span[F], *]) {
               def apply[A](fa: Kleisli[F, Span[F], A]): Kleisli[F, Span[F], A] =
-                fa.local((_: Span[F]) => child).mapF(_.onError(child.attachError(_)))
+                fa.local((_: Span[F]) => child).mapF(_.onError { case e => child.attachError(e) })
             } -> release.andThen(Kleisli.liftF[F, Span[F], Unit](_))
         }
       }
@@ -224,7 +224,7 @@ object Trace {
                     new (Kleisli[F, E, *] ~> Kleisli[F, E, *]) {
                       def apply[A](fa: Kleisli[F, E, A]): Kleisli[F, E, A] =
                         fa.local((_: E) => g(e, child))
-                          .mapF(_.onError(child.attachError(_)))
+                          .mapF(_.onError { case err => child.attachError(err) })
                     } -> release.andThen(Kleisli.liftF[F, E, Unit](_))
                 }
               )
