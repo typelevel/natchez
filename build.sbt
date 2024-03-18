@@ -181,7 +181,7 @@ lazy val lightstepGrpc = project
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
       "io.grpc" % "grpc-netty" % "1.62.2",
-      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.63.Final"
+      "io.netty" % "netty-tcnative-boringssl-static" % "2.0.65.Final"
     ),
     mimaPreviousArtifacts := Set()
   )
