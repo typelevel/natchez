@@ -40,14 +40,14 @@ class XRaySuite extends ScalaCheckSuite {
     assertEquals(
       XRaySpan.parseHeader(noParent),
       Some(
-        XRaySpan.XRayHeader(rootId, None, true)
+        XRaySpan.XRayHeader(rootId, None, sampled = true)
       )
     )
 
     assertEquals(
       XRaySpan.parseHeader(parent),
       Some(
-        XRaySpan.XRayHeader(rootId, Some(parentId), true)
+        XRaySpan.XRayHeader(rootId, Some(parentId), sampled = true)
       )
     )
 
@@ -56,9 +56,9 @@ class XRaySuite extends ScalaCheckSuite {
 
   test("header encoding") {
 
-    assertEquals(XRaySpan.encodeHeader(rootId, None, true), noParent)
-    assertEquals(XRaySpan.encodeHeader(rootId, Some(parentId), true), parent)
-    assertEquals(XRaySpan.encodeHeader(rootId, None, false), notSampled)
+    assertEquals(XRaySpan.encodeHeader(rootId, None, sampled = true), noParent)
+    assertEquals(XRaySpan.encodeHeader(rootId, Some(parentId), sampled = true), parent)
+    assertEquals(XRaySpan.encodeHeader(rootId, None, sampled = false), notSampled)
   }
 
   property("header encoding/parsing round-trip") {
