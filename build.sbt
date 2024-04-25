@@ -1,4 +1,5 @@
-
+import org.typelevel.sbt.gha.WorkflowStep
+import org.typelevel.sbt.gha.WorkflowStep.Sbt
 ThisBuild / tlBaseVersion := "0.3"
 
 val scala212Version = "2.12.19"
@@ -25,16 +26,16 @@ ThisBuild / tlCiReleaseBranches += "series/0.1"
 // start MiMa from here
 ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
 
-ThisBuild / githubWorkflowAddedJobs +=
-  WorkflowJob(
-    id = "docs",
-    name = s"Make site",
-    scalas = List(scala213Version),
-    steps = List(WorkflowStep.CheckoutFull) ++
-      WorkflowStep.SetupJava(githubWorkflowJavaVersions.value.toList) ++
-      githubWorkflowGeneratedCacheSteps.value ++
-      List(WorkflowStep.Sbt(List("docs/makeSite")))
-  )
+//ThisBuild / githubWorkflowAddedJobs +=
+//  WorkflowJob(
+//    id = "docs",
+//    name = s"Make site",
+//    scalas = List(scala213Version),
+//    steps = List(WorkflowStep.CheckoutFull) ++
+//      WorkflowStep.SetupJava(githubWorkflowJavaVersions.value.toList) ++
+//      githubWorkflowGeneratedCacheSteps.value ++
+//      List(WorkflowStep.Sbt(List("docs/makeSite")))
+//  )
 
 // https://github.com/sbt/sbt/issues/6997
 ThisBuild / libraryDependencySchemes ++= Seq(
@@ -63,7 +64,7 @@ lazy val commonSettings = Seq(
 
 // Compilation
 ThisBuild / scalaVersion := scala213Version
-ThisBuild / crossScalaVersions := Seq(scala30Version)
+ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala30Version)
 ThisBuild / githubWorkflowScalaVersions := Seq("2.12", "2.13", "3")
 
 lazy val root = tlCrossRootProject.aggregate(
@@ -110,7 +111,9 @@ lazy val xray = crossProject(JVMPlatform)
     )
   )
 
-ThisBuild / publishTo := Some("GitHub Package Registry" at "https://maven.pkg.github.com/AM-i-B-V/natchez")
+ThisBuild / publishTo := Some(
+  "GitHub Package Registry".at("https://maven.pkg.github.com/AM-i-B-V/natchez")
+)
 
 ThisBuild / credentials += Credentials(
   "GitHub Package Registry",
@@ -118,3 +121,5 @@ ThisBuild / credentials += Credentials(
   "BOT-AM-i",
   System.getenv("GITHUB_TOKEN")
 )
+
+ThisBuild / githubWorkflowPublish := Seq(Sbt(name = Some("Publish"), commands = List("+ publish")))
