@@ -1,4 +1,3 @@
-import org.typelevel.sbt.gha.WorkflowStep
 import org.typelevel.sbt.gha.WorkflowStep.Sbt
 ThisBuild / tlBaseVersion := "0.3"
 
@@ -13,7 +12,6 @@ val catsEffectVersion = "3.5.4"
 val fs2Version = "3.10.2"
 
 // Publishing
-
 ThisBuild / organization := "org.ami.b.v"
 ThisBuild / licenses := Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 ThisBuild / developers := List(
@@ -25,17 +23,6 @@ ThisBuild / tlCiReleaseBranches += "series/0.1"
 
 // start MiMa from here
 ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
-
-//ThisBuild / githubWorkflowAddedJobs +=
-//  WorkflowJob(
-//    id = "docs",
-//    name = s"Make site",
-//    scalas = List(scala213Version),
-//    steps = List(WorkflowStep.CheckoutFull) ++
-//      WorkflowStep.SetupJava(githubWorkflowJavaVersions.value.toList) ++
-//      githubWorkflowGeneratedCacheSteps.value ++
-//      List(WorkflowStep.Sbt(List("docs/makeSite")))
-//  )
 
 // https://github.com/sbt/sbt/issues/6997
 ThisBuild / libraryDependencySchemes ++= Seq(
@@ -74,7 +61,6 @@ lazy val root = tlCrossRootProject.aggregate(
 
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/core"))
-  .enablePlugins(NoPublishPlugin)
   .disablePlugins(TypelevelSonatypePlugin)
   .settings(commonSettings)
   .settings(
@@ -96,7 +82,6 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 lazy val xray = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/xray"))
-  .enablePlugins(NoPublishPlugin)
   .disablePlugins(TypelevelSonatypePlugin)
   .settings(commonSettings)
   .settings(

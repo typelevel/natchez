@@ -80,11 +80,11 @@ jobs:
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
-        run: mkdir -p  project/target
+        run: mkdir -p modules/core/native/target modules/xray/.jvm/target modules/core/js/target modules/core/jvm/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
-        run: tar cf targets.tar  project/target
+        run: tar cf targets.tar modules/core/native/target modules/xray/.jvm/target modules/core/js/target modules/core/jvm/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
@@ -261,5 +261,5 @@ jobs:
       - name: Submit Dependencies
         uses: scalacenter/sbt-dependency-submission@v2
         with:
-          modules-ignore: rootjs_2.12 rootjs_2.13 rootjs_3 natchez-core_native0.4_2.12 natchez-core_native0.4_2.13 natchez-core_native0.4_3 natchez-xray_2.12 natchez-xray_2.13 natchez-xray_3 natchez-core_sjs1_2.12 natchez-core_sjs1_2.13 natchez-core_sjs1_3 natchez-core_2.12 natchez-core_2.13 natchez-core_3 rootjvm_2.12 rootjvm_2.13 rootjvm_3 rootnative_2.12 rootnative_2.13 rootnative_3
+          modules-ignore: rootjs_2.12 rootjs_2.13 rootjs_3 rootjvm_2.12 rootjvm_2.13 rootjvm_3 rootnative_2.12 rootnative_2.13 rootnative_3
           configs-ignore: test scala-tool scala-doc-tool test-internal
