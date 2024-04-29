@@ -124,6 +124,9 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
         "trace_id" -> xrayTraceId.asJson,
         "subsegments" -> cs.reverse.map(Json.fromJsonObject).asJson,
         "annotations" -> allAnnotations.asJson,
+        "parent_id" -> parent
+          .map(p => p.fold(_.asJson, p => p.segmentId.asJson))
+          .getOrElse(Json.fromJsonObject(JsonObject.empty)),
         "metadata" -> JsonObject(
           "links" -> options.links.asJson,
           "span.kind" -> options.spanKind.asJson
