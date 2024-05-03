@@ -252,7 +252,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.7",
-      "org.typelevel" %%% "log4cats-core" % "2.6.0",
+      "org.typelevel" %%% "log4cats-core" % "2.7.0",
       "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test
     )
   )
@@ -362,7 +362,7 @@ lazy val examples = project
     description := "Example programs for Natchez.",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "log4cats-slf4j" % "2.6.0",
+      "org.typelevel" %% "log4cats-slf4j" % "2.7.0",
       "org.slf4j" % "slf4j-simple" % "2.0.13",
       "eu.timepit" %% "refined" % "0.11.1",
       "is.cir" %% "ciris" % "3.5.0",
