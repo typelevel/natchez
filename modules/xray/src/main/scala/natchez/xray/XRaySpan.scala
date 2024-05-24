@@ -118,7 +118,6 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
       /*
        * `aws_group_name` key in the annotations, when present, sets the AWS CloudWatch log group name.
        * It is used to add log details to each trace.
-       * This is required when the log receiver container uses the X-Ray daemon image, which doesn't provide an option to set the group name.
        */
       val logGroupValue = allAnnotations.get("aws_group_name")
       val awsObject = logGroupValue
