@@ -1,4 +1,5 @@
-import org.typelevel.sbt.gha.WorkflowStep.Sbt
+import com.typesafe.tools.mima.core._
+
 ThisBuild / tlBaseVersion := "0.3"
 
 val scala212Version = "2.12.19"
@@ -12,7 +13,8 @@ val catsEffectVersion = "3.5.4"
 val fs2Version = "3.10.2"
 
 // Publishing
-ThisBuild / organization := "org.ami.b.v"
+
+ThisBuild / organization := "org.tpolecat"
 ThisBuild / licenses := Seq(("MIT", url("http://opensource.org/licenses/MIT")))
 ThisBuild / developers := List(
   Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
@@ -23,6 +25,17 @@ ThisBuild / tlCiReleaseBranches += "series/0.1"
 
 // start MiMa from here
 ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
+
+ThisBuild / githubWorkflowAddedJobs +=
+  WorkflowJob(
+    id = "docs",
+    name = s"Make site",
+    scalas = List(scala213Version),
+    steps = List(WorkflowStep.CheckoutFull) ++
+      WorkflowStep.SetupJava(githubWorkflowJavaVersions.value.toList) ++
+      githubWorkflowGeneratedCacheSteps.value ++
+      List(WorkflowStep.Sbt(List("docs/makeSite")))
+  )
 
 // https://github.com/sbt/sbt/issues/6997
 ThisBuild / libraryDependencySchemes ++= Seq(
@@ -56,12 +69,30 @@ ThisBuild / githubWorkflowScalaVersions := Seq("2.12", "2.13", "3")
 
 lazy val root = tlCrossRootProject.aggregate(
   core,
-  xray
+  coreTests,
+  jaeger,
+  honeycomb,
+  opencensus,
+  opentelemetry,
+  lightstep,
+  lightstepGrpc,
+  lightstepHttp,
+  opentracing,
+  datadog,
+  log,
+  newrelic,
+  mock,
+  mtl,
+  noop,
+  xray,
+  logOdin,
+  testkit,
+  examples
 )
 
 lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/core"))
-  .disablePlugins(TypelevelSonatypePlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name := "natchez-core",
@@ -78,7 +109,6 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .nativeSettings(
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
   )
-
 
 lazy val coreTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("modules/core-tests"))
@@ -282,7 +312,8 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/xray"))
-  .disablePlugins(TypelevelSonatypePlugin)
+  .dependsOn(core)
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings)
   .settings(
     name := "natchez-xray",
@@ -291,23 +322,36 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
       "io.circe" %%% "circe-core" % "0.14.7",
       "co.fs2" %%% "fs2-io" % fs2Version,
       "com.comcast" %%% "ip4s-core" % "3.5.0",
-      "org.scodec" %%% "scodec-bits" % "1.1.38",
-      "org.tpolecat" %% "natchez-core" % "0.3.5"
+      "org.scodec" %%% "scodec-bits" % "1.1.38"
+    )
+  )
+  .jsSettings(
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .settings(
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("natchez.xray.XRayEnvironment.env"),
+      ProblemFilters.exclude[MissingTypesProblem]("natchez.xray.XRayEnvironment$"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.XRayEnvironmentCompanionPlatform"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process"),
+      ProblemFilters.exclude[MissingClassProblem]("natchez.xray.process$")
     )
   )
 
-ThisBuild / publishTo := Some(
-  "GitHub Package Registry".at("https://maven.pkg.github.com/AM-i-B-V/natchez")
-)
+lazy val mock = project
+  .in(file("modules/mock"))
+  .dependsOn(core.jvm)
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "natchez-mock",
+    description := "Mock Open Tracing implementation",
+    libraryDependencies ++= Seq(
+      "io.opentracing" % "opentracing-mock" % "0.33.0"
+    ),
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap
+  )
 
-ThisBuild / credentials += Credentials(
-  "GitHub Package Registry",
-  "maven.pkg.github.com",
-  "BOT-AM-i",
-  System.getenv("GITHUB_TOKEN")
-)
-
-ThisBuild / githubWorkflowPublish := Seq(Sbt(name = Some("Publish"), commands = List("+ publish")))
 lazy val examples = project
   .in(file("modules/examples"))
   .dependsOn(core.jvm, jaeger, honeycomb, lightstepHttp, datadog, newrelic, log.jvm, opentelemetry)
