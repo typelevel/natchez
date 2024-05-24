@@ -9,3 +9,6 @@ Natchez is distributed tracing library for Scala.
 
 Please proceed to the [microsite](https://typelevel.org/natchez/) for more information.
 
+## AWS Log Group Name Configuration
+
+In our Scala application, we use the `aws_group_name` key from the annotations to set the AWS Log group name. 
