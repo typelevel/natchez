@@ -115,7 +115,16 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
         (goodKeys + ("malformed_keys" -> badKeys.keys
           .mkString(",")
           .asJson)) ++ fixedAnnotations
-
+      val logGroupValue = allAnnotations.getOrElse("aws_group_name", Json.fromString(""))
+      val awsObject = JsonObject(
+        "aws" -> JsonObject(
+          "cloudwatch_logs" -> Json.arr(
+            JsonObject(
+              "log_group" -> logGroupValue
+            ).asJson
+          )
+        ).asJson
+      )
       JsonObject(
         "name" -> name.asJson,
         "id" -> segmentId.asJson,
@@ -131,11 +140,12 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
           "links" -> options.links.asJson,
           "span.kind" -> options.spanKind.asJson
         ).asJson
-      ).deepMerge(exitCase match {
-        case Canceled   => JsonObject.singleton("fault", true.asJson)
-        case Errored(e) => XRayException(id, e).asJsonObject
-        case Succeeded  => JsonObject.empty
-      })
+      ).deepMerge(awsObject)
+        .deepMerge(exitCase match {
+          case Canceled   => JsonObject.singleton("fault", true.asJson)
+          case Errored(e) => XRayException(id, e).asJsonObject
+          case Succeeded  => JsonObject.empty
+        })
     }
 
   private def header: String =
