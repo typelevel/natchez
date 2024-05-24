@@ -115,7 +115,7 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
         (goodKeys + ("malformed_keys" -> badKeys.keys
           .mkString(",")
           .asJson)) ++ fixedAnnotations
-       /*
+      /*
        * The log group name, specified by the `aws_group_name` key in the annotations, is used to add log details along with each trace.
        * This setting is only needed if the log receiver container is using the X-Ray daemon image which doesn't provide an option to set the group name.
        */
