@@ -6,186 +6,186 @@
 # to meet your needs, then regenerate this file.
 
 pull_request_rules:
-  - name: merge scala-steward's PRs
-    conditions:
-      - author=scala-steward
-      - body~=labels:.*early-semver-patch
-      - status-success=Build and Test (ubuntu-latest, 2.12, temurin@8, rootJS)
-      - status-success=Build and Test (ubuntu-latest, 2.12, temurin@8, rootJVM)
-      - status-success=Build and Test (ubuntu-latest, 2.12, temurin@8, rootNative)
-      - status-success=Build and Test (ubuntu-latest, 2.13, temurin@8, rootJS)
-      - status-success=Build and Test (ubuntu-latest, 2.13, temurin@8, rootJVM)
-      - status-success=Build and Test (ubuntu-latest, 2.13, temurin@8, rootNative)
-      - status-success=Build and Test (ubuntu-latest, 3, temurin@8, rootJS)
-      - status-success=Build and Test (ubuntu-latest, 3, temurin@8, rootJVM)
-      - status-success=Build and Test (ubuntu-latest, 3, temurin@8, rootNative)
-    actions:
-      merge: {}
-  - name: Label core PRs
-    conditions:
-      - files~=^modules/core/
-    actions:
-      label:
-        add:
-          - core
-        remove: []
-  - name: Label core-tests PRs
-    conditions:
-      - files~=^modules/core-tests/
-    actions:
-      label:
-        add:
-          - core-tests
-        remove: []
-  - name: Label datadog PRs
-    conditions:
-      - files~=^modules/datadog/
-    actions:
-      label:
-        add:
-          - datadog
-        remove: []
-  - name: Label docs PRs
-    conditions:
-      - files~=^modules/docs/
-    actions:
-      label:
-        add:
-          - docs
-        remove: []
-  - name: Label examples PRs
-    conditions:
-      - files~=^modules/examples/
-    actions:
-      label:
-        add:
-          - examples
-        remove: []
-  - name: Label honeycomb PRs
-    conditions:
-      - files~=^modules/honeycomb/
-    actions:
-      label:
-        add:
-          - honeycomb
-        remove: []
-  - name: Label jaeger PRs
-    conditions:
-      - files~=^modules/jaeger/
-    actions:
-      label:
-        add:
-          - jaeger
-        remove: []
-  - name: Label lightstep PRs
-    conditions:
-      - files~=^modules/lightstep/
-    actions:
-      label:
-        add:
-          - lightstep
-        remove: []
-  - name: Label lightstep-grpc PRs
-    conditions:
-      - files~=^modules/lightstep-grpc/
-    actions:
-      label:
-        add:
-          - lightstep-grpc
-        remove: []
-  - name: Label lightstep-http PRs
-    conditions:
-      - files~=^modules/lightstep-http/
-    actions:
-      label:
-        add:
-          - lightstep-http
-        remove: []
-  - name: Label log PRs
-    conditions:
-      - files~=^modules/log/
-    actions:
-      label:
-        add:
-          - log
-        remove: []
-  - name: Label log-odin PRs
-    conditions:
-      - files~=^modules/log-odin/
-    actions:
-      label:
-        add:
-          - log-odin
-        remove: []
-  - name: Label mock PRs
-    conditions:
-      - files~=^modules/mock/
-    actions:
-      label:
-        add:
-          - mock
-        remove: []
-  - name: Label mtl PRs
-    conditions:
-      - files~=^modules/mtl/
-    actions:
-      label:
-        add:
-          - mtl
-        remove: []
-  - name: Label newrelic PRs
-    conditions:
-      - files~=^modules/newrelic/
-    actions:
-      label:
-        add:
-          - newrelic
-        remove: []
-  - name: Label noop PRs
-    conditions:
-      - files~=^modules/noop/
-    actions:
-      label:
-        add:
-          - noop
-        remove: []
-  - name: Label opencensus PRs
-    conditions:
-      - files~=^modules/opencensus/
-    actions:
-      label:
-        add:
-          - opencensus
-        remove: []
-  - name: Label opentelemetry PRs
-    conditions:
-      - files~=^modules/opentelemetry/
-    actions:
-      label:
-        add:
-          - opentelemetry
-        remove: []
-  - name: Label opentracing PRs
-    conditions:
-      - files~=^modules/opentracing/
-    actions:
-      label:
-        add:
-          - opentracing
-        remove: []
-  - name: Label testkit PRs
-    conditions:
-      - files~=^modules/testkit/
-    actions:
-      label:
-        add:
-          - testkit
-        remove: []
-  - name: Label xray PRs
-    conditions:
-      - files~=^modules/xray/
-    actions:
-      label:
-        add:
-          - xray
-        remove: []
+- name: merge scala-steward's PRs
+  conditions:
+  - author=scala-steward
+  - body~=labels:.*early-semver-patch
+  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@8, rootJS)
+  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@8, rootJVM)
+  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@8, rootNative)
+  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@8, rootJS)
+  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@8, rootJVM)
+  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@8, rootNative)
+  - status-success=Build and Test (ubuntu-latest, 3, temurin@8, rootJS)
+  - status-success=Build and Test (ubuntu-latest, 3, temurin@8, rootJVM)
+  - status-success=Build and Test (ubuntu-latest, 3, temurin@8, rootNative)
+  actions:
+    merge: {}
+- name: Label core PRs
+  conditions:
+  - files~=^modules/core/
+  actions:
+    label:
+      add:
+      - core
+      remove: []
+- name: Label core-tests PRs
+  conditions:
+  - files~=^modules/core-tests/
+  actions:
+    label:
+      add:
+      - core-tests
+      remove: []
+- name: Label datadog PRs
+  conditions:
+  - files~=^modules/datadog/
+  actions:
+    label:
+      add:
+      - datadog
+      remove: []
+- name: Label docs PRs
+  conditions:
+  - files~=^modules/docs/
+  actions:
+    label:
+      add:
+      - docs
+      remove: []
+- name: Label examples PRs
+  conditions:
+  - files~=^modules/examples/
+  actions:
+    label:
+      add:
+      - examples
+      remove: []
+- name: Label honeycomb PRs
+  conditions:
+  - files~=^modules/honeycomb/
+  actions:
+    label:
+      add:
+      - honeycomb
+      remove: []
+- name: Label jaeger PRs
+  conditions:
+  - files~=^modules/jaeger/
+  actions:
+    label:
+      add:
+      - jaeger
+      remove: []
+- name: Label lightstep PRs
+  conditions:
+  - files~=^modules/lightstep/
+  actions:
+    label:
+      add:
+      - lightstep
+      remove: []
+- name: Label lightstep-grpc PRs
+  conditions:
+  - files~=^modules/lightstep-grpc/
+  actions:
+    label:
+      add:
+      - lightstep-grpc
+      remove: []
+- name: Label lightstep-http PRs
+  conditions:
+  - files~=^modules/lightstep-http/
+  actions:
+    label:
+      add:
+      - lightstep-http
+      remove: []
+- name: Label log PRs
+  conditions:
+  - files~=^modules/log/
+  actions:
+    label:
+      add:
+      - log
+      remove: []
+- name: Label log-odin PRs
+  conditions:
+  - files~=^modules/log-odin/
+  actions:
+    label:
+      add:
+      - log-odin
+      remove: []
+- name: Label mock PRs
+  conditions:
+  - files~=^modules/mock/
+  actions:
+    label:
+      add:
+      - mock
+      remove: []
+- name: Label mtl PRs
+  conditions:
+  - files~=^modules/mtl/
+  actions:
+    label:
+      add:
+      - mtl
+      remove: []
+- name: Label newrelic PRs
+  conditions:
+  - files~=^modules/newrelic/
+  actions:
+    label:
+      add:
+      - newrelic
+      remove: []
+- name: Label noop PRs
+  conditions:
+  - files~=^modules/noop/
+  actions:
+    label:
+      add:
+      - noop
+      remove: []
+- name: Label opencensus PRs
+  conditions:
+  - files~=^modules/opencensus/
+  actions:
+    label:
+      add:
+      - opencensus
+      remove: []
+- name: Label opentelemetry PRs
+  conditions:
+  - files~=^modules/opentelemetry/
+  actions:
+    label:
+      add:
+      - opentelemetry
+      remove: []
+- name: Label opentracing PRs
+  conditions:
+  - files~=^modules/opentracing/
+  actions:
+    label:
+      add:
+      - opentracing
+      remove: []
+- name: Label testkit PRs
+  conditions:
+  - files~=^modules/testkit/
+  actions:
+    label:
+      add:
+      - testkit
+      remove: []
+- name: Label xray PRs
+  conditions:
+  - files~=^modules/xray/
+  actions:
+    label:
+      add:
+      - xray
+      remove: []
