@@ -83,15 +83,15 @@ jobs:
         run: sbt 'project ${{ matrix.project }}' '++ ${{ matrix.scala }}' doc
 
       - name: Make target directories
-        if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
+        if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
         run: mkdir -p modules/mtl/native/target modules/lightstep-grpc/target modules/log/jvm/target modules/noop/jvm/target modules/mock/target modules/testkit/native/target modules/log/native/target modules/testkit/js/target modules/core/native/target modules/docs/target modules/lightstep-http/target modules/datadog/target modules/xray/.jvm/target modules/opentracing/target modules/noop/native/target modules/xray/.js/target modules/core/js/target modules/noop/js/target modules/core/jvm/target modules/jaeger/target modules/opencensus/target modules/honeycomb/target modules/log/js/target modules/mtl/js/target modules/newrelic/target modules/log-odin/target modules/mtl/jvm/target modules/testkit/jvm/target modules/opentelemetry/target modules/lightstep/target project/target
 
       - name: Compress target directories
-        if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
+        if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
         run: tar cf targets.tar modules/mtl/native/target modules/lightstep-grpc/target modules/log/jvm/target modules/noop/jvm/target modules/mock/target modules/testkit/native/target modules/log/native/target modules/testkit/js/target modules/core/native/target modules/docs/target modules/lightstep-http/target modules/datadog/target modules/xray/.jvm/target modules/opentracing/target modules/noop/native/target modules/xray/.js/target modules/core/js/target modules/noop/js/target modules/core/jvm/target modules/jaeger/target modules/opencensus/target modules/honeycomb/target modules/log/js/target modules/mtl/js/target modules/newrelic/target modules/log-odin/target modules/mtl/jvm/target modules/testkit/jvm/target modules/opentelemetry/target modules/lightstep/target project/target
 
       - name: Upload target directories
-        if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
+        if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v4
         with:
           name: target-${{ matrix.os }}-${{ matrix.java }}-${{ matrix.scala }}-${{ matrix.project }}
@@ -100,7 +100,7 @@ jobs:
   publish:
     name: Publish Artifacts
     needs: [build]
-    if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/series/0.1')
+    if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
     strategy:
       matrix:
         os: [ubuntu-latest]

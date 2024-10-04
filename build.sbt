@@ -22,10 +22,15 @@ ThisBuild / developers := List(
 ThisBuild / startYear := Some(2024)
 ThisBuild / tlSonatypeUseLegacyHost := false
 
-ThisBuild / tlCiReleaseBranches += "series/0.1"
-
 // start MiMa from here
 ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
+
+ThisBuild / mergifyStewardConfig := Some(
+  MergifyStewardConfig(
+    author = "typelevel-steward[bot]",
+    mergeMinors = true
+  )
+)
 
 ThisBuild / githubWorkflowAddedJobs +=
   WorkflowJob(
