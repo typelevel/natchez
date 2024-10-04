@@ -4,7 +4,6 @@
 
 package natchez.log
 
-import cats.effect.Ref
 import cats.effect._
 import cats.effect.std.UUIDGen
 import cats.effect.Resource.ExitCase
