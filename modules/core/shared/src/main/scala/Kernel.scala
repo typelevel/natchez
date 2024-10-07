@@ -25,7 +25,7 @@ object Kernel {
     apply(headers.asScala.map { case (k, v) => CIString(k) -> v }.toMap)
 
   implicit val kernelMonoid: Monoid[Kernel] =
-    Monoid.instance(Kernel(Map.empty), (a, b) => Kernel(a.toHeaders |+| b.toHeaders))
+    Monoid.instance(Kernel(Map.empty), (a, b) => Kernel(a.toHeaders ++ b.toHeaders))
 
   implicit val kernelEq: Eq[Kernel] =
     Eq[Map[CIString, String]].contramap(_.toHeaders)
