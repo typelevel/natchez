@@ -4,10 +4,12 @@
 
 package natchez
 
-import org.typelevel.ci._
+import cats.syntax.all.*
+import cats.{Eq, Monoid}
+import org.typelevel.ci.*
 
 import java.util
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /** An opaque hunk of data that we can hand off to another system (in the form of HTTP headers),
   * which can then create new spans as children of this one. By this mechanism we allow our trace
@@ -21,4 +23,10 @@ final case class Kernel(toHeaders: Map[CIString, String]) {
 object Kernel {
   private[natchez] def fromJava(headers: util.Map[String, String]): Kernel =
     apply(headers.asScala.map { case (k, v) => CIString(k) -> v }.toMap)
+
+  implicit val kernelMonoid: Monoid[Kernel] =
+    Monoid.instance(Kernel(Map.empty), (a, b) => Kernel(a.toHeaders |+| b.toHeaders))
+
+  implicit val kernelEq: Eq[Kernel] =
+    Eq[Map[CIString, String]].contramap(_.toHeaders)
 }

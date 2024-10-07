@@ -64,7 +64,10 @@ lazy val commonSettings = Seq(
     "org.scalameta" %%% "munit" % "1.0.0" % Test,
     "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M11" % Test,
     "org.typelevel" %%% "munit-cats-effect" % "2.0.0" % Test,
-    "org.typelevel" %%% "scalacheck-effect-munit" % "2.0.0-M2" % Test
+    "org.typelevel" %%% "scalacheck-effect-munit" % "2.0.0-M2" % Test,
+    "org.typelevel" %%% "cats-kernel-laws" % "2.11.0" % Test,
+    "org.typelevel" %%% "cats-laws" % "2.11.0" % Test,
+    "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test
   )
 )
 
@@ -401,7 +404,11 @@ lazy val testkit = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(
     name := "natchez-testkit",
     description := "In-memory Natchez implementation that is useful for testing",
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap,
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %%% "scalacheck" % "1.17.1",
+      "org.typelevel" %%% "case-insensitive-testing" % "1.4.2"
+    )
   )
 
 lazy val docs = project
