@@ -108,7 +108,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "org.typelevel" %%% "case-insensitive" % "1.4.0",
+      "org.typelevel" %%% "case-insensitive" % "1.4.2",
       "org.scala-lang.modules" %%% "scala-collection-compat" % collectionCompatVersion
     )
   )
