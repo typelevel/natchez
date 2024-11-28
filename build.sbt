@@ -189,7 +189,7 @@ lazy val lightstepGrpc = project
     description := "Lightstep gRPC bindings for Natchez.",
     libraryDependencies ++= Seq(
       "com.lightstep.tracer" % "tracer-grpc" % "0.32.0",
-      "io.grpc" % "grpc-netty" % "1.68.1",
+      "io.grpc" % "grpc-netty" % "1.68.2",
       "io.netty" % "netty-tcnative-boringssl-static" % "2.0.67.Final"
     ),
     mimaPreviousArtifacts := Set()
@@ -376,7 +376,7 @@ lazy val examples = project
       "is.cir" %% "ciris" % "3.6.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.44.1",
       "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.22.0-alpha",
-      "io.grpc" % "grpc-okhttp" % "1.68.1" // required for the OpenTelemetry exporter
+      "io.grpc" % "grpc-okhttp" % "1.68.2" // required for the OpenTelemetry exporter
     )
   )
 
