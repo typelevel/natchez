@@ -83,12 +83,30 @@ This is more general than the `Kleisli` instance above and allows you to instant
 ## Cats-Effect 3 IO Instance
 
 Given a `Span[F]` you can construct a `Trace[IO]` for **Cats-Effect 3** (for Cats-Effect 2 you will need to use `Kleisli` or `Local` above). This uses `FiberLocal` to pass the span around.
+Given a `Span[F]` you can construct a `Trace[IO]` for **Cats-Effect 3** (for
+Given a `Span[IO]` you can construct a `Trace[IO]` for **Cats-Effect 3** (for
+Cats-Effect 2 you will need to use `Kleisli` or `Local` above). This uses
+`IOLocal` to pass the span around.
 
 ```scala mdoc
 import cats.effect.IO
 
 def goIO(span: Span[IO]): IO[Unit] =
   Trace.ioTrace(span).flatMap { implicit trace =>
+    wibble[IO]("bob", 42)
+  }
+```
+
+Alternatively, a `Trace[IO]` can be constructed from an `EntryPoint`, which
+Alternatively, a `Trace[IO]` can be constructed from an `EntryPoint[IO]`, which
+takes care of creation of child spans.
+
+```scala mdoc
+import cats.effect.IO
+import natchez.EntryPoint
+
+def goIO(ep: EntryPoint[IO]): IO[Unit] =
+  Trace.ioTraceForEntryPoint(ep).flatMap { implicit trace =>
     wibble[IO]("bob", 42)
   }
 ```
