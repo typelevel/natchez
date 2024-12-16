@@ -84,4 +84,11 @@ This is more general than the `Kleisli` instance above and allows you to instant
 
 Given a `Span[F]` you can construct a `Trace[IO]` for **Cats-Effect 3** (for Cats-Effect 2 you will need to use `Kleisli` or `Local` above). This uses `FiberLocal` to pass the span around.
 
-TODO: Example
+```scala mdoc
+import cats.effect.IO
+
+def goIO(span: Span[IO]): IO[Unit] =
+  Trace.ioTrace(span).flatMap { implicit trace =>
+    wibble[IO]("bob", 42)
+  }
+```
