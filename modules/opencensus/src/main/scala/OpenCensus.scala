@@ -49,8 +49,11 @@ object OpenCensus {
               .makeCase(OpenCensusSpan.root(t, name, sampler, options))(OpenCensusSpan.finish)
               .widen
 
-          def continueOrElseRoot(name: String, kernel: Kernel, options: Span.Options)
-              : Resource[F, Span[F]] =
+          def continueOrElseRoot(
+              name: String,
+              kernel: Kernel,
+              options: Span.Options
+          ): Resource[F, Span[F]] =
             Resource
               .makeCase(OpenCensusSpan.fromKernelOrElseRoot(t, name, kernel, sampler, options))(
                 OpenCensusSpan.finish

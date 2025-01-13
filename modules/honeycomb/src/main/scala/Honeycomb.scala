@@ -41,8 +41,11 @@ object Honeycomb {
           def root(name: String, options: Span.Options): Resource[F, Span[F]] =
             Resource.makeCase(HoneycombSpan.root(c, name, options))(HoneycombSpan.finish).widen
 
-          def continueOrElseRoot(name: String, kernel: Kernel, options: Span.Options)
-              : Resource[F, Span[F]] =
+          def continueOrElseRoot(
+              name: String,
+              kernel: Kernel,
+              options: Span.Options
+          ): Resource[F, Span[F]] =
             Resource
               .makeCase(HoneycombSpan.fromKernelOrElseRoot(c, name, kernel, options))(
                 HoneycombSpan.finish
