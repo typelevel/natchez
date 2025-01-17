@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/natchezreference/kernels.html"/>
+<link rel="canonical" href="https://github.com/typelevel/natchezreference/kernels.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.1.5
+0.3.7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
@@ -95,7 +96,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.1.5
+0.3.7
 </div>
 </div>
 <div class="nav-toc">
@@ -121,6 +122,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
@@ -164,7 +166,6 @@ import org.http4s.{ EntityDecoder, Uri, Header }
 import org.http4s.Method.GET
 import org.http4s.client.Client
 import org.http4s.client.dsl.io._
-import org.typelevel.ci.CIString
 </code></pre>
 <p>We can add a <code>Span</code>&rsquo;s kernel to an outgoing <code>Client</code> request. If the remote server supports tracing via the same back end, it can extend the trace with child spans.</p>
 <pre class="prettyprint"><code class="language-scala">def makeRequest[A](span: Span[IO], client: Client[IO], uri: Uri)(
@@ -172,7 +173,7 @@ import org.typelevel.ci.CIString
 ): IO[A] =
   span.kernel.flatMap { k =&gt;
     // turn a Map[String, String] into List[Header]
-    val http4sHeaders = k.toHeaders.map { case (k, v) =&gt; Header.Raw(CIString(k), v) } .toSeq
+    val http4sHeaders = k.toHeaders.map { case (k, v) =&gt; Header.Raw(k, v) } .toSeq
     client.expect[A](GET(uri).withHeaders(http4sHeaders))
   }
 </code></pre><div class="callout note "><div class="callout-title">Note</div>
@@ -180,10 +181,10 @@ import org.typelevel.ci.CIString
 <script type="text/javascript" src="../js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/reference/kernels.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/reference/kernels.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/reference/kernels.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/reference/kernels.md')});</script>
 
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../reference/spans.html">Spans</a></p>
@@ -241,7 +242,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -266,7 +267,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.1.5', 'https://github.com/tpolecat/natchez')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.3.7', 'https://github.com/typelevel/natchez')});</script>
 
 
 </html>

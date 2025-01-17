@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/natchezbackends/log.html"/>
+<link rel="canonical" href="https://github.com/typelevel/natchezbackends/log.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.1.5
+0.3.7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
@@ -95,7 +96,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.1.5
+0.3.7
 </div>
 </div>
 <div class="nav-toc">
@@ -121,6 +122,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
@@ -153,37 +155,43 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#log" name="log" class="anchor"><span class="anchor-link"></span></a>Log</h1>
-<p>The <code>natchez-log</code> module provides a back end that logs traces locally (as JSON) to a <a href="https://github.com/typelevel/log4cats">log4cats</a> <code>Logger</code>, with no distributed functionality. To use it, add the following dependency.</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-log" % "0.1.5"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+<p>The <code>natchez-log</code> module provides a back end that logs traces locally (as JSON) to a <a href="https://github.com/typelevel/log4cats">log4cats</a> <code>Logger</code>, with no distributed functionality. To use it, add the following dependency.</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-log" % "0.3.7"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
   &lt;dependency&gt;
     &lt;groupId&gt;org.tpolecat&lt;/groupId&gt;
     &lt;artifactId&gt;natchez-log_2.13&lt;/artifactId&gt;
-    &lt;version&gt;0.1.5&lt;/version&gt;
+    &lt;version&gt;0.3.7&lt;/version&gt;
   &lt;/dependency&gt
 &lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
-  implementation "org.tpolecat:natchez-log_2.13:0.1.5"
+  implementation "org.tpolecat:natchez-log_2.13:0.3.7"
 }</code></pre></dd></dl>
 <h2><a href="#example-trace" name="example-trace" class="anchor"><span class="anchor-link"></span></a>Example Trace</h2>
 <p>The log handler constructs a JSON object for each root span, with a <code>children</code> collection of child spans. On completion of the root span the entire JSON blob is logged as a single message. Here is an example with a root span containing two custom fields and two child spans.</p>
 <pre class="prettyprint"><code class="language-json">{
   &quot;name&quot; : &quot;root span&quot;,
   &quot;service&quot; : &quot;example-service&quot;,
-  &quot;timestamp&quot; : &quot;2021-05-26T16:41:09.221325Z&quot;,
-  &quot;duration_ms&quot; : 108,
-  &quot;trace.span_id&quot; : &quot;dd817430-c00a-423e-9db4-0a24897b9cb9&quot;,
+  &quot;timestamp&quot; : &quot;2025-01-17T16:01:57.522113Z&quot;,
+  &quot;duration_ms&quot; : 72,
+  &quot;trace.span_id&quot; : &quot;7f8de43a-5aa3-49e5-8dda-158b6a74bab0&quot;,
   &quot;trace.parent_id&quot; : null,
-  &quot;trace.trace_id&quot; : &quot;ef7758f0-7b33-4358-81f5-4f2070f7196d&quot;,
-  &quot;exit.case&quot; : &quot;succeeded&quot;,
+  &quot;trace.trace_id&quot; : &quot;1f6721c6-d67d-41ed-9d26-20e65ec7b79f&quot;,
+  &quot;span.kind&quot; : &quot;Internal&quot;,
+  &quot;span.links&quot; : [
+  ],
   &quot;person.name&quot; : &quot;bob&quot;,
   &quot;person.age&quot; : 42,
+  &quot;exit.case&quot; : &quot;succeeded&quot;,
   &quot;children&quot; : [
     {
       &quot;name&quot; : &quot;thing one&quot;,
       &quot;service&quot; : &quot;example-service&quot;,
-      &quot;timestamp&quot; : &quot;2021-05-26T16:41:09.301796Z&quot;,
-      &quot;duration_ms&quot; : 3,
-      &quot;trace.span_id&quot; : &quot;93f6aab7-b89d-4c11-b21a-2272ae6f5697&quot;,
-      &quot;trace.parent_id&quot; : &quot;ef7758f0-7b33-4358-81f5-4f2070f7196d&quot;,
-      &quot;trace.trace_id&quot; : &quot;ef7758f0-7b33-4358-81f5-4f2070f7196d&quot;,
+      &quot;timestamp&quot; : &quot;2025-01-17T16:01:57.578712Z&quot;,
+      &quot;duration_ms&quot; : 1,
+      &quot;trace.span_id&quot; : &quot;29c8cd00-f971-49aa-bed3-677574740612&quot;,
+      &quot;trace.parent_id&quot; : &quot;7f8de43a-5aa3-49e5-8dda-158b6a74bab0&quot;,
+      &quot;trace.trace_id&quot; : &quot;1f6721c6-d67d-41ed-9d26-20e65ec7b79f&quot;,
+      &quot;span.kind&quot; : &quot;Internal&quot;,
+      &quot;span.links&quot; : [
+      ],
       &quot;exit.case&quot; : &quot;succeeded&quot;,
       &quot;children&quot; : [
       ]
@@ -191,11 +199,14 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     {
       &quot;name&quot; : &quot;thing two&quot;,
       &quot;service&quot; : &quot;example-service&quot;,
-      &quot;timestamp&quot; : &quot;2021-05-26T16:41:09.328357Z&quot;,
+      &quot;timestamp&quot; : &quot;2025-01-17T16:01:57.593398Z&quot;,
       &quot;duration_ms&quot; : 1,
-      &quot;trace.span_id&quot; : &quot;f94c8eed-8c1a-4c02-b40e-36266e40b4d5&quot;,
-      &quot;trace.parent_id&quot; : &quot;ef7758f0-7b33-4358-81f5-4f2070f7196d&quot;,
-      &quot;trace.trace_id&quot; : &quot;ef7758f0-7b33-4358-81f5-4f2070f7196d&quot;,
+      &quot;trace.span_id&quot; : &quot;b33af3ef-7f04-4526-8579-4e6ef2c2d521&quot;,
+      &quot;trace.parent_id&quot; : &quot;7f8de43a-5aa3-49e5-8dda-158b6a74bab0&quot;,
+      &quot;trace.trace_id&quot; : &quot;1f6721c6-d67d-41ed-9d26-20e65ec7b79f&quot;,
+      &quot;span.kind&quot; : &quot;Internal&quot;,
+      &quot;span.links&quot; : [
+      ],
       &quot;exit.case&quot; : &quot;succeeded&quot;,
       &quot;children&quot; : [
       ]
@@ -290,10 +301,10 @@ val ep: EntryPoint[IO] =
 <script type="text/javascript" src="../js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/backends/log.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/backends/log.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/backends/log.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/backends/log.md')});</script>
 
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../backends/mock.html">Mock</a></p>
@@ -352,7 +363,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -377,7 +388,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.1.5', 'https://github.com/tpolecat/natchez')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.3.7', 'https://github.com/typelevel/natchez')});</script>
 
 
 </html>
