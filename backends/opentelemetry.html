@@ -2,11 +2,11 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Skunk · Natchez</title>
+<title>OpenTelemetry · Natchez</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/typelevel/natchezexamples/skunk.html"/>
+<link rel="canonical" href="https://github.com/typelevel/natchezbackends/opentelemetry.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -58,12 +58,12 @@
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
-    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
+    <li><a href="../backends/opentelemetry.html" class="active page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
     <li><a href="../examples/http4s.html" class="page">Http4s</a></li>
-    <li><a href="../examples/skunk.html" class="active page">Skunk</a></li>
+    <li><a href="../examples/skunk.html" class="page">Skunk</a></li>
   </ul></li>
 </ul>
 </div>
@@ -122,12 +122,12 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
-    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
+    <li><a href="../backends/opentelemetry.html" class="active page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
     <li><a href="../examples/http4s.html" class="page">Http4s</a></li>
-    <li><a href="../examples/skunk.html" class="active page">Skunk</a></li>
+    <li><a href="../examples/skunk.html" class="page">Skunk</a></li>
   </ul></li>
 </ul>
 </div>
@@ -145,8 +145,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="nav-breadcrumbs">
 <ul>
   <li><a href="../index.html">Natchez</a></li>
-  <li><a href="../examples/index.html">Examples</a></li>
-  <li>Skunk</li>
+  <li><a href="../backends/index.html">Back Ends</a></li>
+  <li>OpenTelemetry</li>
 </ul>
 </div>
 </div>
@@ -154,17 +154,58 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h1><a href="#skunk" name="skunk" class="anchor"><span class="anchor-link"></span></a>Skunk</h1>
+<h1><a href="#opentelemetry" name="opentelemetry" class="anchor"><span class="anchor-link"></span></a>OpenTelemetry</h1>
+<p>The <code>natchez-opentelemetry</code> module provides a backend that uses <a href="https://opentelemetry.io">OpenTelemetry</a> to report spans.</p>
+<p>To use it, add the following dependency.</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" % "natchez-opentelemetry-2.13" % "0.3.7"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.tpolecat&lt;/groupId&gt;
+    &lt;artifactId&gt;natchez-opentelemetry-2.13&lt;/artifactId&gt;
+    &lt;version&gt;0.3.7&lt;/version&gt;
+  &lt;/dependency&gt
+&lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
+  implementation "org.tpolecat:natchez-opentelemetry-2.13:0.3.7"
+}</code></pre></dd></dl>
+<p>Then add any exporter, for example:</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.12.0"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+  &lt;dependency&gt;
+    &lt;groupId&gt;io.opentelemetry&lt;/groupId&gt;
+    &lt;artifactId&gt;opentelemetry-exporter-otlp&lt;/artifactId&gt;
+    &lt;version&gt;1.12.0&lt;/version&gt;
+  &lt;/dependency&gt
+&lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
+  implementation "io.opentelemetry:opentelemetry-exporter-otlp:1.12.0"
+}</code></pre></dd></dl>
+<h2><a href="#configuring-an-opentelemetry-entrypoint" name="configuring-an-opentelemetry-entrypoint" class="anchor"><span class="anchor-link"></span></a>Configuring an OpenTelemetry entrypoint</h2>
+<p>There are two methods you&rsquo;ll need to construct an <code>OpenTelemetry</code> <code>EndPoint</code>.</p>
+<p><code>OpenTelemetry.lift</code> is used to turn an <code>F[_]</code> that constructs a <code>SpanExporter</code>, <code>SpanProcessor</code> or <code>SdkTraceProvider</code> into a <code>Resource</code> that will shut it down cleanly. This takes a <code>String</code> of what you&rsquo;ve constructed, so we can give a nice error if it fails to shut down cleanly.</p>
+<p>The <code>OpenTelemetry.entryPoint</code> method takes a boolean called <code>globallyRegister</code> which tells it whether to register this <code>OpenTelemetry</code> globally. This may be helpful if you have other Java dependencies that use the global tracer. It defaults to false.</p>
+<p>It also takes an <code>OpenTelemetrySdkBuilder =&gt; Resource[F, OpenTelemetrySdkBuilder]</code> so that you can configure the Sdk.</p>
+<p>Here&rsquo;s an example of configuring one with the <code>otlp</code> exporter with batch span processing:</p>
 <script type="text/javascript" src="../js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/examples/skunk.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/backends/opentelemetry.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/examples/skunk.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/backends/opentelemetry.md')});</script>
 
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../examples/index.html">Examples</a></p>
+</div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../backends/opentelemetry.html#opentelemetry" class="header">OpenTelemetry</a>
+  <ul>
+    <li><a href="../backends/opentelemetry.html#configuring-an-opentelemetry-entrypoint" class="header">Configuring an OpenTelemetry entrypoint</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
 </div>
 </div>
 

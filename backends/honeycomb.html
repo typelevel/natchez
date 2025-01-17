@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/natchezbackends/honeycomb.html"/>
+<link rel="canonical" href="https://github.com/typelevel/natchezbackends/honeycomb.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.1.5
+0.3.7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
@@ -95,7 +96,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>Natchez
 </a>
 <div class="version-number">
-0.1.5
+0.3.7
 </div>
 </div>
 <div class="nav-toc">
@@ -121,6 +122,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../backends/noop.html" class="page">No-Op</a></li>
     <li><a href="../backends/odin.html" class="page">Odin</a></li>
     <li><a href="../backends/opencensus.html" class="page">OpenCensus</a></li>
+    <li><a href="../backends/opentelemetry.html" class="page">OpenTelemetry</a></li>
   </ul></li>
   <li><a href="../examples/index.html" class="page">Examples</a>
   <ul>
@@ -153,14 +155,14 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#honeycomb" name="honeycomb" class="anchor"><span class="anchor-link"></span></a>Honeycomb</h1>
-<p>To use the <a href="https://honeycomb.io">Honeycomb</a> back end, add the following dependency:</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-honeycomb" % "0.1.5"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
+<p>To use the <a href="https://honeycomb.io">Honeycomb</a> back end, add the following dependency:</p><dl class="dependency"><dt>sbt</dt><dd><pre class="prettyprint"><code class="language-scala">libraryDependencies += "org.tpolecat" %% "natchez-honeycomb" % "0.3.7"</code></pre></dd><dt>Maven</dt><dd><pre class="prettyprint"><code class="language-xml">&lt;dependencies&gt
   &lt;dependency&gt;
     &lt;groupId&gt;org.tpolecat&lt;/groupId&gt;
     &lt;artifactId&gt;natchez-honeycomb_2.13&lt;/artifactId&gt;
-    &lt;version&gt;0.1.5&lt;/version&gt;
+    &lt;version&gt;0.3.7&lt;/version&gt;
   &lt;/dependency&gt
 &lt;/dependencies&gt;</code></pre></dd><dt>Gradle</dt><dd><pre class="prettyprint"><code class="language-gradle">dependencies {
-  implementation "org.tpolecat:natchez-honeycomb_2.13:0.1.5"
+  implementation "org.tpolecat:natchez-honeycomb_2.13:0.3.7"
 }</code></pre></dd></dl>
 <h2><a href="#example-trace" name="example-trace" class="anchor"><span class="anchor-link"></span></a>Example Trace</h2>
 <p><img src="honeycomb.png" /></p>
@@ -192,7 +194,7 @@ def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
   </thead>
   <tbody>
     <tr>
-      <td><code>service_name</code> </td>
+      <td><code>service.name</code> </td>
       <td>String </td>
       <td>User-supplied service name. </td>
     </tr>
@@ -241,10 +243,10 @@ def entryPoint[F[_]: Sync]: Resource[F, EntryPoint[F]] =
 <script type="text/javascript" src="../js/link_fix.js"></script>
 
 <div class="source-github">
-The source code for this page can be found <a id="source-link" href="https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/backends/honeycomb.md">here</a>.
+The source code for this page can be found <a id="source-link" href="https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/backends/honeycomb.md">here</a>.
 </div>
 
-<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/tpolecat/natchez/tree/v0.1.5/modules/docs/target/mdoc/backends/honeycomb.md')});</script>
+<script type="text/javascript">jQuery(function(){sourceUrlFix('https://github.com/typelevel/natchez/tree/master/modules/docs/target/mdoc/backends/honeycomb.md')});</script>
 
 <div class="nav-next">
 <p><strong>Next:</strong> <a href="../backends/jaeger.html">Jaeger</a></p>
@@ -303,7 +305,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2021</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -328,7 +330,7 @@ The source code for this page can be found <a id="source-link" href="https://git
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.1.5', 'https://github.com/tpolecat/natchez')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '0.3.7', 'https://github.com/typelevel/natchez')});</script>
 
 
 </html>
