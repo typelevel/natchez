@@ -58,6 +58,50 @@ trait Trace[F[_]] {
     * example, so you can quickly find the associated trace.
     */
   def traceUri: F[Option[URI]]
+
+  /** Transforms this `Trace[F]` into a `Trace[G]` using the provided `F ~> G` and `G ~> F`.
+    *
+    * @return A new `Trace[G]` that delegates to this `Trace[F]` using the provided transformations
+    */
+  def imapK[G[_]](
+      fk: F ~> G
+  )(gk: G ~> F)(implicit F: MonadCancel[F, ?], G: MonadCancel[G, ?]): Trace[G] = {
+    val outer = this
+
+    new Trace[G] {
+      override def put(fields: (String, TraceValue)*): G[Unit] = fk(outer.put(fields*))
+
+      override def log(fields: (String, TraceValue)*): G[Unit] = fk(outer.log(fields*))
+
+      override def log(event: String): G[Unit] = fk(outer.log(event))
+
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): G[Unit] =
+        fk(outer.attachError(err, fields*))
+
+      override def kernel: G[Kernel] = fk(outer.kernel)
+
+      override def spanR(name: String, options: Span.Options): Resource[G, G ~> G] =
+        outer
+          .spanR(name, options)
+          .mapK(fk)
+          .map(_.compose(gk).andThen(fk))
+
+      override def span[A](name: String, options: Span.Options)(k: G[A]): G[A] =
+        fk(outer.span(name, options)(gk(k)))
+
+      override def spanK(name: String, options: Span.Options): G ~> G =
+        outer.spanK(name, options).compose(gk).andThen(fk)
+
+      override def traceId: G[Option[String]] =
+        fk(outer.traceId)
+
+      override def spanId(implicit FF: Applicative[G]): G[Option[String]] =
+        fk(outer.spanId)
+
+      override def traceUri: G[Option[URI]] =
+        fk(outer.traceUri)
+    }
+  }
 }
 
 object Trace {
