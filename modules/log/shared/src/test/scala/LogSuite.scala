@@ -37,7 +37,7 @@ class LogSuite extends CatsEffectSuite {
   test("log formatter should log things") {
     MockLogger.newInstance[IO]("test").flatMap { implicit log =>
       Log
-        .entryPoint[IO]("service", filter(_).spaces2)
+        .entryPoint[IO]("service", filter(_: Json).spaces2)
         .root("root span", Span.Options.Defaults.withSpanKind(SpanKind.Server))
         .use { root =>
           root.put("foo" -> 1, "bar" -> true) *>
@@ -82,7 +82,7 @@ class LogSuite extends CatsEffectSuite {
         )
       )
       val traceId = Log
-        .entryPoint[IO]("service", filter(_).spaces2)
+        .entryPoint[IO]("service", filter(_: Json).spaces2)
         .continueOrElseRoot("root span", kernel)
         .use { root =>
           root.traceId
@@ -128,7 +128,7 @@ class LogSuite extends CatsEffectSuite {
     tests.traverse { case (exception, expected) =>
       MockLogger.newInstance[IO]("test").flatMap { implicit log =>
         Log
-          .entryPoint[IO]("service", filter(_).spaces2)
+          .entryPoint[IO]("service", filter(_: Json).spaces2)
           .root("root span", Span.Options.Defaults.withSpanKind(SpanKind.Server))
           .use { root =>
             root.attachError(err = exception)
