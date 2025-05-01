@@ -12,7 +12,7 @@ import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.`export`.BatchSpanProcessor
-import io.opentelemetry.semconv.ResourceAttributes
+import io.opentelemetry.semconv.ServiceAttributes
 import natchez.{EntryPoint, Span, Trace}
 import natchez.opentelemetry.OpenTelemetry
 
@@ -44,7 +44,7 @@ class OpenTelemetryExample extends IOApp {
             .builder()
             .setResource(
               OtelResource.create(
-                Attributes.of(ResourceAttributes.SERVICE_NAME, "OpenTelemetryExample")
+                Attributes.of(ServiceAttributes.SERVICE_NAME, "OpenTelemetryExample")
               )
             )
             .addSpanProcessor(processor)
