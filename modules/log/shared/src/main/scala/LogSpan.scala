@@ -22,7 +22,7 @@ import org.typelevel.ci._
 
 import java.net.URI
 
-private[log] final case class LogSpan[F[_]: Sync: Logger](
+private[log] final case class LogSpan[F[_]: Sync: Logger: UUIDGen](
     service: String,
     name: String,
     sid: String,
@@ -139,7 +139,7 @@ private[log] object LogSpan {
     val SpanId = ci"X-Natchez-Parent-Span-Id"
   }
 
-  private def uuid[F[_]: Sync]: F[UUID] =
+  private def uuid[F[_]: UUIDGen]: F[UUID] =
     UUIDGen.randomUUID
 
   private def now[F[_]: Sync]: F[Instant] =
@@ -169,7 +169,7 @@ private[log] object LogSpan {
   def finishChild[F[_]: Sync: Logger]: (LogSpan[F], ExitCase) => F[Unit] =
     finish(_ => sys.error("implementation error; child JSON should never be logged"))
 
-  def child[F[_]: Sync: Logger](
+  def child[F[_]: Sync: Logger: UUIDGen](
       parent: LogSpan[F],
       name: String,
       options: Span.Options
@@ -192,7 +192,7 @@ private[log] object LogSpan {
       options = options
     )
 
-  def root[F[_]: Sync: Logger](
+  def root[F[_]: Sync: Logger: UUIDGen](
       service: String,
       name: String,
       options: Span.Options
@@ -216,7 +216,7 @@ private[log] object LogSpan {
       options = options
     )
 
-  def fromKernel[F[_]: Sync: Logger](
+  def fromKernel[F[_]: Sync: Logger: UUIDGen](
       service: String,
       name: String,
       kernel: Kernel,
@@ -242,7 +242,7 @@ private[log] object LogSpan {
       options = options
     )
 
-  def fromKernelOrElseRoot[F[_]: Sync: Logger](
+  def fromKernelOrElseRoot[F[_]: Sync: Logger: UUIDGen](
       service: String,
       name: String,
       kernel: Kernel,
