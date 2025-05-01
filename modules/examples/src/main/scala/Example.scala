@@ -90,7 +90,7 @@ object Main extends IOApp {
   // }å
 
   // Log
-  def entryPoint[F[_] : Sync : UUIDGen]: Resource[F, EntryPoint[F]] = {
+  def entryPoint[F[_]: Sync: UUIDGen]: Resource[F, EntryPoint[F]] = {
     import natchez.log.Log
     import org.typelevel.log4cats.Logger
     import org.typelevel.log4cats.slf4j.Slf4jLogger

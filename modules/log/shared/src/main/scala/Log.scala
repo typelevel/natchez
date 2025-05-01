@@ -13,7 +13,7 @@ import io.circe.Json
 
 object Log {
 
-  def entryPoint[F[_] : Sync : Logger : UUIDGen](
+  def entryPoint[F[_]: Sync: Logger: UUIDGen](
       service: String,
       format: Json => String = _.spaces2
   ): EntryPoint[F] =
@@ -43,10 +43,11 @@ object Log {
 
   // only maintained for binary compatibility
   @deprecated("use version with implicit UUIDGen", "0.3.8")
-  def entryPoint[F[_]](service: String,
-                       format: Json => String,
-                       F: Sync[F],
-                       L: Logger[F]
-                      ): EntryPoint[F] = entryPoint(service, format)(F, L, UUIDGen.fromSync(F))
+  def entryPoint[F[_]](
+      service: String,
+      format: Json => String,
+      F: Sync[F],
+      L: Logger[F]
+  ): EntryPoint[F] = entryPoint(service, format)(F, L, UUIDGen.fromSync(F))
 
 }
