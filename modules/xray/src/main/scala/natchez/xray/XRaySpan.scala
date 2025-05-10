@@ -115,7 +115,24 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
         (goodKeys + ("malformed_keys" -> badKeys.keys
           .mkString(",")
           .asJson)) ++ fixedAnnotations
-
+      /*
+       * `aws_group_name` key in the annotations, when present, sets the AWS CloudWatch log group name.
+       * It is used to add log details to each trace.
+       */
+      val logGroupValue = allAnnotations.get("aws_group_name")
+      val awsObject = logGroupValue
+        .map(lgValue =>
+          JsonObject(
+            "aws" -> JsonObject(
+              "cloudwatch_logs" -> Json.arr(
+                JsonObject(
+                  "log_group" -> lgValue
+                ).asJson
+              )
+            ).asJson
+          )
+        )
+        .getOrElse(JsonObject.empty)
       JsonObject(
         "name" -> name.asJson,
         "id" -> segmentId.asJson,
@@ -131,11 +148,12 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
           "links" -> options.links.asJson,
           "span.kind" -> options.spanKind.asJson
         ).asJson
-      ).deepMerge(exitCase match {
-        case Canceled   => JsonObject.singleton("fault", true.asJson)
-        case Errored(e) => XRayException(id, e).asJsonObject
-        case Succeeded  => JsonObject.empty
-      })
+      ).deepMerge(awsObject)
+        .deepMerge(exitCase match {
+          case Canceled   => JsonObject.singleton("fault", true.asJson)
+          case Errored(e) => XRayException(id, e).asJsonObject
+          case Succeeded  => JsonObject.empty
+        })
     }
 
   private def header: String =
