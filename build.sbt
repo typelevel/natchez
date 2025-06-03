@@ -20,7 +20,6 @@ ThisBuild / developers := List(
   Developer("tpolecat", "Rob Norris", "rob_norris@mac.com", url("http://www.tpolecat.org"))
 )
 ThisBuild / startYear := Some(2024)
-ThisBuild / tlSonatypeUseLegacyHost := false
 
 // start MiMa from here
 ThisBuild / tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.6").toMap
