@@ -175,6 +175,9 @@ object Span {
     def spanKind: Span.SpanKind
     def links: Chain[Kernel]
 
+    /** Whether to activate span in underlying tracing framework. This typically binds span to a ThreadLocal. */
+    def activateSpan: Boolean
+
     def withParentKernel(kernel: Kernel): Options
     def withoutParentKernel: Options
     def withSpanCreationPolicy(p: Options.SpanCreationPolicy): Options
@@ -182,6 +185,8 @@ object Span {
     def withSpanKind(spanKind: SpanKind): Options
 
     def withLink(kernel: Kernel): Options
+
+    def withActivateSpan(activateSpan: Boolean): Options
   }
 
   object Options {
@@ -202,22 +207,25 @@ object Span {
         parentKernel: Option[Kernel],
         spanCreationPolicy: SpanCreationPolicy,
         spanKind: SpanKind,
-        links: Chain[Kernel]
+        links: Chain[Kernel],
+        activateSpan: Boolean
     ) extends Options {
       override def withParentKernel(kernel: Kernel): Options =
-        OptionsImpl(Some(kernel), spanCreationPolicy, spanKind, links)
+        OptionsImpl(Some(kernel), spanCreationPolicy, spanKind, links, activateSpan)
       override def withoutParentKernel: Options =
-        OptionsImpl(None, spanCreationPolicy, spanKind, links)
+        OptionsImpl(None, spanCreationPolicy, spanKind, links, activateSpan)
       override def withSpanCreationPolicy(p: SpanCreationPolicy): Options =
-        OptionsImpl(parentKernel, p, spanKind, links)
+        OptionsImpl(parentKernel, p, spanKind, links, activateSpan)
       override def withSpanKind(spanKind: SpanKind): Options =
-        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links)
+        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links, activateSpan)
       override def withLink(kernel: Kernel): Options =
-        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links.append(kernel))
+        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links.append(kernel), activateSpan)
+      override def withActivateSpan(activateSpan: Boolean): Options =
+        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links, activateSpan)
     }
 
     val Defaults: Options =
-      OptionsImpl(None, SpanCreationPolicy.Default, SpanKind.Internal, Chain.empty)
+      OptionsImpl(None, SpanCreationPolicy.Default, SpanKind.Internal, Chain.empty, true)
     val Suppress: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Suppress)
     val Coalesce: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Coalesce)
 

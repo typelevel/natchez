@@ -75,7 +75,9 @@ final case class DDSpan[F[_]: Sync](
           case (span, _)                   => Sync[F].delay(span.finish())
         }
         .flatTap(span =>
-          Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close()))
+          Resource
+            .make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close()))
+            .whenA(options.activateSpan)
         )
         .map(DDSpan(tracer, _, uriPrefix, options))
     )
