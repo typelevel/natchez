@@ -176,7 +176,7 @@ object Span {
     def links: Chain[Kernel]
 
     /** Whether to activate span in underlying tracing framework. This typically binds span to a ThreadLocal. */
-    def activateSpan: Boolean
+    def shouldActivateSpan: Boolean
 
     def withParentKernel(kernel: Kernel): Options
     def withoutParentKernel: Options
@@ -186,7 +186,7 @@ object Span {
 
     def withLink(kernel: Kernel): Options
 
-    def withActivateSpan(activateSpan: Boolean): Options
+    def withShouldActivateSpan(shouldActivateSpan: Boolean): Options
   }
 
   object Options {
@@ -208,7 +208,7 @@ object Span {
         spanCreationPolicy: SpanCreationPolicy,
         spanKind: SpanKind,
         links: Chain[Kernel],
-        activateSpan: Boolean
+        shouldActivateSpan: Boolean
     ) extends Options {
       override def withParentKernel(kernel: Kernel): Options =
         copy(parentKernel = Some(kernel))
@@ -220,12 +220,17 @@ object Span {
         copy(spanKind = spanKind)
       override def withLink(kernel: Kernel): Options =
         copy(links = links.append(kernel))
-      override def withActivateSpan(activateSpan: Boolean): Options =
-        copy(activateSpan = activateSpan)
+      override def withShouldActivateSpan(shouldActivateSpan: Boolean): Options =
+        copy(shouldActivateSpan = shouldActivateSpan)
     }
 
-    val Defaults: Options =
-      OptionsImpl(None, SpanCreationPolicy.Default, SpanKind.Internal, Chain.empty, true)
+    val Defaults: Options = OptionsImpl(
+      None,
+      SpanCreationPolicy.Default,
+      SpanKind.Internal,
+      Chain.empty,
+      shouldActivateSpan = true
+    )
     val Suppress: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Suppress)
     val Coalesce: Options = Defaults.withSpanCreationPolicy(SpanCreationPolicy.Coalesce)
 
