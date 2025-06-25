@@ -211,17 +211,17 @@ object Span {
         activateSpan: Boolean
     ) extends Options {
       override def withParentKernel(kernel: Kernel): Options =
-        OptionsImpl(Some(kernel), spanCreationPolicy, spanKind, links, activateSpan)
+        copy(parentKernel = Some(kernel))
       override def withoutParentKernel: Options =
-        OptionsImpl(None, spanCreationPolicy, spanKind, links, activateSpan)
+        copy(parentKernel = None)
       override def withSpanCreationPolicy(p: SpanCreationPolicy): Options =
-        OptionsImpl(parentKernel, p, spanKind, links, activateSpan)
+        copy(spanCreationPolicy = p)
       override def withSpanKind(spanKind: SpanKind): Options =
-        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links, activateSpan)
+        copy(spanKind = spanKind)
       override def withLink(kernel: Kernel): Options =
-        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links.append(kernel), activateSpan)
+        copy(links = links.append(kernel))
       override def withActivateSpan(activateSpan: Boolean): Options =
-        OptionsImpl(parentKernel, spanCreationPolicy, spanKind, links, activateSpan)
+        copy(activateSpan = activateSpan)
     }
 
     val Defaults: Options =
