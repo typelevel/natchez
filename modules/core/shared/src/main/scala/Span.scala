@@ -175,7 +175,6 @@ object Span {
     def spanKind: Span.SpanKind
     def links: Chain[Kernel]
 
-    /** Whether to activate span in underlying tracing framework. This typically binds span to a ThreadLocal. */
     def shouldActivateSpan: Boolean
 
     def withParentKernel(kernel: Kernel): Options
@@ -186,6 +185,14 @@ object Span {
 
     def withLink(kernel: Kernel): Options
 
+    /** Whether to activate span in underlying tracing framework when starting the span.
+      *
+      * Note that span activation typically uses `ThreadLocal` and will be incorrect if your code shifts threads such as
+      * when using `IO`. Underlying tracing library might have some instrumentation to compensate for this, but it won't
+      * necessarily work correctly.
+      *
+      * This is the default behavior.
+      */
     def withShouldActivateSpan(shouldActivateSpan: Boolean): Options
   }
 
