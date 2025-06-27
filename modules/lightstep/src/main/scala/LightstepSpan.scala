@@ -96,4 +96,10 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
 
   // TODO
   def traceUri: F[Option[URI]] = none.pure[F]
+
+  override def unsafeRunWithActivatedSpan[T](run: => T): T = {
+    val scope = tracer.activateSpan(span)
+    try run
+    finally scope.close()
+  }
 }
