@@ -4,7 +4,7 @@
 
 package natchez
 
-import cats.~>
+import cats.{Applicative, ~>}
 import cats.effect.MonadCancel
 import cats.effect.Resource
 
@@ -70,5 +70,29 @@ trait EntryPoint[F[_]] {
           options: Span.Options
       ): Resource[G, Span[G]] = aux(outer.continueOrElseRoot(name, kernel, options))
     }
+  }
+}
+
+object EntryPoint {
+
+  def noop[F[_]: Applicative]: EntryPoint[F] = new NoopEntryPoint[F]
+
+  private class NoopEntryPoint[F[_]: Applicative] extends EntryPoint[F] {
+    override def root(name: String, options: Span.Options): Resource[F, Span[F]] =
+      Resource.pure(Span.noop[F])
+
+    override def continue(
+        name: String,
+        kernel: Kernel,
+        options: Span.Options
+    ): Resource[F, Span[F]] =
+      Resource.pure(Span.noop[F])
+
+    override def continueOrElseRoot(
+        name: String,
+        kernel: Kernel,
+        options: Span.Options
+    ): Resource[F, Span[F]] =
+      Resource.pure(Span.noop[F])
   }
 }
