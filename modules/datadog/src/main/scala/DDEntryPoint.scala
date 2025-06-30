@@ -18,7 +18,7 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
   override def root(name: String, options: Span.Options): Resource[F, Span[F]] = {
     def initSpan(): F[ot.Span] =
       Sync[F]
-        .delay(tracer.buildSpan(name))
+        .delay(tracer.buildSpan(name).ignoreActiveSpan())
         .flatTap(addSpanKind(_, options.spanKind))
         .flatMap(options.links.foldM(_)(addLink[F](tracer)))
         .flatMap(builder => Sync[F].delay(builder.start()))
