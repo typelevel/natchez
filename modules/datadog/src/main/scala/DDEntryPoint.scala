@@ -25,9 +25,6 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
 
     Resource
       .make(initSpan())(s => Sync[F].delay(s.finish()))
-      .flatTap(span =>
-        Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close()))
-      )
       .map(DDSpan(tracer, _, uriPrefix, options))
   }
 
@@ -51,9 +48,6 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
 
     Resource
       .make(initSpan())(s => Sync[F].delay(s.finish()))
-      .flatTap(span =>
-        Resource.make(Sync[F].delay(tracer.activateSpan(span)))(s => Sync[F].delay(s.close()))
-      )
       .map(DDSpan(tracer, _, uriPrefix, options))
   }
 
