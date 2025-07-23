@@ -9,7 +9,7 @@ val scala30Version = "3.3.6"
 val collectionCompatVersion = "2.11.0"
 
 val catsVersion = "2.11.0"
-val catsEffectVersion = "3.6.2"
+val catsEffectVersion = "3.6.3"
 val fs2Version = "3.12.0"
 
 // Publishing
@@ -296,7 +296,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-mtl" % "1.4.0",
       "org.typelevel" %%% "cats-mtl-laws" % "1.4.0" % Test,
       "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test,
-      "org.typelevel" %%% "cats-effect-testkit" % "3.6.2" % Test
+      "org.typelevel" %%% "cats-effect-testkit" % "3.6.3" % Test
     )
   )
   .nativeSettings(
