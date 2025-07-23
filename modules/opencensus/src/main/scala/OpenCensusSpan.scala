@@ -95,6 +95,12 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
         ("error.class" -> TraceValue.StringValue(err.getClass.getSimpleName)) ::
         fields.toList: _*
     )
+
+  override def unsafeRunWithActivatedSpan[T](run: => T): T = {
+    val scope = tracer.withSpan(span)
+    try run
+    finally scope.close()
+  }
 }
 
 private[opencensus] object OpenCensusSpan {
