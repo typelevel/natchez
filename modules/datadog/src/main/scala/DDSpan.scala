@@ -112,4 +112,10 @@ final case class DDSpan[F[_]: Sync](
           ) ++ fields.toList.nested.map(_.value).value.toMap).asJava
         )
       }.void
+
+  override def unsafeRunWithActivatedSpan[T](run: => T): T = {
+    val scope = tracer.activateSpan(span)
+    try run
+    finally scope.close()
+  }
 }
