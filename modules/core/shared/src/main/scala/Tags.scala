@@ -36,6 +36,7 @@ object Tags {
   /** true if and only if the application considers the operation represented by the Span to have failed */
   def error(bool: Boolean): (String, TraceValue) = ("error", bool)
 
+  // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md
   object http {
     private val prefix = "http"
 
@@ -43,12 +44,38 @@ object Tags {
     def method(m: String): (String, TraceValue) = (s"$prefix.method", m)
 
     /** HTTP response status code for the associated Span. E.g., 200, 503, 404 */
-    def status_code(s: String): (String, TraceValue) = (s"$prefix.status_code", s)
+    def status_code(s: Int): (String, TraceValue) = (s"$prefix.status_code", s)
 
     /** URL of the request being handled in this segment of the trace, in standard URI format.
       * E.g., "https://domain.net/path/to?resource=here"
       */
     def url(u: String): (String, TraceValue) = (s"$prefix.url", u)
+
+    /**
+     * server definitions https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-definitions
+     */
+    def route(r: String): (String, TraceValue) = (s"$prefix.route", r)
+
+    def target(t: String): (String, TraceValue) = (s"$prefix.target", t)
+
+    def clientIP(ip: String): (String, TraceValue) = (s"$prefix.client_ip", ip)
+
+    def scheme(s: String): (String, TraceValue) = (s"$prefix.scheme", s)
+  }
+
+  /**
+   * https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md
+   */
+  object net {
+    private val prefix = "net"
+    object host {
+      private val prefix = s"${net.prefix}.host"
+
+      def name(n: String): (String, TraceValue) = (s"$prefix.name", n)
+
+      def port(p: Int): (String, TraceValue) = (s"$prefix.port", p)
+    }
+    // TODO relocate peer here?
   }
 
   object message_bus {
