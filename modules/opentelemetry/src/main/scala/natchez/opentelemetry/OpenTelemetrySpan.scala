@@ -131,6 +131,12 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
     (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
       uri.resolve(s"/trace/$id")
     }.value
+
+  override def unsafeRunWithActivatedSpan[T](run: => T): T = {
+    val scope = span.makeCurrent()
+    try run
+    finally scope.close()
+  }
 }
 
 private[opentelemetry] object OpenTelemetrySpan {
