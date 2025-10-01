@@ -3,8 +3,8 @@ ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 )
 
-addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.8.0")
-addSbtPlugin("org.typelevel" % "sbt-typelevel-mergify" % "0.8.0")
+addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.8.1")
+addSbtPlugin("org.typelevel" % "sbt-typelevel-mergify" % "0.8.1")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.10.7")
 addSbtPlugin("com.github.sbt" % "sbt-site" % "1.7.0")
 addSbtPlugin("com.github.sbt" % "sbt-site-paradox" % "1.7.0")
