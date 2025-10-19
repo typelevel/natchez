@@ -51,6 +51,15 @@ trait Span[F[_]] {
     */
   def traceUri: F[Option[URI]]
 
+  /** Run impure code with the span of underlying tracing backend activated on the current thread
+    *  for the duration of the call.
+    *
+    * This is useful when calling into Java or other non-cats-effect code that is instrumented by the tracing backend.
+    *
+    * This should always be wrapped in `Sync.suspend` or equivalent.
+    */
+  def unsafeRunWithActivatedSpan[T](run: => T): T = run
+
   /** Converts this `Span[F]` to a `Span[G]` using a `F ~> G`. */
   def mapK[G[_]](f: F ~> G)(implicit
       F: MonadCancel[F, _],
