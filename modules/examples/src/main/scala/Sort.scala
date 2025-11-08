@@ -18,7 +18,7 @@ object Sort {
     Trace[F].span(as.mkString(",")) {
       Temporal[F].sleep(10.milli) *> {
         as match {
-          case Nil => Monad[F].pure(Nil)
+          case Nil    => Monad[F].pure(Nil)
           case h :: t =>
             val (a, b) = t.partition(_ <= h)
             (qsort[F, A](a), qsort[F, A](b)).parMapN(_ ++ List(h) ++ _)

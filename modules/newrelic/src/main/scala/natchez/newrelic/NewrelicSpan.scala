@@ -191,7 +191,7 @@ object NewrelicSpan {
       _ <- nrs.parent match {
         case Some(Left(_))  => Sync[F].unit
         case Some(Right(p)) => p.children.update(curSpan :: curChildren ::: _)
-        case None =>
+        case None           =>
           val batch = new SpanBatch((curSpan :: curChildren).asJava, new Attributes(), nrs.traceIdS)
           Sync[F].delay(nrs.sender.sendBatch(batch)).void
       }
