@@ -150,8 +150,8 @@ private[log] object LogSpan {
       for {
         n <- now
         _ <- exitCase match {
-          case Succeeded => span.put("exit.case" -> "succeeded")
-          case Canceled  => span.put("exit.case" -> "canceled")
+          case Succeeded           => span.put("exit.case" -> "succeeded")
+          case Canceled            => span.put("exit.case" -> "canceled")
           case Errored(ex: Fields) =>
             span.attachError(ex) >> span.putAny(ex.fields.toList.map { case (k, v) =>
               (k, v.asJson)

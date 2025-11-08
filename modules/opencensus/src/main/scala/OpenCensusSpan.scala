@@ -66,7 +66,7 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
     Span.putErrorFields(
       Resource
         .makeCase(options.parentKernel match {
-          case None => OpenCensusSpan.child(this, name, options)
+          case None    => OpenCensusSpan.child(this, name, options)
           case Some(k) =>
             OpenCensusSpan.fromKernelWithSpan(tracer, name, k, span, options)
         })(
