@@ -5,16 +5,17 @@
 package natchez
 package lightstep
 
+import cats.Applicative
 import cats.effect.{Resource, Sync}
-import cats.syntax.all._
+import cats.syntax.all.*
 import io.opentracing.log.Fields
-import io.{opentracing => ot}
+import io.opentracing as ot
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.opentracing.tag.Tags
 import natchez.Span.Options
-import natchez.lightstep.Lightstep._
+import natchez.lightstep.Lightstep.*
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import java.net.URI
 
 private[lightstep] final case class LightstepSpan[F[_]: Sync](
@@ -36,10 +37,11 @@ private[lightstep] final case class LightstepSpan[F[_]: Sync](
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
-      case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))
-      case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
-      case (k, ListValue(v))    => Sync[F].delay(span.setTag(k, v.map(_.toString).mkString(", ")))
+      case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v)).void
+      case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v)).void
+      case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v)).void
+      case (k, ListValue(v)) => Sync[F].delay(span.setTag(k, v.map(_.toString).mkString(", "))).void
+      case (_, NoneValue)    => Applicative[F].unit
     }
 
   override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =

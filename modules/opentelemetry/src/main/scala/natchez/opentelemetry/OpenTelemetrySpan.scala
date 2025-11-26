@@ -76,6 +76,7 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
           case ListValue(v)    => v.mkString(", ")
         }
         bldr.put(k, strings: _*)
+      case (_, NoneValue) => ()
     }
     bldr.build()
   }

@@ -32,26 +32,38 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
   override protected val spanCreationPolicyOverride: Options.SpanCreationPolicy =
     options.spanCreationPolicy
 
-  private def traceToAttribute(value: TraceValue): AttributeValue = value match {
+  private def traceToAttribute(value: TraceValue): Option[AttributeValue] = value match {
     case StringValue(v) =>
       val safeString = if (v == null) "null" else v
-      AttributeValue.stringAttributeValue(safeString)
+      AttributeValue.stringAttributeValue(safeString).some
     case NumberValue(v) =>
-      AttributeValue.doubleAttributeValue(v.doubleValue())
+      AttributeValue.doubleAttributeValue(v.doubleValue()).some
     case BooleanValue(v) =>
-      AttributeValue.booleanAttributeValue(v)
+      AttributeValue.booleanAttributeValue(v).some
     case ListValue(v) =>
-      AttributeValue.stringAttributeValue(v.map(_.toString).mkString(", "))
+      AttributeValue.stringAttributeValue(v.map(_.toString).mkString(", ")).some
+    case NoneValue => None
   }
 
+  private def fieldsToAttributeValues(
+      fields: List[(String, TraceValue)]
+  ): List[(String, AttributeValue)] =
+    fields.nested
+      .map(traceToAttribute)
+      .value
+      .collect { case (key, Some(value)) =>
+        key -> value
+      }
+
   override def put(fields: (String, TraceValue)*): F[Unit] =
-    fields.toList.traverse_ { case (key, value) =>
-      Sync[F].delay(span.putAttribute(key, traceToAttribute(value)))
-    }
+    fieldsToAttributeValues(fields.toList)
+      .traverse_ { case (key, value) =>
+        Sync[F].delay(span.putAttribute(key, value))
+      }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {
-    val map = fields.map { case (k, v) => k -> traceToAttribute(v) }.toMap.asJava
-    Sync[F].delay(span.addAnnotation("event", map)).void
+    val map = fieldsToAttributeValues(fields.toList).toMap.asJava
+    Sync[F].delay(span.addAnnotation("event", map)).unlessA(map.isEmpty)
   }
 
   override def log(event: String): F[Unit] =

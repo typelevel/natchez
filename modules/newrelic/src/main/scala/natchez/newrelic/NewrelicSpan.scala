@@ -4,6 +4,7 @@
 
 package natchez.newrelic
 
+import cats.Applicative
 import java.net.URI
 import java.util.UUID
 import cats.effect.Ref
@@ -45,10 +46,11 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (k, StringValue(v))  => attributes.update(att => att.put(k, v))
-      case (k, NumberValue(v))  => attributes.update(att => att.put(k, v))
-      case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v))
-      case (k, ListValue(vs))   => attributes.update(att => att.put(k, vs.mkString(", ")))
+      case (k, StringValue(v))  => attributes.update(att => att.put(k, v)).void
+      case (k, NumberValue(v))  => attributes.update(att => att.put(k, v)).void
+      case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v)).void
+      case (k, ListValue(vs))   => attributes.update(att => att.put(k, vs.mkString(", "))).void
+      case (_, NoneValue)       => Applicative[F].unit
     }
 
   override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =

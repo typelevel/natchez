@@ -17,6 +17,11 @@ object TraceValue {
   case class BooleanValue(value: Boolean) extends TraceValue
   case class NumberValue(value: Number) extends TraceValue
   case class ListValue(value: List[TraceValue]) extends TraceValue
+  case object NoneValue extends TraceValue {
+    override def value: Nothing = throw new IllegalStateException(
+      "Cannot extract value from NoneValue"
+    )
+  }
 
   implicit def viaTraceableValue[A: TraceableValue](a: A): TraceValue =
     TraceableValue[A].toTraceValue(a)
@@ -64,4 +69,7 @@ object TraceableValue {
 
   implicit def foldableToTraceValue[F[_]: Foldable, A: TraceableValue]: TraceableValue[F[A]] =
     fa => TraceValue.ListValue(fa.toList.map(TraceableValue[A].toTraceValue))
+
+  implicit def optionalToTraceValue[A: TraceableValue]: TraceableValue[Option[A]] =
+    _.fold[TraceValue](TraceValue.NoneValue)(TraceableValue[A].toTraceValue)
 }

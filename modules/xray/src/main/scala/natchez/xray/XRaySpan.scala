@@ -170,6 +170,7 @@ private[xray] object XRaySpan {
       case NumberValue(n: BigInt)               => n.asJson
       case NumberValue(n)                       => n.doubleValue.asJson
       case ListValue(vs)                        => vs.map(EncodeTraceValue(_)).asJson
+      case NoneValue                            => Json.Null
     }
 
   val Header = ci"X-Amzn-Trace-Id"
