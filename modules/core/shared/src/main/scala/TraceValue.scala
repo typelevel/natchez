@@ -4,6 +4,9 @@
 
 package natchez
 
+import cats.*
+import cats.syntax.all.*
+
 sealed trait TraceValue extends Product with Serializable {
   def value: Any
 }
@@ -13,6 +16,7 @@ object TraceValue {
   case class StringValue(value: String) extends TraceValue
   case class BooleanValue(value: Boolean) extends TraceValue
   case class NumberValue(value: Number) extends TraceValue
+  case class ListValue(value: List[TraceValue]) extends TraceValue
 
   implicit def viaTraceableValue[A: TraceableValue](a: A): TraceValue =
     TraceableValue[A].toTraceValue(a)
@@ -57,4 +61,7 @@ object TraceableValue {
   implicit val longToTraceValue: TraceableValue[Long] = TraceValue.NumberValue(_)
   implicit val doubleToTraceValue: TraceableValue[Double] = TraceValue.NumberValue(_)
   implicit val floatToTraceValue: TraceableValue[Float] = TraceValue.NumberValue(_)
+
+  implicit def foldableToTraceValue[F[_]: Foldable, A: TraceableValue]: TraceableValue[F[A]] =
+    fa => TraceValue.ListValue(fa.toList.map(TraceableValue[A].toTraceValue))
 }

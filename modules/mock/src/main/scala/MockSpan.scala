@@ -13,7 +13,7 @@ import io.opentracing.log.Fields
 import io.{opentracing => ot}
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.opentracing.tag.Tags
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import natchez.TraceValue._
 import java.net.URI
 
 final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.MockSpan)
@@ -35,6 +35,7 @@ final case class MockSpan[F[_]: Sync](tracer: ot.mock.MockTracer, span: ot.mock.
       case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
+      case (k, ListValue(v))    => Sync[F].delay(span.setTag(k, v.map(_.toString).mkString(", ")))
     }
 
   def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =

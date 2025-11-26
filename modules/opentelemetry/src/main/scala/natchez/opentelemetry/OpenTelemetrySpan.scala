@@ -24,7 +24,7 @@ import io.opentelemetry.context.Context
 
 import java.lang
 import io.opentelemetry.api.{OpenTelemetry => OTel}
-import TraceValue.{BooleanValue, NumberValue, StringValue}
+import TraceValue._
 
 import java.net.URI
 import scala.collection.mutable
@@ -66,6 +66,16 @@ private[opentelemetry] final case class OpenTelemetrySpan[F[_]: Sync](
       // and any other Number can fall back to a Double
       case (k, NumberValue(v))  => bldr.put(k, v.doubleValue())
       case (k, BooleanValue(v)) => bldr.put(k, v)
+      case (k, ListValue(vs))   =>
+        // TODO when support for HLists is merged, stop converting to string
+        // see https://opentelemetry.io/blog/2025/complex-attribute-types/#upcoming-support-for-complex-attribute-types-in-opentelemetry
+        val strings: List[String] = vs.collect {
+          case StringValue(v)  => v
+          case BooleanValue(v) => v.toString
+          case NumberValue(v)  => v.toString
+          case ListValue(v)    => v.mkString(", ")
+        }
+        bldr.put(k, strings: _*)
     }
     bldr.build()
   }

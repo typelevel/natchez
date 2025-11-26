@@ -43,6 +43,7 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
       case (k, StringValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, NumberValue(v))  => Sync[F].delay(span.setTag(k, v))
       case (k, BooleanValue(v)) => Sync[F].delay(span.setTag(k, v))
+      case (k, ListValue(v))    => Sync[F].delay(span.setTag(k, v.map(_.toString).mkString(", ")))
     }
 
   override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =

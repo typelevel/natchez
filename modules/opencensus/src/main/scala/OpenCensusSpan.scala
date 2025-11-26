@@ -14,7 +14,7 @@ import io.opencensus.trace.{AttributeValue, Sampler, SpanBuilder, Tracer, Tracin
 import io.opencensus.trace.propagation.SpanContextParseException
 import io.opencensus.trace.propagation.TextFormat.Getter
 import natchez.Span.{Options, SpanKind}
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import natchez.TraceValue._
 import org.typelevel.ci._
 
 import scala.collection.mutable
@@ -40,6 +40,8 @@ private[opencensus] final case class OpenCensusSpan[F[_]: Sync](
       AttributeValue.doubleAttributeValue(v.doubleValue())
     case BooleanValue(v) =>
       AttributeValue.booleanAttributeValue(v)
+    case ListValue(v) =>
+      AttributeValue.stringAttributeValue(v.map(_.toString).mkString(", "))
   }
 
   override def put(fields: (String, TraceValue)*): F[Unit] =

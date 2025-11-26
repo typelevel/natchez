@@ -13,7 +13,7 @@ import cats.syntax.all._
 import io.opentracing.log.Fields
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.opentracing.tag.Tags
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import natchez.TraceValue._
 import _root_.datadog.trace.api.DDTags
 import natchez.Span.Options
 import natchez.datadog.DDTracer.{addLink, addSpanKind}
@@ -46,6 +46,7 @@ final case class DDSpan[F[_]: Sync](
       case (str, StringValue(value))  => Sync[F].delay(span.setTag(str, value))
       case (str, NumberValue(value))  => Sync[F].delay(span.setTag(str, value))
       case (str, BooleanValue(value)) => Sync[F].delay(span.setTag(str, value))
+      case (str, ListValue(v)) => Sync[F].delay(span.setTag(str, v.map(_.toString).mkString(", ")))
     }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {

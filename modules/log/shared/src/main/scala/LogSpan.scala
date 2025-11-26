@@ -111,7 +111,7 @@ private[log] final case class LogSpan[F[_]: Sync: Logger: UUIDGen](
 
 private[log] object LogSpan {
 
-  implicit val EncodeTraceValue: Encoder[TraceValue] =
+  implicit lazy val EncodeTraceValue: Encoder[TraceValue] =
     Encoder.instance {
       case StringValue(s)                       => s.asJson
       case BooleanValue(b)                      => b.asJson
@@ -126,6 +126,7 @@ private[log] object LogSpan {
       case NumberValue(n: BigDecimal)           => n.asJson
       case NumberValue(n: BigInt)               => n.asJson
       case NumberValue(n)                       => n.doubleValue.asJson
+      case ListValue(vs)                        => vs.map(EncodeTraceValue(_)).asJson
     }
 
   implicit val KeyEncodeCIString: KeyEncoder[CIString] = KeyEncoder[String].contramap(_.toString)
