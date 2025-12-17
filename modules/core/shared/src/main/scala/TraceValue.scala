@@ -4,6 +4,8 @@
 
 package natchez
 
+import cats.*
+
 sealed trait TraceValue extends Product with Serializable {
   def value: Any
 }
@@ -57,4 +59,14 @@ object TraceableValue {
   implicit val longToTraceValue: TraceableValue[Long] = TraceValue.NumberValue(_)
   implicit val doubleToTraceValue: TraceableValue[Double] = TraceValue.NumberValue(_)
   implicit val floatToTraceValue: TraceableValue[Float] = TraceValue.NumberValue(_)
+
+  implicit def bifoldableTraceableValue[F[_, _]: Bifoldable, A: TraceableValue, B: TraceableValue]
+      : TraceableValue[F[A, B]] =
+    Bifoldable[F]
+      .bifoldRight(_, Eval.later[TraceValue](???))(
+        (a, _) => Eval.now(TraceableValue[A].toTraceValue(a)),
+        (b, _) => Eval.now(TraceableValue[B].toTraceValue(b))
+      )
+      .value
+
 }
