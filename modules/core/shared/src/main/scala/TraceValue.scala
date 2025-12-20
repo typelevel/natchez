@@ -60,6 +60,8 @@ object TraceableValue {
   implicit val doubleToTraceValue: TraceableValue[Double] = TraceValue.NumberValue(_)
   implicit val floatToTraceValue: TraceableValue[Float] = TraceValue.NumberValue(_)
 
+  implicit val traceValueIdentity: TraceableValue[TraceValue] = identity
+
   implicit def bifoldableTraceableValue[F[_, _]: Bifoldable, A: TraceableValue, B: TraceableValue]
       : TraceableValue[F[A, B]] =
     Bifoldable[F]
