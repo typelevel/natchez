@@ -43,6 +43,7 @@ object TraceValue {
   *
   * @tparam A The type to be converted to `TraceValue`
   */
+@FunctionalInterface
 trait TraceableValue[A] { outer =>
   def toTraceValue(a: A): TraceValue
 
