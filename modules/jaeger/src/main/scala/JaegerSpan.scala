@@ -100,6 +100,12 @@ private[jaeger] final case class JaegerSpan[F[_]: Sync](
     (Nested(prefix.pure[F]), Nested(traceId)).mapN { (uri, id) =>
       uri.resolve(s"/trace/$id")
     }.value
+
+  override def unsafeRunWithActivatedSpan[T](run: => T): T = {
+    val scope = tracer.activateSpan(span)
+    try run
+    finally scope.close()
+  }
 }
 
 private[jaeger] object JaegerSpan {
