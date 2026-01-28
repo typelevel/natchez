@@ -274,7 +274,7 @@ jobs:
       - name: Submit Dependencies
         uses: scalacenter/sbt-dependency-submission@v2
         with:
-          modules-ignore: natchez-examples_2.12 natchez-examples_2.13 natchez-examples_3 rootjs_2.12 rootjs_2.13 rootjs_3 coretests_sjs1_2.12 coretests_sjs1_2.13 coretests_sjs1_3 coretests_2.12 coretests_2.13 coretests_3 rootjvm_2.12 rootjvm_2.13 rootjvm_3 rootnative_2.12 rootnative_2.13 rootnative_3 coretests_native0.4_2.12 coretests_native0.4_2.13 coretests_native0.4_3
+          modules-ignore: natchez-examples_2.12 natchez-examples_3 natchez-examples_3 rootjs_2.12 rootjs_3 rootjs_3 coretests_sjs1_2.12 coretests_sjs1_3 coretests_sjs1_3 coretests_2.12 coretests_3 coretests_3 rootjvm_2.12 rootjvm_3 rootjvm_3 rootnative_2.12 rootnative_3 rootnative_3 coretests_native0.4_2.12 coretests_native0.4_3 coretests_native0.4_3
           configs-ignore: test scala-tool scala-doc-tool test-internal
 
   docs:
@@ -282,7 +282,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        scala: [2.13.18]
+        scala: [3.8.1]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:

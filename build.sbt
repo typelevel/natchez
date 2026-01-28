@@ -3,7 +3,7 @@ import com.typesafe.tools.mima.core._
 ThisBuild / tlBaseVersion := "0.3"
 
 val scala212Version = "2.12.21"
-val scala213Version = "2.13.18"
+val scala213Version = "3.8.1"
 val scala30Version = "3.3.7"
 
 val collectionCompatVersion = "2.11.0"
