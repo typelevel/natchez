@@ -43,7 +43,9 @@ final class DDEntryPoint[F[_]: Sync](tracer: ot.Tracer, uriPrefix: Option[URI])
             Format.Builtin.HTTP_HEADERS,
             new TextMapAdapter(kernel.toJava)
           )
-          tracer.buildSpan(name).asChildOf(spanContext)
+          val builder = tracer.buildSpan(name).ignoreActiveSpan()
+          if (spanContext != null) builder.asChildOf(spanContext)
+          else builder
         }
         .flatTap(addSpanKind(_, options.spanKind))
         .flatMap(options.links.foldM(_)(addLink[F](tracer)))
