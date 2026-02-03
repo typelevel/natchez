@@ -6,7 +6,7 @@ package natchez
 package datadog
 
 import cats.effect._
-import cats.effect.std.AtomicCell
+import cats.effect.Ref
 import cats.syntax.all._
 import munit.CatsEffectSuite
 
@@ -30,7 +30,7 @@ class DDEntryPointSuite extends CatsEffectSuite {
       }
       .use { ep =>
         for {
-          traceIds <- AtomicCell[IO].of(List.empty[Option[String]])
+          traceIds <- Ref[IO].of(List.empty[Option[String]])
 
           // Process 100 concurrent requests with empty kernels (no tracing headers)
           // This simulates external requests that don't carry incoming trace context
@@ -65,7 +65,7 @@ class DDEntryPointSuite extends CatsEffectSuite {
       }
       .use { ep =>
         for {
-          traceIds <- AtomicCell[IO].of(List.empty[Option[String]])
+          traceIds <- Ref[IO].of(List.empty[Option[String]])
 
           _ <- (1 to 100).toList.parTraverse { _ =>
             ep.root("request").use { span =>
