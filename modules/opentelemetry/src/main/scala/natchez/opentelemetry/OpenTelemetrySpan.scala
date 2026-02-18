@@ -152,7 +152,7 @@ private[opentelemetry] object OpenTelemetrySpan {
       _ <- Sync[F].delay {
         exitCase match {
           case Succeeded   => outer.span.setStatus(StatusCode.OK)
-          case Canceled    => outer.span.setStatus(StatusCode.UNSET)
+          case Canceled    => outer.span.setStatus(StatusCode.ERROR, "Canceled")
           case Errored(ex) =>
             outer.span.setStatus(StatusCode.ERROR, ex.getMessage)
             outer.span.recordException(ex)
