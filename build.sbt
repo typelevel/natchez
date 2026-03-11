@@ -369,7 +369,7 @@ lazy val examples = project
     description := "Example programs for Natchez.",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "log4cats-slf4j" % "2.7.1",
+      "org.typelevel" %% "log4cats-slf4j" % "2.8.0",
       "org.slf4j" % "slf4j-simple" % "2.0.17",
       "eu.timepit" %% "refined" % "0.11.3",
       "is.cir" %% "ciris" % "3.12.0",
