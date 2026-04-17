@@ -115,7 +115,7 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.10").toMap
   )
 
 lazy val coreTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
@@ -265,7 +265,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.10").toMap
   )
 
 lazy val newrelic = project
@@ -300,7 +300,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.10").toMap
   )
 
 lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
@@ -314,7 +314,7 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq()
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.10").toMap
   )
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
@@ -410,7 +410,7 @@ lazy val testkit = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.10").toMap
   )
 
 lazy val docs = project
