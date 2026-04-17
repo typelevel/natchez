@@ -17,7 +17,7 @@ object XRay {
       useEnvironmentFallback: Boolean = true
   ): Resource[F, EntryPoint[F]] =
     Network[F]
-      .openDatagramSocket()
+      .bindDatagramSocket()
       .map { socket =>
         new XRayEntryPoint[F](socket, daemonAddress, useEnvironmentFallback)
       }

@@ -6,11 +6,11 @@ val scala212Version = "2.12.21"
 val scala213Version = "2.13.18"
 val scala30Version = "3.3.7"
 
-val collectionCompatVersion = "2.11.0"
+val collectionCompatVersion = "2.14.0"
 
-val catsVersion = "2.11.0"
-val catsEffectVersion = "3.6.3"
-val fs2Version = "3.12.2"
+val catsVersion = "2.13.0"
+val catsEffectVersion = "3.7.0"
+val fs2Version = "3.13.0"
 
 // Publishing
 
@@ -47,6 +47,8 @@ ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 )
 
+ThisBuild / resolvers += Resolver.sonatypeCentralSnapshots
+
 // Headers
 lazy val commonSettings = Seq(
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -60,13 +62,13 @@ lazy val commonSettings = Seq(
   ),
   // Testing
   libraryDependencies ++= Seq(
-    "org.scalameta" %%% "munit" % "1.0.0" % Test,
-    "org.scalameta" %%% "munit-scalacheck" % "1.0.0-M11" % Test,
-    "org.typelevel" %%% "munit-cats-effect" % "2.1.0" % Test,
-    "org.typelevel" %%% "scalacheck-effect-munit" % "2.0.0-M2" % Test,
-    "org.typelevel" %%% "cats-kernel-laws" % "2.11.0" % Test,
-    "org.typelevel" %%% "cats-laws" % "2.11.0" % Test,
-    "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test
+    "org.scalameta" %%% "munit" % "1.3.0" % Test,
+    "org.scalameta" %%% "munit-scalacheck" % "1.3.0" % Test,
+    "org.typelevel" %%% "munit-cats-effect" % "2.2.0" % Test,
+    "org.typelevel" %%% "scalacheck-effect-munit" % "2.1.0" % Test,
+    "org.typelevel" %%% "cats-kernel-laws" % "2.13.0" % Test,
+    "org.typelevel" %%% "cats-laws" % "2.13.0" % Test,
+    "org.typelevel" %%% "discipline-munit" % "2.0.0-99-eeb871b-SNAPSHOT" % Test
   )
 )
 
@@ -110,12 +112,12 @@ lazy val core = crossProject(JSPlatform, JVMPlatform, NativePlatform)
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "co.fs2" %%% "fs2-io" % fs2Version,
-      "org.typelevel" %%% "case-insensitive" % "1.4.2",
+      "org.typelevel" %%% "case-insensitive" % "1.5.0",
       "org.scala-lang.modules" %%% "scala-collection-compat" % collectionCompatVersion
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
   )
 
 lazy val coreTests = crossProject(JSPlatform, JVMPlatform, NativePlatform)
@@ -230,7 +232,7 @@ lazy val opentelemetry = project
   .settings(
     name := "natchez-opentelemetry",
     description := "Base OpenTelemetry Utilities for Natchez",
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap,
     libraryDependencies ++= Seq(
       "io.opentelemetry" % "opentelemetry-sdk" % "1.61.0"
     )
@@ -259,13 +261,13 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     name := "natchez-log",
     description := "Logging bindings for Natchez, using log4cats.",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.8",
-      "org.typelevel" %%% "log4cats-core" % "2.7.1",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0" % Test
+      "io.circe" %%% "circe-core" % "0.14.14",
+      "org.typelevel" %%% "log4cats-core" % "2.8.0",
+      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0" % Test
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
   )
 
 lazy val newrelic = project
@@ -277,7 +279,7 @@ lazy val newrelic = project
     name := "newrelic",
     description := "Newrelic bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.14.8",
+      "io.circe" %% "circe-core" % "0.14.14",
       "com.newrelic.telemetry" % "telemetry" % "0.10.0",
       "com.newrelic.telemetry" % "telemetry-core" % "0.16.0",
       "com.newrelic.telemetry" % "telemetry-http-okhttp" % "0.16.0"
@@ -293,14 +295,14 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     name := "natchez-mtl",
     description := "cats-mtl bindings for Natchez.",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-mtl" % "1.4.0",
-      "org.typelevel" %%% "cats-mtl-laws" % "1.4.0" % Test,
-      "org.typelevel" %%% "discipline-munit" % "2.0.0-M3" % Test,
-      "org.typelevel" %%% "cats-effect-testkit" % "3.6.3" % Test
+      "org.typelevel" %%% "cats-mtl" % "1.5.0",
+      "org.typelevel" %%% "cats-mtl-laws" % "1.5.0" % Test,
+      "org.typelevel" %%% "discipline-munit" % "2.0.0-99-eeb871b-SNAPSHOT" % Test,
+      "org.typelevel" %%% "cats-effect-testkit" % "3.7.0" % Test
     )
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
   )
 
 lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
@@ -314,7 +316,7 @@ lazy val noop = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq()
   )
   .nativeSettings(
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap
   )
 
 lazy val xray = crossProject(JSPlatform, JVMPlatform)
@@ -327,7 +329,7 @@ lazy val xray = crossProject(JSPlatform, JVMPlatform)
     name := "natchez-xray",
     description := "AWS X-Ray bindings implementation",
     libraryDependencies ++= Seq(
-      "io.circe" %%% "circe-core" % "0.14.8",
+      "io.circe" %%% "circe-core" % "0.14.14",
       "co.fs2" %%% "fs2-io" % fs2Version,
       "com.comcast" %%% "ip4s-core" % "3.8.0"
     )
@@ -387,7 +389,7 @@ lazy val logOdin = project
   .settings(
     name := "natchez-log-odin",
     description := "Logging bindings for Natchez, using Odin.",
-    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.1.7").toMap,
+    tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.4.0").toMap,
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % "0.14.1",
       "com.github.valskalla" %% "odin-core" % "0.13.0",
@@ -405,8 +407,8 @@ lazy val testkit = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     description := "In-memory Natchez implementation that is useful for testing",
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap,
     libraryDependencies ++= Seq(
-      "org.scalacheck" %%% "scalacheck" % "1.17.1",
-      "org.typelevel" %%% "case-insensitive-testing" % "1.4.2"
+      "org.scalacheck" %%% "scalacheck" % "1.19.0",
+      "org.typelevel" %%% "case-insensitive-testing" % "1.5.0"
     )
   )
 
