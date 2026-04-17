@@ -47,8 +47,6 @@ ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 )
 
-ThisBuild / resolvers += Resolver.sonatypeCentralSnapshots
-
 // Headers
 lazy val commonSettings = Seq(
   headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.cppStyleLineComment),
@@ -68,7 +66,7 @@ lazy val commonSettings = Seq(
     "org.typelevel" %%% "scalacheck-effect-munit" % "2.1.0" % Test,
     "org.typelevel" %%% "cats-kernel-laws" % "2.13.0" % Test,
     "org.typelevel" %%% "cats-laws" % "2.13.0" % Test,
-    "org.typelevel" %%% "discipline-munit" % "2.0.0-99-eeb871b-SNAPSHOT" % Test
+    "org.typelevel" %%% "discipline-munit" % "2.0.0" % Test
   )
 )
 
@@ -297,7 +295,7 @@ lazy val mtl = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-mtl" % "1.5.0",
       "org.typelevel" %%% "cats-mtl-laws" % "1.5.0" % Test,
-      "org.typelevel" %%% "discipline-munit" % "2.0.0-99-eeb871b-SNAPSHOT" % Test,
+      "org.typelevel" %%% "discipline-munit" % "2.0.0" % Test,
       "org.typelevel" %%% "cats-effect-testkit" % "3.7.0" % Test
     )
   )
