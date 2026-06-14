@@ -261,7 +261,7 @@ lazy val log = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core" % "0.14.15",
       "org.typelevel" %%% "log4cats-core" % "2.8.0",
-      "io.github.cquiroz" %%% "scala-java-time" % "2.6.0" % Test
+      "io.github.cquiroz" %%% "scala-java-time" % "2.7.0" % Test
     )
   )
   .nativeSettings(
