@@ -371,7 +371,7 @@ lazy val examples = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % "2.8.0",
       "org.slf4j" % "slf4j-simple" % "2.0.18",
-      "eu.timepit" %% "refined" % "0.11.3",
+      "eu.timepit" %% "refined" % "0.11.4",
       "is.cir" %% "ciris" % "3.15.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.63.0",
       "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.42.0",
