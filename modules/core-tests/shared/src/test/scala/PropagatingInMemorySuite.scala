@@ -82,7 +82,7 @@ class PropagatingInMemorySuite extends CatsEffectSuite {
       }
 
       run *> ep.spans.map { spans =>
-        val byName = spans.groupMapReduce(_.name)(identity)((a, _) => a)
+        val byName = spans.groupBy(_.name).map { case (k, v) => k -> v.head }
         (1 to n).foreach { i =>
           val parent = byName.get(s"parent-$i")
           val child = byName.get(s"child-$i")
