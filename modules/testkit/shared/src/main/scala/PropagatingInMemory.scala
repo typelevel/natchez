@@ -51,9 +51,8 @@ object PropagatingInMemory {
   class Span[F[_]: Monad](
       val name: String,
       val id: String,
-      /** The resolved parent: an explicit parentKernel's id if one was given, else the enclosing
-        * span's id, else `None` for a root with no continued kernel.
-        */
+      // The resolved parent: an explicit parentKernel's id if one was given, else the enclosing
+      // span's id, else `None` for a root with no continued kernel.
       val parentId: Option[String],
       log: Ref[F, Chain[Recorded]],
       nextId: F[String],
