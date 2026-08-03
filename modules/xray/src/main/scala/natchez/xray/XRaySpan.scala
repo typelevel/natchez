@@ -75,32 +75,6 @@ private[xray] final case class XRaySpan[F[_]: Concurrent: Clock: Random](
   private def toEpochSeconds(t: FiniteDuration): Double =
     t.toMicros.toDouble / 1000000
 
-  implicit val exceptionEncoder: Encoder.AsObject[XRayException] =
-    Encoder.AsObject.instance { xex =>
-      val ex = xex.ex
-      JsonObject(
-        "fault" -> true.asJson,
-        "cause" -> Json.obj(
-          "exceptions" -> Json.arr(
-            Json.obj(
-              "id" -> xex.id.asJson,
-              "message" -> ex.getMessage.asJson,
-              "type" -> ex.getClass.getName.asJson,
-              "stack" -> ex.getStackTrace
-                .map(x =>
-                  Json.obj(
-                    "line" -> x.getLineNumber.asJson,
-                    "path" -> x.getFileName.asJson,
-                    "label" -> x.getMethodName.asJson
-                  )
-                )
-                .asJson
-            )
-          )
-        )
-      )
-    }
-
   def serialize(end: FiniteDuration, exitCase: ExitCase): F[JsonObject] =
     (fields.get, children.get, XRaySpan.segmentId[F]).mapN { (fs, cs, id) =>
       val (badKeys: Map[String, Json], goodKeys: Map[String, Json]) =
@@ -153,6 +127,33 @@ private[xray] object XRaySpan {
     Encoder[String].contramap(_.toString)
 
   final case class XRayException(id: String, ex: Throwable)
+  object XRayException extends scala.runtime.AbstractFunction2[String, Throwable, XRayException] {
+    private[xray] implicit val exceptionEncoder: Encoder.AsObject[XRayException] =
+      Encoder.AsObject.instance { xex =>
+        val ex = xex.ex
+        JsonObject(
+          "fault" -> true.asJson,
+          "cause" -> Json.obj(
+            "exceptions" -> Json.arr(
+              Json.obj(
+                "id" -> xex.id.asJson,
+                "message" -> Option(ex.getMessage).asJson,
+                "type" -> ex.getClass.getName.asJson,
+                "stack" -> ex.getStackTrace
+                  .map(x =>
+                    Json.obj(
+                      "line" -> x.getLineNumber.asJson,
+                      "path" -> Option(x.getFileName).asJson,
+                      "label" -> x.getMethodName.asJson
+                    )
+                  )
+                  .asJson
+              )
+            )
+          )
+        )
+      }
+  }
 
   implicit val EncodeTraceValue: Encoder[TraceValue] =
     Encoder.instance {
