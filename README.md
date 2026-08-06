@@ -9,3 +9,7 @@ Natchez is distributed tracing library for Scala.
 
 Please proceed to the [microsite](https://typelevel.org/natchez/) for more information.
 
+
+#### AWS Cloud Watch Log Group Name Configuration
+
+To add an AWS Cloud Watch log group name to the traces, add the `aws_group_name` key in the annotation with the value as log group name.
