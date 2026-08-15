@@ -4,6 +4,8 @@
 
 package natchez
 
+import cats.*
+
 sealed trait TraceValue extends Product with Serializable {
   def value: Any
 }
@@ -41,6 +43,7 @@ object TraceValue {
   *
   * @tparam A The type to be converted to `TraceValue`
   */
+@FunctionalInterface
 trait TraceableValue[A] { outer =>
   def toTraceValue(a: A): TraceValue
 
@@ -57,4 +60,16 @@ object TraceableValue {
   implicit val longToTraceValue: TraceableValue[Long] = TraceValue.NumberValue(_)
   implicit val doubleToTraceValue: TraceableValue[Double] = TraceValue.NumberValue(_)
   implicit val floatToTraceValue: TraceableValue[Float] = TraceValue.NumberValue(_)
+
+  implicit val traceValueIdentity: TraceableValue[TraceValue] = identity
+
+  implicit def bifoldableTraceableValue[F[_, _]: Bifoldable, A: TraceableValue, B: TraceableValue]
+      : TraceableValue[F[A, B]] =
+    Bifoldable[F]
+      .bifoldRight(_, Eval.later[TraceValue](???))(
+        (a, _) => Eval.now(TraceableValue[A].toTraceValue(a)),
+        (b, _) => Eval.now(TraceableValue[B].toTraceValue(b))
+      )
+      .value
+
 }
