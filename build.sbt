@@ -406,7 +406,7 @@ lazy val testkit = crossProject(JSPlatform, JVMPlatform, NativePlatform)
     description := "In-memory Natchez implementation that is useful for testing",
     tlVersionIntroduced := List("2.12", "2.13", "3").map(_ -> "0.3.1").toMap,
     libraryDependencies ++= Seq(
-      "org.scalacheck" %%% "scalacheck" % "1.19.0",
+      "org.scalacheck" %%% "scalacheck" % "1.20.0",
       "org.typelevel" %%% "case-insensitive-testing" % "1.5.0"
     )
   )
