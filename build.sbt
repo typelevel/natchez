@@ -371,7 +371,7 @@ lazy val examples = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "log4cats-slf4j" % "2.8.0",
-      "org.slf4j" % "slf4j-simple" % "2.0.18",
+      "org.slf4j" % "slf4j-simple" % "2.0.19",
       "eu.timepit" %% "refined" % "0.11.4",
       "is.cir" %% "ciris" % "3.15.0",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.65.0",
@@ -451,7 +451,7 @@ lazy val docs = project
       "org.http4s" %% "http4s-dsl" % "0.23.15",
       "org.http4s" %% "http4s-client" % "0.23.15",
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
-      "org.slf4j" % "slf4j-simple" % "2.0.18",
+      "org.slf4j" % "slf4j-simple" % "2.0.19",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.65.0", // for the opentelemetry example
       "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.43.0"
     ),
