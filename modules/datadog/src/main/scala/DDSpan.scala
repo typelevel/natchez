@@ -6,6 +6,7 @@ package natchez
 package datadog
 
 import io.{opentracing => ot}
+import cats.Applicative
 import cats.data.Nested
 import cats.effect.{Resource, Sync}
 import cats.effect.Resource.ExitCase
@@ -13,7 +14,7 @@ import cats.syntax.all._
 import io.opentracing.log.Fields
 import io.opentracing.propagation.{Format, TextMapAdapter}
 import io.opentracing.tag.Tags
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import natchez.TraceValue._
 import _root_.datadog.trace.api.DDTags
 import natchez.Span.Options
 import natchez.datadog.DDTracer.{addLink, addSpanKind}
@@ -43,9 +44,12 @@ final case class DDSpan[F[_]: Sync](
 
   def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (str, StringValue(value))  => Sync[F].delay(span.setTag(str, value))
-      case (str, NumberValue(value))  => Sync[F].delay(span.setTag(str, value))
-      case (str, BooleanValue(value)) => Sync[F].delay(span.setTag(str, value))
+      case (str, StringValue(value))  => Sync[F].delay(span.setTag(str, value)).void
+      case (str, NumberValue(value))  => Sync[F].delay(span.setTag(str, value)).void
+      case (str, BooleanValue(value)) => Sync[F].delay(span.setTag(str, value)).void
+      case (str, ListValue(v))        =>
+        Sync[F].delay(span.setTag(str, v.map(_.toString).mkString(", "))).void
+      case (_, NoneValue) => Applicative[F].unit
     }
 
   override def log(fields: (String, TraceValue)*): F[Unit] = {

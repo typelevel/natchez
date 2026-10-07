@@ -155,7 +155,7 @@ private[xray] object XRaySpan {
       }
   }
 
-  implicit val EncodeTraceValue: Encoder[TraceValue] =
+  implicit lazy val EncodeTraceValue: Encoder[TraceValue] =
     Encoder.instance {
       case StringValue(s)                       => s.asJson
       case BooleanValue(b)                      => b.asJson
@@ -170,6 +170,8 @@ private[xray] object XRaySpan {
       case NumberValue(n: BigDecimal)           => n.asJson
       case NumberValue(n: BigInt)               => n.asJson
       case NumberValue(n)                       => n.doubleValue.asJson
+      case ListValue(vs)                        => vs.map(EncodeTraceValue(_)).asJson
+      case NoneValue                            => Json.Null
     }
 
   val Header = ci"X-Amzn-Trace-Id"
