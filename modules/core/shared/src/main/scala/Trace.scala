@@ -110,50 +110,55 @@ object Trace {
 
   /** A `Trace` instance that uses `IOLocal` internally. */
   def ioTrace(rootSpan: Span[IO]): IO[Trace[IO]] =
-    IOLocal(rootSpan).map { local =>
-      new Trace[IO] {
+    IOLocal(rootSpan).map(fromIOLocal)
 
-        override def put(fields: (String, TraceValue)*): IO[Unit] =
-          local.get.flatMap(_.put(fields: _*))
+  /** A `Trace` instance backed by an existing `IOLocal[Span[IO]]`. Unlike [[ioTrace]], this gives
+    * the caller ownership of the `IOLocal`, so the current `Span[IO]` remains accessible via
+    * `local.get`.
+    */
+  def fromIOLocal(local: IOLocal[Span[IO]]): Trace[IO] =
+    new Trace[IO] {
 
-        override def attachError(err: Throwable, fields: (String, TraceValue)*): IO[Unit] =
-          local.get.flatMap(_.attachError(err, fields: _*))
+      override def put(fields: (String, TraceValue)*): IO[Unit] =
+        local.get.flatMap(_.put(fields: _*))
 
-        override def log(fields: (String, TraceValue)*): IO[Unit] =
-          local.get.flatMap(_.log(fields: _*))
+      override def attachError(err: Throwable, fields: (String, TraceValue)*): IO[Unit] =
+        local.get.flatMap(_.attachError(err, fields: _*))
 
-        override def log(event: String): IO[Unit] =
-          local.get.flatMap(_.log(event))
+      override def log(fields: (String, TraceValue)*): IO[Unit] =
+        local.get.flatMap(_.log(fields: _*))
 
-        override def kernel: IO[Kernel] =
-          local.get.flatMap(_.kernel)
+      override def log(event: String): IO[Unit] =
+        local.get.flatMap(_.log(event))
 
-        override def spanR(name: String, options: Span.Options): Resource[IO, IO ~> IO] =
-          for {
-            parent <- Resource.eval(local.get)
-            child <- parent.span(name, options)
-          } yield new (IO ~> IO) {
-            def apply[A](fa: IO[A]): IO[A] =
-              local.get.flatMap { old =>
-                local
-                  .set(child)
-                  .bracket(_ => fa.onError { case e => child.attachError(e) })(_ => local.set(old))
-              }
+      override def kernel: IO[Kernel] =
+        local.get.flatMap(_.kernel)
 
-          }
+      override def spanR(name: String, options: Span.Options): Resource[IO, IO ~> IO] =
+        for {
+          parent <- Resource.eval(local.get)
+          child <- parent.span(name, options)
+        } yield new (IO ~> IO) {
+          def apply[A](fa: IO[A]): IO[A] =
+            local.get.flatMap { old =>
+              local
+                .set(child)
+                .bracket(_ => fa.onError { case e => child.attachError(e) })(_ => local.set(old))
+            }
 
-        override def span[A](name: String, options: Span.Options)(k: IO[A]): IO[A] =
-          spanR(name, options).use(_(k))
+        }
 
-        override def traceId: IO[Option[String]] =
-          local.get.flatMap(_.traceId)
+      override def span[A](name: String, options: Span.Options)(k: IO[A]): IO[A] =
+        spanR(name, options).use(_(k))
 
-        override def spanId(implicit F: Applicative[IO]): IO[Option[String]] =
-          local.get.flatMap(_.spanId)
+      override def traceId: IO[Option[String]] =
+        local.get.flatMap(_.traceId)
 
-        override def traceUri: IO[Option[URI]] =
-          local.get.flatMap(_.traceUri)
-      }
+      override def spanId(implicit F: Applicative[IO]): IO[Option[String]] =
+        local.get.flatMap(_.spanId)
+
+      override def traceUri: IO[Option[URI]] =
+        local.get.flatMap(_.traceUri)
     }
 
   /** A `Trace` instance that uses `IOLocal` internally. Span creation delegates to the supplied entry point. */
