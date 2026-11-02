@@ -375,7 +375,7 @@ lazy val examples = project
       "eu.timepit" %% "refined" % "0.11.4",
       "is.cir" %% "ciris" % "3.15.2",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.67.0",
-      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.44.0",
+      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.45.0",
       "io.grpc" % "grpc-okhttp" % "1.84.2" // required for the OpenTelemetry exporter
     )
   )
@@ -453,7 +453,7 @@ lazy val docs = project
       "org.typelevel" %% "log4cats-slf4j" % "2.4.0",
       "org.slf4j" % "slf4j-simple" % "2.0.20",
       "io.opentelemetry" % "opentelemetry-exporter-otlp" % "1.67.0", // for the opentelemetry example
-      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.44.0"
+      "io.opentelemetry.semconv" % "opentelemetry-semconv" % "1.45.0"
     ),
     excludeDependencies += "org.scala-lang.modules" % "scala-collection-compat_3" // pray this does more good than harm
   )
