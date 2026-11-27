@@ -4,6 +4,7 @@
 
 package natchez.newrelic
 
+import cats.Applicative
 import java.net.URI
 import java.util.UUID
 import cats.effect.Ref
@@ -11,7 +12,7 @@ import cats.effect.{Resource, Sync}
 import cats.syntax.all._
 import com.newrelic.telemetry.Attributes
 import com.newrelic.telemetry.spans.{Span, SpanBatch, SpanBatchSender}
-import natchez.TraceValue.{BooleanValue, NumberValue, StringValue}
+import natchez.TraceValue._
 import natchez.newrelic.NewrelicSpan.Headers
 import natchez.{Kernel, TraceValue}
 import org.typelevel.ci._
@@ -45,9 +46,11 @@ private[newrelic] final case class NewrelicSpan[F[_]: Sync](
 
   override def put(fields: (String, TraceValue)*): F[Unit] =
     fields.toList.traverse_ {
-      case (k, StringValue(v))  => attributes.update(att => att.put(k, v))
-      case (k, NumberValue(v))  => attributes.update(att => att.put(k, v))
-      case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v))
+      case (k, StringValue(v))  => attributes.update(att => att.put(k, v)).void
+      case (k, NumberValue(v))  => attributes.update(att => att.put(k, v)).void
+      case (k, BooleanValue(v)) => attributes.update(att => att.put(k, v)).void
+      case (k, ListValue(vs))   => attributes.update(att => att.put(k, vs.mkString(", "))).void
+      case (_, NoneValue)       => Applicative[F].unit
     }
 
   override def attachError(err: Throwable, fields: (String, TraceValue)*): F[Unit] =
